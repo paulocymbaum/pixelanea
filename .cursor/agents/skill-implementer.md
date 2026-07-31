@@ -1,3 +1,9 @@
+---
+name: skill-implementer
+model: inherit
+is_background: true
+---
+
 
 name: skill-implementer
 description: Pixelanea skill delivery orchestrator. Always asks which skill to implement, then investigates the codebase, plans tasks, executes the delivery, and performs a scored code review. Use proactively when the user wants to implement, apply, or run a project skill end-to-end.
