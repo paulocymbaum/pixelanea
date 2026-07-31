@@ -1,0 +1,85 @@
+name: Build
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install frontend dependencies
+        run: pnpm install
+
+      - name: Generate API client
+        run: pnpm generate:api
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Frontend unit tests
+        run: pnpm --filter @pixelanea/web test
+
+      - name: Build frontend
+        run: pnpm --filter @pixelanea/api-client build && pnpm --filter @pixelanea/web exec vite build
+
+      - name: Install backend build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake g++ gcc curl python3
+
+      - name: Configure backend
+        run: |
+          cmake -S server -B server/build \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DCMAKE_C_COMPILER=gcc \
+            -G "Unix Makefiles"
+
+      - name: Build backend
+        run: cmake --build server/build
+
+      - name: Backend unit tests
+        run: ctest --test-dir server/build --output-on-failure
+
+      - name: Backend smoke tests
+        run: ./scripts/test-backend.sh
+
+      - name: Frontend smoke tests
+        run: ./scripts/test-frontend.sh
+
+  bump-version:
+    needs: build
+    if: >-
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master') &&
+      !contains(github.event.head_commit.message, '[skip ci]')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump version and push
+        env:
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+        run: ./scripts/ci-bump-and-push.sh "${{ github.ref_name }}"

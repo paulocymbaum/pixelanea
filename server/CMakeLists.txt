@@ -194,6 +194,7 @@ set(PIXELANEA_SERVER_SOURCES
   src/main.cpp
   src/api/api_server.cpp
   src/api/base64.cpp
+  src/api/web_static.cpp
   src/logging/http_request_log.cpp
 )
 

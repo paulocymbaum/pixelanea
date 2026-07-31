@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HOST="127.0.0.1"
+PORT="8787"
+APP_URL="http://${HOST}:${PORT}"
+BINARY="${INSTALL_DIR}/pixelanea-server"
+WEB_ROOT="${INSTALL_DIR}/web"
+
+port_in_use() {
+  if command -v ss >/dev/null 2>&1; then
+    ss -tln "sport = :${PORT}" 2>/dev/null | grep -q LISTEN
+    return
+  fi
+  fuser "${PORT}/tcp" >/dev/null 2>&1
+}
+
+if port_in_use; then
+  if command -v fuser >/dev/null 2>&1; then
+    fuser -k "${PORT}/tcp" 2>/dev/null || true
+    sleep 0.5
+  fi
+fi
+
+"${BINARY}" --host "${HOST}" --port "${PORT}" --web-root "${WEB_ROOT}" &
+SERVER_PID=$!
+
+cleanup() {
+  kill "${SERVER_PID}" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+if command -v curl >/dev/null 2>&1; then
+  for _ in $(seq 1 50); do
+    if curl -sf "${APP_URL}/api/health" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.2
+  done
+else
+  sleep 2
+fi
+
+if command -v xdg-open >/dev/null 2>&1; then
+  xdg-open "${APP_URL}" >/dev/null 2>&1 &
+elif command -v sensible-browser >/dev/null 2>&1; then
+  sensible-browser "${APP_URL}" >/dev/null 2>&1 &
+else
+  echo "Pixelanea is running at ${APP_URL}"
+fi
+
+wait "${SERVER_PID}"

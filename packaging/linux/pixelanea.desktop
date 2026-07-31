@@ -1,0 +1,12 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Pixelanea
+GenericName=Pixel Art Editor
+Comment=Make pixel art. Keep it local.
+Exec=__PIXELANEA_RUN_DESKTOP__
+Icon=__PIXELANEA_ICON__
+Terminal=false
+Categories=Graphics;2DGraphics;
+Keywords=pixel;art;editor;animation;
+StartupNotify=true
