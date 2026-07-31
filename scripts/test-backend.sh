@@ -159,6 +159,35 @@ else
   fail "PUT /api/projects/{id}/frames/0 round-trip"
 fi
 
+PIXELATE_PNG_B64=$(python3 - <<'PY'
+import base64, struct, zlib
+
+def png_chunk(tag, data):
+    crc = zlib.crc32(tag + data) & 0xffffffff
+    return struct.pack('>I', len(data)) + tag + data + struct.pack('>I', crc)
+
+width, height = 2, 2
+raw = b''.join([
+    b'\x00' + bytes([255, 0, 0, 255, 0, 255, 0, 255]),
+    b'\x00' + bytes([0, 0, 255, 255, 255, 255, 0, 255]),
+])
+compressed = zlib.compress(raw, 9)
+ihdr = struct.pack('>IIBBBBB', width, height, 8, 6, 0, 0, 0)
+png = b'\x89PNG\r\n\x1a\n' + png_chunk(b'IHDR', ihdr) + png_chunk(b'IDAT', compressed) + png_chunk(b'IEND', b'')
+print(base64.b64encode(png).decode())
+PY
+)
+
+PIXELATE=$(curl -sf -X POST "http://127.0.0.1:8787/api/projects/${PROJECT_ID}/import/pixelate" \
+  -H 'Content-Type: application/json' \
+  -d "{\"imageData\":\"${PIXELATE_PNG_B64}\",\"targetWidth\":2,\"targetHeight\":2,\"maxColors\":4}" || true)
+
+if echo "${PIXELATE}" | python3 -c "import sys,json; d=json.load(sys.stdin); assert d['width']==2 and len(d['pixels'])==4"; then
+  pass "POST /api/projects/{id}/import/pixelate"
+else
+  fail "POST /api/projects/{id}/import/pixelate (got: ${PIXELATE})"
+fi
+
 DELETE_CODE=$(curl -sf -o /dev/null -w "%{http_code}" -X DELETE "http://127.0.0.1:8787/api/projects/${PROJECT_ID}")
 if [[ "${DELETE_CODE}" == "204" ]]; then
   pass "DELETE /api/projects/{id}"

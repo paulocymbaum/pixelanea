@@ -54,12 +54,23 @@ TEST_CASE("MigrationRunner applies 001_initial.sql", "[migration]") {
 
   auto* db = connection->handle();
   REQUIRE(query_int(db, "SELECT value FROM app_meta WHERE key = 'schema_version'") ==
-          1);
+          2);
   REQUIRE(table_exists(db, "projects"));
   REQUIRE(table_exists(db, "palettes"));
   REQUIRE(table_exists(db, "palette_colors"));
   REQUIRE(table_exists(db, "frames"));
   REQUIRE(table_exists(db, "assets"));
+
+  sqlite3_stmt* stmt = nullptr;
+  REQUIRE(sqlite3_prepare_v2(
+              db,
+              "SELECT COUNT(*) FROM pragma_table_info('projects') WHERE name = 'asset_type'",
+              -1,
+              &stmt,
+              nullptr) == SQLITE_OK);
+  REQUIRE(sqlite3_step(stmt) == SQLITE_ROW);
+  REQUIRE(sqlite3_column_int(stmt, 0) == 1);
+  sqlite3_finalize(stmt);
 
   std::filesystem::remove(db_path, ec);
 }

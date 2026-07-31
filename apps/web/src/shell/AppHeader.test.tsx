@@ -1,19 +1,37 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
 import { AppHeader } from "./AppHeader";
 
+const fileActionsMock = vi.hoisted(() => ({
+  onNewProject: vi.fn(),
+  onOpenProject: vi.fn(),
+  onSave: vi.fn(),
+  onSaveAs: vi.fn(),
+  canSave: true,
+  dialogs: null,
+}));
+
+vi.mock("@/components/project/useProjectFileActions", () => ({
+  useProjectFileActions: () => fileActionsMock,
+}));
+
 describe("AppHeader", () => {
   beforeEach(() => {
-    useEditorStore.setState({ projectName: "Untitled project" });
+    useEditorStore.setState({ projectName: "Untitled project", projectId: "p1" });
     useSessionStore.setState({ theme: "light" });
     document.documentElement.classList.remove("dark");
+    fileActionsMock.onNewProject.mockReset();
+    fileActionsMock.onOpenProject.mockReset();
+    fileActionsMock.onSave.mockReset();
+    fileActionsMock.onSaveAs.mockReset();
+    fileActionsMock.canSave = true;
   });
 
   it("renders banner with app name and project title", () => {
-    render(<AppHeader />);
+    render(<AppHeader onNewProject={() => {}} />);
 
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByText(copy.appName)).toBeInTheDocument();
@@ -21,7 +39,7 @@ describe("AppHeader", () => {
   });
 
   it("exposes header menu triggers for File, Edit, and View", () => {
-    render(<AppHeader />);
+    render(<AppHeader onNewProject={() => {}} />);
 
     expect(screen.getByRole("button", { name: "File" })).toHaveAttribute(
       "aria-haspopup",
@@ -37,8 +55,16 @@ describe("AppHeader", () => {
     );
   });
 
+  it("passes onNewProject to file actions hook", () => {
+    const onNewProject = vi.fn();
+    render(<AppHeader onNewProject={onNewProject} />);
+
+    expect(onNewProject).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "File" })).toBeInTheDocument();
+  });
+
   it("toggles theme via header control", () => {
-    render(<AppHeader />);
+    render(<AppHeader onNewProject={() => {}} />);
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle theme" }));
 

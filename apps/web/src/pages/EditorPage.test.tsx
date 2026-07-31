@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { copy } from "@/content/copy";
+import { useEditorStore } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { stubCanvasEnvironment } from "@/test/canvas-mocks";
 import { EditorPage } from "./EditorPage";
@@ -13,13 +14,10 @@ vi.mock("@/api/health", () => ({
   checkHealth: checkHealthMock,
 }));
 
-vi.mock("@/hooks/useProjectBootstrap", () => ({
-  useProjectBootstrap: () => {},
-}));
-
 describe("EditorPage", () => {
   beforeEach(() => {
     stubCanvasEnvironment();
+    useEditorStore.setState({ projectId: "proj-1", projectName: "Test" });
     useUiStore.setState({ apiStatus: "checking", apiVersion: null });
     checkHealthMock.mockReset();
     checkHealthMock.mockResolvedValue({
@@ -29,7 +27,7 @@ describe("EditorPage", () => {
   });
 
   it("mounts editor shell inside TooltipProvider", () => {
-    render(<EditorPage />);
+    render(<EditorPage onNewProject={() => {}} />);
 
     expect(screen.getByRole("banner")).toBeInTheDocument();
     expect(screen.getByRole("complementary", { name: "Tools" })).toBeInTheDocument();
@@ -37,7 +35,7 @@ describe("EditorPage", () => {
   });
 
   it("checks API health on mount and updates status bar", async () => {
-    render(<EditorPage />);
+    render(<EditorPage onNewProject={() => {}} />);
 
     await waitFor(() => {
       expect(checkHealthMock).toHaveBeenCalled();

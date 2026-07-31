@@ -49,4 +49,27 @@ describe("PaletteColorDialog", () => {
     expect(onSave).not.toHaveBeenCalled();
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
+
+  it("updates draft color when a generated shade is selected", () => {
+    const onSave = vi.fn();
+    const onOpenChange = vi.fn();
+
+    render(
+      <PaletteColorDialog
+        open
+        onOpenChange={onOpenChange}
+        mode="edit"
+        initialColor="#808080"
+        onSave={onSave}
+      />,
+    );
+
+    const shade = screen.getAllByRole("option")[0];
+    fireEvent.click(shade);
+    const selectedHex = shade.getAttribute("title");
+
+    fireEvent.click(screen.getByRole("button", { name: "Save color" }));
+
+    expect(onSave).toHaveBeenCalledWith(selectedHex);
+  });
 });

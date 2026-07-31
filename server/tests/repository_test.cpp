@@ -10,11 +10,13 @@ using pixelanea::db::FrameRepository;
 using pixelanea::db::PaletteRepository;
 using pixelanea::db::ProjectRepository;
 using pixelanea::domain::Color;
+using pixelanea::domain::CopyFrameParams;
 using pixelanea::domain::CreateProjectParams;
 using pixelanea::domain::DuplicateFramesParams;
 using pixelanea::domain::Frame;
 using pixelanea::domain::Palette;
 using pixelanea::domain::ProjectId;
+using pixelanea::domain::ReorderFramesParams;
 using pixelanea::domain::UpdateProjectParams;
 using pixelanea::logging::NullLogger;
 
@@ -158,6 +160,129 @@ TEST_CASE("FrameRepository duplicate expands and copies source frame", "[reposit
     REQUIRE(fetched.value().pixels[0] == 3);
     REQUIRE(fetched.value().pixels[7] == 5);
   }
+
+  REQUIRE(projects.close(id).has_value());
+}
+
+TEST_CASE("FrameRepository duplicate blank fill mode keeps art on source only", "[repository]") {
+  NullLogger logger;
+  ProjectRepository projects{logger};
+  FrameRepository frames{projects, logger};
+
+  const auto created = projects.create(sample_project_params());
+  REQUIRE(created.has_value());
+  const ProjectId id = created.value().id;
+
+  Frame frame;
+  frame.index = 0;
+  frame.width = 4;
+  frame.height = 4;
+  frame.pixels = std::vector<uint8_t>(16, 0);
+  frame.pixels[0] = 3;
+  frame.pixels[7] = 5;
+  REQUIRE(frames.put(id, frame).has_value());
+
+  DuplicateFramesParams params;
+  params.target_frame_count = 8;
+  params.source_frame_index = 0;
+  params.fill_mode = pixelanea::domain::DuplicateFillMode::Blank;
+  const auto duplicated = frames.duplicate(id, params);
+  REQUIRE(duplicated.has_value());
+
+  const auto source_frame = frames.get(id, 0);
+  REQUIRE(source_frame.has_value());
+  REQUIRE(source_frame.value().pixels[0] == 3);
+  REQUIRE(source_frame.value().pixels[7] == 5);
+
+  for (int index = 1; index < 8; ++index) {
+    const auto fetched = frames.get(id, index);
+    REQUIRE(fetched.has_value());
+    for (const auto pixel : fetched.value().pixels) {
+      REQUIRE(pixel == 0);
+    }
+  }
+
+  REQUIRE(projects.close(id).has_value());
+}
+
+TEST_CASE("FrameRepository copy_frame copies pixels to target", "[repository]") {
+  NullLogger logger;
+  ProjectRepository projects{logger};
+  FrameRepository frames{projects, logger};
+
+  const auto created = projects.create(sample_project_params());
+  REQUIRE(created.has_value());
+  const ProjectId id = created.value().id;
+
+  DuplicateFramesParams dup;
+  dup.target_frame_count = 8;
+  dup.source_frame_index = 0;
+  REQUIRE(frames.duplicate(id, dup).has_value());
+
+  Frame source;
+  source.index = 0;
+  source.width = 4;
+  source.height = 4;
+  source.pixels = std::vector<uint8_t>(16, 0);
+  source.pixels[2] = 7;
+  REQUIRE(frames.put(id, source).has_value());
+
+  CopyFrameParams copy_params;
+  copy_params.source_frame_index = 0;
+  copy_params.target_frame_index = 2;
+  const auto copied = frames.copy_frame(id, copy_params);
+  REQUIRE(copied.has_value());
+  REQUIRE(copied.value().index == 2);
+
+  const auto target = frames.get(id, 2);
+  REQUIRE(target.has_value());
+  REQUIRE(target.value().pixels[2] == 7);
+
+  const auto untouched = frames.get(id, 1);
+  REQUIRE(untouched.has_value());
+  REQUIRE(untouched.value().pixels[2] == 0);
+
+  REQUIRE(projects.close(id).has_value());
+}
+
+TEST_CASE("FrameRepository reorder moves frame index", "[repository]") {
+  NullLogger logger;
+  ProjectRepository projects{logger};
+  FrameRepository frames{projects, logger};
+
+  const auto created = projects.create(sample_project_params());
+  REQUIRE(created.has_value());
+  const ProjectId id = created.value().id;
+
+  DuplicateFramesParams dup;
+  dup.target_frame_count = 8;
+  dup.source_frame_index = 0;
+  REQUIRE(frames.duplicate(id, dup).has_value());
+
+  for (int index = 0; index < 4; ++index) {
+    Frame frame;
+    frame.index = index;
+    frame.width = 4;
+    frame.height = 4;
+    frame.pixels = std::vector<uint8_t>(16, 0);
+    frame.pixels[0] = static_cast<uint8_t>(index + 1);
+    REQUIRE(frames.put(id, frame).has_value());
+  }
+
+  pixelanea::domain::ReorderFramesParams reorder_params;
+  reorder_params.from_index = 3;
+  reorder_params.to_index = 0;
+  const auto reordered = frames.reorder(id, reorder_params);
+  REQUIRE(reordered.has_value());
+  REQUIRE(reordered.value().size() == 8);
+
+  const auto first = frames.get(id, 0);
+  REQUIRE(first.has_value());
+  REQUIRE(first.value().pixels[0] == 4);
+
+  const auto second = frames.get(id, 1);
+  REQUIRE(second.has_value());
+  REQUIRE(second.value().pixels[0] == 1);
 
   REQUIRE(projects.close(id).has_value());
 }

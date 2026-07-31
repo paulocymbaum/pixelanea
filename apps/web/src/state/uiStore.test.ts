@@ -8,6 +8,9 @@ describe("uiStore", () => {
       showTechnicalInfo: false,
       apiStatus: "checking",
       apiVersion: null,
+      onboardingDismissed: false,
+      onboardingStep: 0,
+      importWizardStep: 0,
     });
   });
 

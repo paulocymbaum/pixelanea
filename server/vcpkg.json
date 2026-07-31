@@ -4,7 +4,8 @@
   "dependencies": [
     "sqlite3",
     "cpp-httplib",
-    "nlohmann-json"
+    "nlohmann-json",
+    "libzip"
   ],
   "builtin-baseline": "2024.12.12"
 }

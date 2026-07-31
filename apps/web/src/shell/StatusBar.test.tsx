@@ -46,4 +46,21 @@ describe("StatusBar", () => {
     render(<StatusBar />);
     expect(screen.getByText(copy.hoverCellNone)).toBeInTheDocument();
   });
+
+  it("shows hex and palette index when technical info enabled", () => {
+    useUiStore.setState({ showTechnicalInfo: true });
+    const pixels = new Uint8Array(32 * 32);
+    pixels[4 * 32 + 2] = 2;
+    useEditorStore.setState({
+      hoverCell: { x: 2, y: 4 },
+      gridWidth: 32,
+      pixels,
+      paletteColors: ["#000000", "#FF0000", "#00FF00"],
+    });
+
+    render(<StatusBar />);
+    expect(
+      screen.getByText(copy.hoverCellTechnical(2, 4, "#00FF00", 2)),
+    ).toBeInTheDocument();
+  });
 });

@@ -11,6 +11,12 @@ function paintAt(
   if (previous === next) {
     return;
   }
+  if (
+    ctx.paletteLocked &&
+    (next < 0 || next >= ctx.paletteColorCount)
+  ) {
+    return;
+  }
   return new PaintCellCommand(cell.x, cell.y, previous, next);
 }
 

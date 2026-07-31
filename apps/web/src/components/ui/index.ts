@@ -1,8 +1,10 @@
 export { Button } from "./Button";
 export {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./DropdownMenu";
 export {

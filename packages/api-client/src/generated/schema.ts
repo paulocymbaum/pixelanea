@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/open": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open a project from a .pixelanea bundle on disk */
+        post: operations["openProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{projectId}": {
         parameters: {
             query?: never;
@@ -57,6 +74,25 @@ export interface paths {
         head?: never;
         /** Update project settings */
         patch: operations["updateProject"];
+        trace?: never;
+    };
+    "/api/projects/{projectId}/save": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Save project to a .pixelanea bundle on disk */
+        post: operations["saveProject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/projects/{projectId}/palette": {
@@ -117,6 +153,82 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/projects/{projectId}/frames/copy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Copy pixel data from one frame into another */
+        post: operations["copyFrame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{projectId}/frames/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a frame to a new index in the strip */
+        post: operations["reorderFrames"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{projectId}/import/pixelate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decode image, downscale, quantize, and apply to a frame */
+        post: operations["importPixelate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{projectId}/export/gif": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Export all frames as an animated GIF */
+        post: operations["exportGif"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects/{projectId}/frames/{frameIndex}": {
         parameters: {
             query?: never;
@@ -142,6 +254,12 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Kind of pixel art asset for export and organization
+         * @default character
+         * @enum {string}
+         */
+        AssetType: "character" | "prop" | "background" | "animation";
         HealthResponse: {
             /** @enum {string} */
             status: "ok";
@@ -164,11 +282,31 @@ export interface components {
             fps: number;
             /** @default 16 */
             cellSize: number;
+            assetType?: components["schemas"]["AssetType"];
         };
         UpdateProjectRequest: {
             name?: string;
             fps?: number;
             cellSize?: number;
+            assetType?: components["schemas"]["AssetType"];
+        };
+        OpenProjectRequest: {
+            /** @description Absolute or relative filesystem path to a .pixelanea bundle file */
+            path: string;
+        };
+        SaveProjectRequest: {
+            /** @description Destination filesystem path for the .pixelanea bundle file */
+            path: string;
+            assetType?: components["schemas"]["AssetType"];
+        };
+        SaveProjectResponse: {
+            /** @description Resolved path where the bundle was written */
+            path: string;
+            /**
+             * Format: date-time
+             * @description UTC timestamp when the bundle was saved
+             */
+            savedAt: string;
         };
         Project: {
             /** Format: uuid */
@@ -179,6 +317,7 @@ export interface components {
             frameCount: number;
             fps: number;
             cellSize: number;
+            assetType: components["schemas"]["AssetType"];
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -206,9 +345,29 @@ export interface components {
              * @default 0
              */
             sourceFrameIndex: number;
+            /**
+             * @description copy duplicates source into all frames; blank keeps art only on source
+             * @default copy
+             * @enum {string}
+             */
+            fillMode: "copy" | "blank";
         };
         DuplicateFramesResponse: {
             project: components["schemas"]["Project"];
+            frames: components["schemas"]["FrameMetadata"][];
+        };
+        CopyFrameRequest: {
+            sourceFrameIndex: number;
+            targetFrameIndex: number;
+        };
+        CopyFrameResponse: {
+            frame: components["schemas"]["FrameMetadata"];
+        };
+        ReorderFramesRequest: {
+            fromIndex: number;
+            toIndex: number;
+        };
+        ReorderFramesResponse: {
             frames: components["schemas"]["FrameMetadata"][];
         };
         Color: {
@@ -226,6 +385,47 @@ export interface components {
         PutPaletteRequest: {
             name?: string;
             colors: components["schemas"]["Color"][];
+        };
+        ExportGifRequest: {
+            /** @description Animation speed; defaults to project fps */
+            fps?: number;
+            /**
+             * @description Whether the GIF should loop indefinitely
+             * @default true
+             */
+            loop: boolean;
+        };
+        PixelateImportRequest: {
+            /**
+             * Format: byte
+             * @description Base64-encoded PNG, JPEG, or BMP image bytes
+             */
+            imageData: string;
+            /** @description Output grid width; defaults to project width */
+            targetWidth?: number;
+            /** @description Output grid height; defaults to project height */
+            targetHeight?: number;
+            /** @description Extract a new palette with at most this many colors */
+            maxColors?: number;
+            /**
+             * @description Frame slot to replace with pixelated result
+             * @default 0
+             */
+            frameIndex: number;
+            /**
+             * @description Remove detected background and output transparent pixels (index 0)
+             * @default true
+             */
+            removeBackground: boolean;
+        };
+        PixelateImportResponse: {
+            frameIndex: number;
+            width: number;
+            height: number;
+            /** @description Palette indices row-major (width * height) */
+            pixels: number[];
+            /** @description Present when maxColors generated a new palette */
+            palette?: components["schemas"]["Palette"];
         };
     };
     responses: {
@@ -303,6 +503,31 @@ export interface operations {
             400: components["responses"]["BadRequest"];
         };
     };
+    openProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Project opened from bundle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+        };
+    };
     getProject: {
         parameters: {
             query?: never;
@@ -369,6 +594,34 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Project"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    saveProject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveProjectRequest"];
+            };
+        };
+        responses: {
+            /** @description Project saved to bundle */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SaveProjectResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -473,6 +726,118 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DuplicateFramesResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    copyFrame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CopyFrameRequest"];
+            };
+        };
+        responses: {
+            /** @description Target frame updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CopyFrameResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    reorderFrames: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderFramesRequest"];
+            };
+        };
+        responses: {
+            /** @description Frames reordered */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReorderFramesResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    importPixelate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PixelateImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Pixelated frame applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PixelateImportResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    exportGif: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExportGifRequest"];
+            };
+        };
+        responses: {
+            /** @description Animated GIF bytes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/gif": string;
                 };
             };
             400: components["responses"]["BadRequest"];

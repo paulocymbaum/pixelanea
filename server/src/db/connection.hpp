@@ -1,5 +1,7 @@
 #pragma once
 
+#include "domain/result.hpp"
+
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -17,6 +19,7 @@ class Connection {
   Connection& operator=(const Connection&) = delete;
 
   sqlite3* handle() const { return db_; }
+  domain::VoidResult checkpoint_wal() const;
 
  private:
   explicit Connection(sqlite3* db);

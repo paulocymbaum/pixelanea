@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority";
 
 /** Active tool: accent bg + 3px left border + semibold — not color alone (DESIGN § Iconography). */
 export const toolButtonVariants = cva(
-  "flex min-h-10 min-w-10 flex-col items-center justify-center gap-1 rounded-button border-l-[3px] px-1 py-2 text-xs transition-colors",
+  "flex min-h-10 min-w-10 flex-col items-center justify-center gap-1 rounded-button border-l-[3px] px-1 py-2 text-xs transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
   {
     variants: {
       active: {

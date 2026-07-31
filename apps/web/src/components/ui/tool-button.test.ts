@@ -7,6 +7,7 @@ describe("toolButtonVariants", () => {
     expect(classes).toContain("border-accent");
     expect(classes).toContain("bg-accent-muted");
     expect(classes).toContain("font-semibold");
+    expect(classes).toContain("focus-visible:outline-focus-ring");
   });
 
   it("uses transparent border when inactive", () => {

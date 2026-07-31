@@ -1,4 +1,12 @@
-import type { Frame } from "@pixelanea/api-client";
+import type {
+  CopyFrameRequest,
+  CopyFrameResponse,
+  DuplicateFramesRequest,
+  DuplicateFramesResponse,
+  Frame,
+  ReorderFramesRequest,
+  ReorderFramesResponse,
+} from "@pixelanea/api-client";
 import { getApiClient } from "./client";
 import { mapApiError } from "./errors";
 
@@ -37,6 +45,46 @@ export async function saveFrame(
       pixels: pixelsToApi(pixels),
     });
     return { ok: true };
+  } catch (error) {
+    return { ok: false, message: mapApiError(error) };
+  }
+}
+
+export async function duplicateFrames(
+  projectId: string,
+  body: DuplicateFramesRequest,
+): Promise<
+  { ok: true; response: DuplicateFramesResponse } | { ok: false; message: string }
+> {
+  try {
+    const response = await getApiClient().duplicateFrames(projectId, body);
+    return { ok: true, response };
+  } catch (error) {
+    return { ok: false, message: mapApiError(error) };
+  }
+}
+
+export async function copyFrame(
+  projectId: string,
+  body: CopyFrameRequest,
+): Promise<{ ok: true; response: CopyFrameResponse } | { ok: false; message: string }> {
+  try {
+    const response = await getApiClient().copyFrame(projectId, body);
+    return { ok: true, response };
+  } catch (error) {
+    return { ok: false, message: mapApiError(error) };
+  }
+}
+
+export async function reorderFrames(
+  projectId: string,
+  body: ReorderFramesRequest,
+): Promise<
+  { ok: true; response: ReorderFramesResponse } | { ok: false; message: string }
+> {
+  try {
+    const response = await getApiClient().reorderFrames(projectId, body);
+    return { ok: true, response };
   } catch (error) {
     return { ok: false, message: mapApiError(error) };
   }

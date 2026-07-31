@@ -17,6 +17,10 @@ class FrameRepository {
                                               const domain::Frame& frame);
   domain::Result<domain::DuplicateFramesResult> duplicate(
       const domain::ProjectId& id, const domain::DuplicateFramesParams& params);
+  domain::Result<domain::FrameMetadata> copy_frame(const domain::ProjectId& id,
+                                                   const domain::CopyFrameParams& params);
+  domain::Result<std::vector<domain::FrameMetadata>> reorder(
+      const domain::ProjectId& id, const domain::ReorderFramesParams& params);
 
  private:
   ProjectRepository& projects_;

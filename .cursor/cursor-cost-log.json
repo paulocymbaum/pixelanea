@@ -1,0 +1,2410 @@
+{
+  "metadata": {
+    "workspace": "/home/paulo-yapper/pixelanea",
+    "generated_at_utc": "2026-07-31T18:20:57.656538+00:00",
+    "membership": "pro",
+    "billing_cycle_start": "2026-07-30T18:35:35.000Z",
+    "billing_cycle_end": "2026-08-30T18:35:35.000Z",
+    "subscription_usd_per_month": 20.0,
+    "data_sources": [
+      "api2.cursor.sh/auth/usage-summary",
+      "api2.cursor.sh/aiserver.v1.DashboardService/GetFilteredUsageEvents",
+      "composer.composerHeaders (workspace filter)",
+      "agent-transcripts (conversation IDs)"
+    ],
+    "important_notes": [
+      "Cursor does not bill per-repo. Costs attribute account usage events to Pixelanea conversations by conversationId.",
+      "chargedCents is 0 for events included in Pro plan — no extra USD charged beyond subscription.",
+      "requestsCosts is Cursor internal usage weighting (dashboard included-usage pool units).",
+      "estimated_attributed_subscription_value_usd = $20 × (pixelanea requestsCosts / cycle pool total)."
+    ]
+  },
+  "account_billing_cycle": {
+    "billingCycleStart": "2026-07-30T18:35:35.000Z",
+    "billingCycleEnd": "2026-08-30T18:35:35.000Z",
+    "membershipType": "pro",
+    "limitType": "user",
+    "isUnlimited": false,
+    "autoModelSelectedDisplayMessage": "You've used 7% of your included total usage",
+    "namedModelSelectedDisplayMessage": "You've used 0% of your included API usage",
+    "individualUsage": {
+      "plan": {
+        "enabled": true,
+        "used": 2000,
+        "limit": 2000,
+        "remaining": 0,
+        "breakdown": {
+          "included": 2000,
+          "bonus": 548,
+          "total": 2548
+        },
+        "autoPercentUsed": 8.493333333333334,
+        "apiPercentUsed": 0,
+        "totalPercentUsed": 7.385507246376812
+      },
+      "onDemand": {
+        "enabled": false,
+        "used": 0,
+        "limit": null,
+        "remaining": null
+      }
+    },
+    "teamUsage": {}
+  },
+  "account_totals_current_cycle": {
+    "events": 1903,
+    "requests_cost_units": 11915.600000000022,
+    "charged_cents": 0.0,
+    "input_tokens": 91849771,
+    "output_tokens": 11141894,
+    "cache_read_tokens": 967872828,
+    "cache_write_tokens": 8591999
+  },
+  "pixelanea_totals": {
+    "events": 104,
+    "requests_cost_units": 420.5,
+    "charged_cents": 0.0,
+    "input_tokens": 3788775,
+    "output_tokens": 797568,
+    "cache_read_tokens": 63406852,
+    "cache_write_tokens": 0
+  },
+  "pixelanea_share_of_cycle_pool_percent": 16.5,
+  "pixelanea_share_of_account_events_percent": 3.53,
+  "estimated_attributed_subscription_value_usd": 3.3,
+  "pixelanea_by_conversation": [
+    {
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "name": "Backlog initiation process",
+      "created_at": "2026-07-31T05:45:39.918000+00:00",
+      "events": 6,
+      "requests_cost_units": 32.6,
+      "charged_cents": 0.0,
+      "input_tokens": 218618,
+      "output_tokens": 51560,
+      "cache_read_tokens": 5326285,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "name": "Cpp logging layer design",
+      "created_at": "2026-07-31T06:08:37.925000+00:00",
+      "events": 9,
+      "requests_cost_units": 30.900000000000002,
+      "charged_cents": 0.0,
+      "input_tokens": 234337,
+      "output_tokens": 40140,
+      "cache_read_tokens": 5105906,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "523e8676-0002-435e-b0ef-d0c28db8b32f",
+      "name": "Backlog management and updates",
+      "created_at": "2026-07-31T16:57:29.762000+00:00",
+      "events": 5,
+      "requests_cost_units": 30.7,
+      "charged_cents": 0.0,
+      "input_tokens": 124118,
+      "output_tokens": 42780,
+      "cache_read_tokens": 5279864,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "72336b27-8ae7-47b7-974d-eb076635a9c8",
+      "name": "Design system definition update",
+      "created_at": "2026-07-31T06:40:40.328000+00:00",
+      "events": 4,
+      "requests_cost_units": 29.0,
+      "charged_cents": 0.0,
+      "input_tokens": 131154,
+      "output_tokens": 33835,
+      "cache_read_tokens": 5056709,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "c111cb50-f53f-4c27-816f-0fe14c3b19ae",
+      "name": "Backend delivery next steps",
+      "created_at": "2026-07-31T06:26:26.240000+00:00",
+      "events": 4,
+      "requests_cost_units": 24.0,
+      "charged_cents": 0.0,
+      "input_tokens": 119600,
+      "output_tokens": 29879,
+      "cache_read_tokens": 4120565,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "50dbd865-1152-4222-9a41-4e90510c02c3",
+      "name": "Pixelanea backend backlog items",
+      "created_at": "2026-07-31T15:17:01.353000+00:00",
+      "events": 2,
+      "requests_cost_units": 13.5,
+      "charged_cents": 0.0,
+      "input_tokens": 127515,
+      "output_tokens": 35053,
+      "cache_read_tokens": 1931604,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "f38de363-bc53-41c0-b577-b3526b9f816a",
+      "name": "Tools maintenance request",
+      "created_at": "2026-07-31T06:52:42.695000+00:00",
+      "events": 1,
+      "requests_cost_units": 12.5,
+      "charged_cents": 0.0,
+      "input_tokens": 86758,
+      "output_tokens": 13016,
+      "cache_read_tokens": 2127096,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "45d8d02e-b8d2-4700-abb8-8cc36b6220aa",
+      "name": "Frontend and backend backlog",
+      "created_at": "2026-07-31T07:04:49.510000+00:00",
+      "events": 4,
+      "requests_cost_units": 12.299999999999999,
+      "charged_cents": 0.0,
+      "input_tokens": 136139,
+      "output_tokens": 15145,
+      "cache_read_tokens": 1941994,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "4fa62057-67f6-4e62-a1f2-b00166e2cfb4",
+      "name": null,
+      "created_at": null,
+      "events": 3,
+      "requests_cost_units": 12.2,
+      "charged_cents": 0.0,
+      "input_tokens": 115937,
+      "output_tokens": 28356,
+      "cache_read_tokens": 1787167,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "0ecf7acf-56f1-4061-b3dc-ae717fc4bd98",
+      "name": "Cursor prompts log request",
+      "created_at": "2026-07-31T18:11:54.797000+00:00",
+      "events": 2,
+      "requests_cost_units": 12.1,
+      "charged_cents": 0.0,
+      "input_tokens": 110070,
+      "output_tokens": 24865,
+      "cache_read_tokens": 1849890,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "0bce2831-5d0d-4182-aa08-581766fbdda8",
+      "name": "Frontend backlog implementation",
+      "created_at": "2026-07-31T15:16:58.230000+00:00",
+      "events": 2,
+      "requests_cost_units": 12.0,
+      "charged_cents": 0.0,
+      "input_tokens": 120964,
+      "output_tokens": 29932,
+      "cache_read_tokens": 1720283,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "9d90b217-e1f6-44d9-a0c0-ccbefdc35ec5",
+      "name": "Backlog completion and updates",
+      "created_at": "2026-07-31T15:33:03.642000+00:00",
+      "events": 1,
+      "requests_cost_units": 11.7,
+      "charged_cents": 0.0,
+      "input_tokens": 82845,
+      "output_tokens": 23487,
+      "cache_read_tokens": 1829409,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "5ebdb8b3-277c-4a00-adc0-45e1c24ab434",
+      "name": "Frontend and Cpp backend load",
+      "created_at": "2026-07-31T06:43:44.189000+00:00",
+      "events": 1,
+      "requests_cost_units": 11.7,
+      "charged_cents": 0.0,
+      "input_tokens": 87080,
+      "output_tokens": 21173,
+      "cache_read_tokens": 1852592,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "15d14dd3-2c84-43c2-8b35-d87e0adee0dc",
+      "name": "GIF export backlog item",
+      "created_at": "2026-07-31T17:53:37.616000+00:00",
+      "events": 1,
+      "requests_cost_units": 11.3,
+      "charged_cents": 0.0,
+      "input_tokens": 80469,
+      "output_tokens": 17374,
+      "cache_read_tokens": 1845312,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "8a3d21dc-35a6-4dc8-b38e-d3c4f192ae87",
+      "name": "Frontend backlog implementation",
+      "created_at": "2026-07-31T14:45:41.852000+00:00",
+      "events": 1,
+      "requests_cost_units": 11.3,
+      "charged_cents": 0.0,
+      "input_tokens": 178959,
+      "output_tokens": 25451,
+      "cache_read_tokens": 1487284,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "dc780d1e-d58a-4ec6-82b5-66206d47e7f2",
+      "name": "Frontend and backend backlog",
+      "created_at": "2026-07-31T14:44:46.920000+00:00",
+      "events": 2,
+      "requests_cost_units": 11.2,
+      "charged_cents": 0.0,
+      "input_tokens": 90224,
+      "output_tokens": 15007,
+      "cache_read_tokens": 1821188,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "efe81873-a532-4bac-b4ab-e81db82803dd",
+      "name": "Backend implementation backlog",
+      "created_at": "2026-07-31T06:35:17.861000+00:00",
+      "events": 4,
+      "requests_cost_units": 11.0,
+      "charged_cents": 0.0,
+      "input_tokens": 82595,
+      "output_tokens": 12136,
+      "cache_read_tokens": 1850738,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "name": "Pixelanea project README",
+      "created_at": "2026-07-31T05:03:31.153000+00:00",
+      "events": 10,
+      "requests_cost_units": 10.5,
+      "charged_cents": 0.0,
+      "input_tokens": 163818,
+      "output_tokens": 52813,
+      "cache_read_tokens": 1018592,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "35c77501-a445-4838-8c90-c891909e8855",
+      "name": "Backend backlog implementation",
+      "created_at": "2026-07-31T14:45:48.061000+00:00",
+      "events": 1,
+      "requests_cost_units": 9.7,
+      "charged_cents": 0.0,
+      "input_tokens": 73315,
+      "output_tokens": 23829,
+      "cache_read_tokens": 1459514,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "5f544fe0-d866-46d1-9c2d-f7ce21a718b4",
+      "name": "Pixelate import pipeline workflow",
+      "created_at": "2026-07-31T14:51:22.930000+00:00",
+      "events": 1,
+      "requests_cost_units": 8.2,
+      "charged_cents": 0.0,
+      "input_tokens": 58206,
+      "output_tokens": 4955,
+      "cache_read_tokens": 156832,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "6a5866fd-5c70-4dca-baba-3f512cd0424a",
+      "name": "Procedural shading palettes",
+      "created_at": "2026-07-31T16:01:44.002000+00:00",
+      "events": 3,
+      "requests_cost_units": 7.9,
+      "charged_cents": 0.0,
+      "input_tokens": 132551,
+      "output_tokens": 8691,
+      "cache_read_tokens": 1156388,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "0cd4e52a-7a2c-4681-9525-726cdb9e4c16",
+      "name": "Phase 1 MVP backlog items",
+      "created_at": "2026-07-31T16:41:48.882000+00:00",
+      "events": 1,
+      "requests_cost_units": 7.5,
+      "charged_cents": 0.0,
+      "input_tokens": 70241,
+      "output_tokens": 17812,
+      "cache_read_tokens": 1107305,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "4aa6201f-5b63-4e1c-9bd2-8151490dc455",
+      "name": "Backend backlog implementation",
+      "created_at": "2026-07-31T07:05:36.952000+00:00",
+      "events": 1,
+      "requests_cost_units": 7.4,
+      "charged_cents": 0.0,
+      "input_tokens": 62876,
+      "output_tokens": 12999,
+      "cache_read_tokens": 1152407,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "601a7eb0-e9fe-4dd6-b6ca-ddcc3ea20829",
+      "name": "Frontend backlog implementation",
+      "created_at": "2026-07-31T07:05:33.594000+00:00",
+      "events": 1,
+      "requests_cost_units": 5.8,
+      "charged_cents": 0.0,
+      "input_tokens": 56942,
+      "output_tokens": 16747,
+      "cache_read_tokens": 815973,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "2982e55e-92bc-4a60-9107-979bb4a5a8af",
+      "name": "Frontend code practices",
+      "created_at": "2026-07-31T05:32:18.672000+00:00",
+      "events": 3,
+      "requests_cost_units": 5.4,
+      "charged_cents": 0.0,
+      "input_tokens": 82549,
+      "output_tokens": 28832,
+      "cache_read_tokens": 508324,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "3563337b-2011-4999-b5a7-3fd567611107",
+      "name": "Backlog management and updates",
+      "created_at": "2026-07-31T18:08:28.638000+00:00",
+      "events": 1,
+      "requests_cost_units": 5.2,
+      "charged_cents": 0.0,
+      "input_tokens": 57092,
+      "output_tokens": 10253,
+      "cache_read_tokens": 776917,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "16815265-ab4c-4fac-bbf2-6817ec7a832b",
+      "name": "Test validation guide for delivery",
+      "created_at": "2026-07-31T18:10:53.323000+00:00",
+      "events": 1,
+      "requests_cost_units": 5.1,
+      "charged_cents": 0.0,
+      "input_tokens": 40683,
+      "output_tokens": 8024,
+      "cache_read_tokens": 820178,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "604c3dc8-51a8-4994-a010-8341e3ba6be9",
+      "name": "Agent tool for code search",
+      "created_at": "2026-07-31T05:34:50.352000+00:00",
+      "events": 2,
+      "requests_cost_units": 4.8,
+      "charged_cents": 0.0,
+      "input_tokens": 50705,
+      "output_tokens": 11934,
+      "cache_read_tokens": 694183,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "275a4387-d101-429d-9c68-2947260cf558",
+      "name": "Pixelanea frontend implementation",
+      "created_at": "2026-07-31T06:40:25.966000+00:00",
+      "events": 1,
+      "requests_cost_units": 4.6,
+      "charged_cents": 0.0,
+      "input_tokens": 46444,
+      "output_tokens": 15346,
+      "cache_read_tokens": 604935,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "ddf2c191-7e93-43b6-a074-1fa885ba2e07",
+      "name": "Pixelanea backend implementation",
+      "created_at": "2026-07-31T06:37:04.118000+00:00",
+      "events": 1,
+      "requests_cost_units": 4.3,
+      "charged_cents": 0.0,
+      "input_tokens": 42820,
+      "output_tokens": 11397,
+      "cache_read_tokens": 617693,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "6d14ef16-52ac-48f3-9e94-00f420c7037d",
+      "name": "Backlog management and updates",
+      "created_at": "2026-07-31T16:40:30.456000+00:00",
+      "events": 1,
+      "requests_cost_units": 4.0,
+      "charged_cents": 0.0,
+      "input_tokens": 48012,
+      "output_tokens": 5412,
+      "cache_read_tokens": 609795,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "a80e17b8-7e06-469e-a2b1-ffd9f3b3db02",
+      "name": "Pixelanea frontend standards",
+      "created_at": "2026-07-31T06:47:56.414000+00:00",
+      "events": 1,
+      "requests_cost_units": 3.8,
+      "charged_cents": 0.0,
+      "input_tokens": 47610,
+      "output_tokens": 10565,
+      "cache_read_tokens": 513150,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "febc8386-7c70-4349-a3f3-6c5ee5897fbc",
+      "name": "Pixelanea Phase 2 backlog",
+      "created_at": "2026-07-31T16:57:58.291000+00:00",
+      "events": 1,
+      "requests_cost_units": 3.5,
+      "charged_cents": 0.0,
+      "input_tokens": 45529,
+      "output_tokens": 12326,
+      "cache_read_tokens": 424708,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "9d4b9fb9-16d4-42a1-b329-e75ab8337b6b",
+      "name": "Pixelanea skill test writing",
+      "created_at": "2026-07-31T06:43:49.478000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.9,
+      "charged_cents": 0.0,
+      "input_tokens": 39924,
+      "output_tokens": 8428,
+      "cache_read_tokens": 383636,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "4fed6770-93f1-449b-b742-a1e19a2e1757",
+      "name": "Backlog management and updates",
+      "created_at": "2026-07-31T18:18:40.784000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.8,
+      "charged_cents": 0.0,
+      "input_tokens": 45543,
+      "output_tokens": 4625,
+      "cache_read_tokens": 393940,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "dd984f6c-2f73-4865-a862-fe5ec14ba86c",
+      "name": "Shading palettes feature",
+      "created_at": "2026-07-31T15:27:45.049000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.8,
+      "charged_cents": 0.0,
+      "input_tokens": 38647,
+      "output_tokens": 10626,
+      "cache_read_tokens": 321086,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "ff3ab54c-b39c-4648-b1dc-31f379a4366b",
+      "name": "Frontend and backend backlog",
+      "created_at": "2026-07-31T15:15:30.368000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.6,
+      "charged_cents": 0.0,
+      "input_tokens": 34118,
+      "output_tokens": 5947,
+      "cache_read_tokens": 361536,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "a8245e87-aad6-49bf-8c4e-4cd04d2a7a69",
+      "name": "Backlog feature requests",
+      "created_at": "2026-07-31T18:05:17.293000+00:00",
+      "events": 2,
+      "requests_cost_units": 2.5,
+      "charged_cents": 0.0,
+      "input_tokens": 29966,
+      "output_tokens": 6388,
+      "cache_read_tokens": 344999,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "ecaf0641-4e97-4341-90ae-2a3a7bbfbda1",
+      "name": "Backlog management and updates",
+      "created_at": "2026-07-31T15:32:19.030000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.3,
+      "charged_cents": 0.0,
+      "input_tokens": 32352,
+      "output_tokens": 3791,
+      "cache_read_tokens": 332500,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "1b6eff99-2bdb-4cb0-9746-86a3eb105fc2",
+      "name": "Backlog management and updates",
+      "created_at": "2026-07-31T17:52:47.434000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.1,
+      "charged_cents": 0.0,
+      "input_tokens": 37465,
+      "output_tokens": 3785,
+      "cache_read_tokens": 285199,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "15f35a51-6794-459a-a794-3f931ca2652c",
+      "name": "Stepper navigation with tabs",
+      "created_at": "2026-07-31T17:40:40.132000+00:00",
+      "events": 1,
+      "requests_cost_units": 2.1,
+      "charged_cents": 0.0,
+      "input_tokens": 32140,
+      "output_tokens": 5980,
+      "cache_read_tokens": 265218,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "94567762-2424-4998-abab-9d759e0599b1",
+      "name": "Frontend skill test guide",
+      "created_at": "2026-07-31T06:50:38.267000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.7,
+      "charged_cents": 0.0,
+      "input_tokens": 34325,
+      "output_tokens": 5939,
+      "cache_read_tokens": 176029,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "fb8d9108-746d-4c6f-9849-4220aa9ffd7e",
+      "name": "Pixelanea backlog implementation",
+      "created_at": "2026-07-31T18:19:29.492000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.4,
+      "charged_cents": 0.0,
+      "input_tokens": 27218,
+      "output_tokens": 4961,
+      "cache_read_tokens": 152772,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "48d0b9dc-94a7-495a-a436-bc7d1c715d20",
+      "name": "Procedural shading palettes",
+      "created_at": "2026-07-31T15:26:24.682000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.4,
+      "charged_cents": 0.0,
+      "input_tokens": 29503,
+      "output_tokens": 2675,
+      "cache_read_tokens": 172222,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "f60a1438-6846-421a-a515-5913ee3d5399",
+      "name": "Pixelanea procedural shading palettes",
+      "created_at": "2026-07-31T16:02:32.443000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.2,
+      "charged_cents": 0.0,
+      "input_tokens": 25379,
+      "output_tokens": 2696,
+      "cache_read_tokens": 146674,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "ede39165-4a0e-45fe-a942-8257cfe6448c",
+      "name": "Pixelanea skill test validation",
+      "created_at": "2026-07-31T07:14:42.458000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.2,
+      "charged_cents": 0.0,
+      "input_tokens": 26545,
+      "output_tokens": 3615,
+      "cache_read_tokens": 129292,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "adb49ee3-40f0-4751-8498-f801d89fb03a",
+      "name": "Tools list rule definition",
+      "created_at": "2026-07-31T05:37:31.990000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.2,
+      "charged_cents": 0.0,
+      "input_tokens": 27504,
+      "output_tokens": 1932,
+      "cache_read_tokens": 139844,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "30c38f3a-c6be-4bcc-b0cb-408e8ecf687a",
+      "name": "C++ performance and architecture",
+      "created_at": "2026-07-31T05:31:21.124000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.1,
+      "charged_cents": 0.0,
+      "input_tokens": 20565,
+      "output_tokens": 4388,
+      "cache_read_tokens": 110401,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "f1d6ce79-4afd-432d-b686-1ee79ed828ec",
+      "name": "Pixelanea frontend loading issues",
+      "created_at": "2026-07-31T16:40:16.820000+00:00",
+      "events": 1,
+      "requests_cost_units": 1.0,
+      "charged_cents": 0.0,
+      "input_tokens": 23641,
+      "output_tokens": 1731,
+      "cache_read_tokens": 123296,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "87720d14-bf7e-45a1-bbae-03357fe463cf",
+      "name": "Agent skill implementation process",
+      "created_at": "2026-07-31T05:39:03.338000+00:00",
+      "events": 1,
+      "requests_cost_units": 0.7,
+      "charged_cents": 0.0,
+      "input_tokens": 18360,
+      "output_tokens": 2669,
+      "cache_read_tokens": 64324,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "49070b34-168d-460b-86fe-84d6b0fadbcc",
+      "name": "File structure for skills outputs",
+      "created_at": "2026-07-31T05:40:57.715000+00:00",
+      "events": 1,
+      "requests_cost_units": 0.7,
+      "charged_cents": 0.0,
+      "input_tokens": 17740,
+      "output_tokens": 2660,
+      "cache_read_tokens": 59772,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "9c71f2ff-a3e3-4678-9e8e-3332e068a438",
+      "name": "Pixelanea project overview",
+      "created_at": "2026-07-31T05:07:21.340000+00:00",
+      "events": 1,
+      "requests_cost_units": 0.6,
+      "charged_cents": 0.0,
+      "input_tokens": 12218,
+      "output_tokens": 2833,
+      "cache_read_tokens": 60145,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "87650c51-a264-49ce-9b47-e2401dadf013",
+      "name": "Niels Lohmann overview",
+      "created_at": "2026-07-31T07:07:28.012000+00:00",
+      "events": 1,
+      "requests_cost_units": 0.3,
+      "charged_cents": 0.0,
+      "input_tokens": 14459,
+      "output_tokens": 527,
+      "cache_read_tokens": 13187,
+      "cache_write_tokens": 0
+    },
+    {
+      "conversation_id": "52a7d450-5f8b-4317-8d4c-471be5828018",
+      "name": null,
+      "created_at": "2026-07-31T18:20:39.336000+00:00",
+      "events": 1,
+      "requests_cost_units": 0.2,
+      "charged_cents": 0.0,
+      "input_tokens": 14388,
+      "output_tokens": 248,
+      "cache_read_tokens": 0,
+      "cache_write_tokens": 0
+    }
+  ],
+  "pixelanea_by_model": {
+    "default": {
+      "events": 103,
+      "requests_cost_units": 412.3,
+      "charged_cents": 0.0,
+      "input_tokens": 3730569,
+      "output_tokens": 792613,
+      "cache_read_tokens": 63250020,
+      "cache_write_tokens": 0
+    },
+    "composer-2.5-fast": {
+      "events": 1,
+      "requests_cost_units": 8.2,
+      "charged_cents": 0.0,
+      "input_tokens": 58206,
+      "output_tokens": 4955,
+      "cache_read_tokens": 156832,
+      "cache_write_tokens": 0
+    }
+  },
+  "pixelanea_events": [
+    {
+      "timestamp": "2026-07-31T05:07:18.136000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 14325,
+        "outputTokens": 2020,
+        "cacheReadTokens": 24945
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:07:23.667000+00:00",
+      "conversation_id": "9c71f2ff-a3e3-4678-9e8e-3332e068a438",
+      "conversation_name": "Pixelanea project overview",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 12218,
+        "outputTokens": 2833,
+        "cacheReadTokens": 60145
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:09:56.037000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 8758,
+        "outputTokens": 3879,
+        "cacheReadTokens": 21488
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:10:54.634000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 3885,
+        "outputTokens": 1599,
+        "cacheReadTokens": 15220
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:12:05.646000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 11793,
+        "outputTokens": 5243,
+        "cacheReadTokens": 58210
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:19:21.036000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 7275,
+        "outputTokens": 5155,
+        "cacheReadTokens": 111308
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:23:23.240000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 5481,
+        "outputTokens": 4820,
+        "cacheReadTokens": 103335
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:24:15.152000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 10449,
+        "outputTokens": 5657,
+        "cacheReadTokens": 123878
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:25:13.619000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 66440,
+        "outputTokens": 6146,
+        "cacheReadTokens": 100721
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:27:53.699000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 24219,
+        "outputTokens": 9314,
+        "cacheReadTokens": 199704
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:31:00.707000+00:00",
+      "conversation_id": "1edf5196-0866-4bdd-9ab6-46e53afbd2f5",
+      "conversation_name": "Pixelanea project README",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 11193,
+        "outputTokens": 8980,
+        "cacheReadTokens": 259783
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:32:10.220000+00:00",
+      "conversation_id": "30c38f3a-c6be-4bcc-b0cb-408e8ecf687a",
+      "conversation_name": "C++ performance and architecture",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 20565,
+        "outputTokens": 4388,
+        "cacheReadTokens": 110401
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:32:37.557000+00:00",
+      "conversation_id": "2982e55e-92bc-4a60-9107-979bb4a5a8af",
+      "conversation_name": "Frontend code practices",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 29647,
+        "outputTokens": 8817,
+        "cacheReadTokens": 146270
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:33:35.786000+00:00",
+      "conversation_id": "2982e55e-92bc-4a60-9107-979bb4a5a8af",
+      "conversation_name": "Frontend code practices",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 26676,
+        "outputTokens": 8622,
+        "cacheReadTokens": 129988
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:34:46.846000+00:00",
+      "conversation_id": "2982e55e-92bc-4a60-9107-979bb4a5a8af",
+      "conversation_name": "Frontend code practices",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 26226,
+        "outputTokens": 11393,
+        "cacheReadTokens": 232066
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:36:33.466000+00:00",
+      "conversation_id": "604c3dc8-51a8-4994-a010-8341e3ba6be9",
+      "conversation_name": "Agent tool for code search",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 38210,
+        "outputTokens": 7050,
+        "cacheReadTokens": 385793
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:38:20.694000+00:00",
+      "conversation_id": "604c3dc8-51a8-4994-a010-8341e3ba6be9",
+      "conversation_name": "Agent tool for code search",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 12495,
+        "outputTokens": 4884,
+        "cacheReadTokens": 308390
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:39:55.670000+00:00",
+      "conversation_id": "adb49ee3-40f0-4751-8498-f801d89fb03a",
+      "conversation_name": "Tools list rule definition",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 27504,
+        "outputTokens": 1932,
+        "cacheReadTokens": 139844
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:42:30.777000+00:00",
+      "conversation_id": "49070b34-168d-460b-86fe-84d6b0fadbcc",
+      "conversation_name": "File structure for skills outputs",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 17740,
+        "outputTokens": 2660,
+        "cacheReadTokens": 59772
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:44:52.989000+00:00",
+      "conversation_id": "87720d14-bf7e-45a1-bbae-03357fe463cf",
+      "conversation_name": "Agent skill implementation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 18360,
+        "outputTokens": 2669,
+        "cacheReadTokens": 64324
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:45:52.766000+00:00",
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "conversation_name": "Backlog initiation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 24017,
+        "outputTokens": 1246,
+        "cacheReadTokens": 51292
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:47:19.240000+00:00",
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "conversation_name": "Backlog initiation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 16.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 73905,
+        "outputTokens": 31329,
+        "cacheReadTokens": 2792454
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:55:13.637000+00:00",
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "conversation_name": "Backlog initiation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 3563,
+        "outputTokens": 1796,
+        "cacheReadTokens": 240834
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T05:55:24.418000+00:00",
+      "conversation_id": "4fa62057-67f6-4e62-a1f2-b00166e2cfb4",
+      "conversation_name": null,
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 5.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 54241,
+        "outputTokens": 18521,
+        "cacheReadTokens": 793542
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:00:33.583000+00:00",
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "conversation_name": "Backlog initiation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 6631,
+        "outputTokens": 2840,
+        "cacheReadTokens": 340864
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:01:14.918000+00:00",
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "conversation_name": "Backlog initiation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 93170,
+        "outputTokens": 5870,
+        "cacheReadTokens": 471176
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:02:42.673000+00:00",
+      "conversation_id": "b3bf5f20-a42c-49bb-aa2f-91fb1c66f25e",
+      "conversation_name": "Backlog initiation process",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 7.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 17332,
+        "outputTokens": 8479,
+        "cacheReadTokens": 1429665
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:05:37.088000+00:00",
+      "conversation_id": "4fa62057-67f6-4e62-a1f2-b00166e2cfb4",
+      "conversation_name": null,
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 49241,
+        "outputTokens": 3668,
+        "cacheReadTokens": 321291
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:07:16.481000+00:00",
+      "conversation_id": "4fa62057-67f6-4e62-a1f2-b00166e2cfb4",
+      "conversation_name": null,
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 12455,
+        "outputTokens": 6167,
+        "cacheReadTokens": 672334
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:09:10.198000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 7.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 56303,
+        "outputTokens": 16059,
+        "cacheReadTokens": 1208540
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:14:10.610000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 4607,
+        "outputTokens": 1562,
+        "cacheReadTokens": 294902
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:14:45.824000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 4129,
+        "outputTokens": 790,
+        "cacheReadTokens": 173662
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:16:36.523000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 5.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 28250,
+        "outputTokens": 7368,
+        "cacheReadTokens": 943989
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:19:20.552000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 2961,
+        "outputTokens": 1493,
+        "cacheReadTokens": 178647
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:20:36.454000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 4.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 11758,
+        "outputTokens": 4754,
+        "cacheReadTokens": 786921
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:23:09.419000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 725,
+        "outputTokens": 98,
+        "cacheReadTokens": 103344
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:24:15.058000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 103704,
+        "outputTokens": 1810,
+        "cacheReadTokens": 324604
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:25:21.369000+00:00",
+      "conversation_id": "daad1d51-56e7-46e1-bd67-e8aba194eab2",
+      "conversation_name": "Cpp logging layer design",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 6.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 21900,
+        "outputTokens": 6206,
+        "cacheReadTokens": 1091297
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:27:09.843000+00:00",
+      "conversation_id": "c111cb50-f53f-4c27-816f-0fe14c3b19ae",
+      "conversation_name": "Backend delivery next steps",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 6.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 58329,
+        "outputTokens": 12164,
+        "cacheReadTokens": 979814
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:30:27.182000+00:00",
+      "conversation_id": "c111cb50-f53f-4c27-816f-0fe14c3b19ae",
+      "conversation_name": "Backend delivery next steps",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 8.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 38949,
+        "outputTokens": 10503,
+        "cacheReadTokens": 1410753
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:33:35.183000+00:00",
+      "conversation_id": "c111cb50-f53f-4c27-816f-0fe14c3b19ae",
+      "conversation_name": "Backend delivery next steps",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 9481,
+        "outputTokens": 2160,
+        "cacheReadTokens": 612629
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:34:12.164000+00:00",
+      "conversation_id": "c111cb50-f53f-4c27-816f-0fe14c3b19ae",
+      "conversation_name": "Backend delivery next steps",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 6.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 12841,
+        "outputTokens": 5052,
+        "cacheReadTokens": 1117369
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:36:29.378000+00:00",
+      "conversation_id": "efe81873-a532-4bac-b4ab-e81db82803dd",
+      "conversation_name": "Backend implementation backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 36308,
+        "outputTokens": 3525,
+        "cacheReadTokens": 356680
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:37:05.328000+00:00",
+      "conversation_id": "ddf2c191-7e93-43b6-a074-1fa885ba2e07",
+      "conversation_name": "Pixelanea backend implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 4.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 42820,
+        "outputTokens": 11397,
+        "cacheReadTokens": 617693
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:39:23.891000+00:00",
+      "conversation_id": "efe81873-a532-4bac-b4ab-e81db82803dd",
+      "conversation_name": "Backend implementation backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 21321,
+        "outputTokens": 3386,
+        "cacheReadTokens": 525873
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:40:27.450000+00:00",
+      "conversation_id": "275a4387-d101-429d-9c68-2947260cf558",
+      "conversation_name": "Pixelanea frontend implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 4.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 46444,
+        "outputTokens": 15346,
+        "cacheReadTokens": 604935
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:41:18.464000+00:00",
+      "conversation_id": "72336b27-8ae7-47b7-974d-eb076635a9c8",
+      "conversation_name": "Design system definition update",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 48464,
+        "outputTokens": 11715,
+        "cacheReadTokens": 474653
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:43:36.316000+00:00",
+      "conversation_id": "efe81873-a532-4bac-b4ab-e81db82803dd",
+      "conversation_name": "Backend implementation backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 8059,
+        "outputTokens": 1373,
+        "cacheReadTokens": 331858
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:43:50.825000+00:00",
+      "conversation_id": "9d4b9fb9-16d4-42a1-b329-e75ab8337b6b",
+      "conversation_name": "Pixelanea skill test writing",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 39924,
+        "outputTokens": 8428,
+        "cacheReadTokens": 383636
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:45:44.216000+00:00",
+      "conversation_id": "efe81873-a532-4bac-b4ab-e81db82803dd",
+      "conversation_name": "Backend implementation backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 16907,
+        "outputTokens": 3852,
+        "cacheReadTokens": 636327
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:47:28.046000+00:00",
+      "conversation_id": "72336b27-8ae7-47b7-974d-eb076635a9c8",
+      "conversation_name": "Design system definition update",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 13798,
+        "outputTokens": 3171,
+        "cacheReadTokens": 384630
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:47:57.683000+00:00",
+      "conversation_id": "a80e17b8-7e06-469e-a2b1-ffd9f3b3db02",
+      "conversation_name": "Pixelanea frontend standards",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 47610,
+        "outputTokens": 10565,
+        "cacheReadTokens": 513150
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:50:11.771000+00:00",
+      "conversation_id": "72336b27-8ae7-47b7-974d-eb076635a9c8",
+      "conversation_name": "Design system definition update",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 8004,
+        "outputTokens": 1953,
+        "cacheReadTokens": 393413
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:50:39.888000+00:00",
+      "conversation_id": "94567762-2424-4998-abab-9d759e0599b1",
+      "conversation_name": "Frontend skill test guide",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 34325,
+        "outputTokens": 5939,
+        "cacheReadTokens": 176029
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:51:36.268000+00:00",
+      "conversation_id": "5ebdb8b3-277c-4a00-adc0-45e1c24ab434",
+      "conversation_name": "Frontend and Cpp backend load",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 11.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 87080,
+        "outputTokens": 21173,
+        "cacheReadTokens": 1852592
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:52:12.217000+00:00",
+      "conversation_id": "72336b27-8ae7-47b7-974d-eb076635a9c8",
+      "conversation_name": "Design system definition update",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 20.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 60888,
+        "outputTokens": 16996,
+        "cacheReadTokens": 3804013
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T06:52:47.576000+00:00",
+      "conversation_id": "f38de363-bc53-41c0-b577-b3526b9f816a",
+      "conversation_name": "Tools maintenance request",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 12.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 86758,
+        "outputTokens": 13016,
+        "cacheReadTokens": 2127096
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:04:56.200000+00:00",
+      "conversation_id": "45d8d02e-b8d2-4700-abb8-8cc36b6220aa",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 34829,
+        "outputTokens": 3990,
+        "cacheReadTokens": 291690
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:05:36.058000+00:00",
+      "conversation_id": "601a7eb0-e9fe-4dd6-b6ca-ddcc3ea20829",
+      "conversation_name": "Frontend backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 5.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 56942,
+        "outputTokens": 16747,
+        "cacheReadTokens": 815973
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:05:39.201000+00:00",
+      "conversation_id": "4aa6201f-5b63-4e1c-9bd2-8151490dc455",
+      "conversation_name": "Backend backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 7.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 62876,
+        "outputTokens": 12999,
+        "cacheReadTokens": 1152407
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:07:31.794000+00:00",
+      "conversation_id": "87650c51-a264-49ce-9b47-e2401dadf013",
+      "conversation_name": "Niels Lohmann overview",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 14459,
+        "outputTokens": 527,
+        "cacheReadTokens": 13187
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:14:15.301000+00:00",
+      "conversation_id": "45d8d02e-b8d2-4700-abb8-8cc36b6220aa",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 9932,
+        "outputTokens": 1845,
+        "cacheReadTokens": 264597
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:14:44.385000+00:00",
+      "conversation_id": "ede39165-4a0e-45fe-a942-8257cfe6448c",
+      "conversation_name": "Pixelanea skill test validation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 26545,
+        "outputTokens": 3615,
+        "cacheReadTokens": 129292
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:18:07.585000+00:00",
+      "conversation_id": "45d8d02e-b8d2-4700-abb8-8cc36b6220aa",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 16341,
+        "outputTokens": 6362,
+        "cacheReadTokens": 649358
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T07:19:59.669000+00:00",
+      "conversation_id": "45d8d02e-b8d2-4700-abb8-8cc36b6220aa",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 4.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 75037,
+        "outputTokens": 2948,
+        "cacheReadTokens": 736349
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T14:45:05.189000+00:00",
+      "conversation_id": "dc780d1e-d58a-4ec6-82b5-66206d47e7f2",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 67431,
+        "outputTokens": 6953,
+        "cacheReadTokens": 737983
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T14:45:44.156000+00:00",
+      "conversation_id": "8a3d21dc-35a6-4dc8-b38e-d3c4f192ae87",
+      "conversation_name": "Frontend backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 11.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 178959,
+        "outputTokens": 25451,
+        "cacheReadTokens": 1487284
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T14:45:49.956000+00:00",
+      "conversation_id": "35c77501-a445-4838-8c90-c891909e8855",
+      "conversation_name": "Backend backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 9.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 73315,
+        "outputTokens": 23829,
+        "cacheReadTokens": 1459514
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T14:51:24.116000+00:00",
+      "conversation_id": "5f544fe0-d866-46d1-9c2d-f7ce21a718b4",
+      "conversation_name": "Pixelate import pipeline workflow",
+      "model": "composer-2.5-fast",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 8.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 58206,
+        "outputTokens": 4955,
+        "cacheReadTokens": 156832
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T14:53:56.739000+00:00",
+      "conversation_id": "dc780d1e-d58a-4ec6-82b5-66206d47e7f2",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 6.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 22793,
+        "outputTokens": 8054,
+        "cacheReadTokens": 1083205
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:16:19.091000+00:00",
+      "conversation_id": "ff3ab54c-b39c-4648-b1dc-31f379a4366b",
+      "conversation_name": "Frontend and backend backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 34118,
+        "outputTokens": 5947,
+        "cacheReadTokens": 361536
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:16:59.075000+00:00",
+      "conversation_id": "0bce2831-5d0d-4182-aa08-581766fbdda8",
+      "conversation_name": "Frontend backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 49383,
+        "outputTokens": 10600,
+        "cacheReadTokens": 497011
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:17:03.925000+00:00",
+      "conversation_id": "50dbd865-1152-4222-9a41-4e90510c02c3",
+      "conversation_name": "Pixelanea backend backlog items",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 47175,
+        "outputTokens": 13080,
+        "cacheReadTokens": 410818
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:18:54.379000+00:00",
+      "conversation_id": "0bce2831-5d0d-4182-aa08-581766fbdda8",
+      "conversation_name": "Frontend backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 8.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 71581,
+        "outputTokens": 19332,
+        "cacheReadTokens": 1223272
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:18:57.721000+00:00",
+      "conversation_id": "50dbd865-1152-4222-9a41-4e90510c02c3",
+      "conversation_name": "Pixelanea backend backlog items",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 10,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 80340,
+        "outputTokens": 21973,
+        "cacheReadTokens": 1520786
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:27:20.882000+00:00",
+      "conversation_id": "48d0b9dc-94a7-495a-a436-bc7d1c715d20",
+      "conversation_name": "Procedural shading palettes",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 29503,
+        "outputTokens": 2675,
+        "cacheReadTokens": 172222
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:27:46.988000+00:00",
+      "conversation_id": "dd984f6c-2f73-4865-a862-fe5ec14ba86c",
+      "conversation_name": "Shading palettes feature",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 38647,
+        "outputTokens": 10626,
+        "cacheReadTokens": 321086
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:32:34.658000+00:00",
+      "conversation_id": "ecaf0641-4e97-4341-90ae-2a3a7bbfbda1",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 32352,
+        "outputTokens": 3791,
+        "cacheReadTokens": 332500
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T15:33:05.179000+00:00",
+      "conversation_id": "9d90b217-e1f6-44d9-a0c0-ccbefdc35ec5",
+      "conversation_name": "Backlog completion and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 11.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 82845,
+        "outputTokens": 23487,
+        "cacheReadTokens": 1829409
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:01:50.601000+00:00",
+      "conversation_id": "6a5866fd-5c70-4dca-baba-3f512cd0424a",
+      "conversation_name": "Procedural shading palettes",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 34706,
+        "outputTokens": 3266,
+        "cacheReadTokens": 237030
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:02:35.180000+00:00",
+      "conversation_id": "f60a1438-6846-421a-a515-5913ee3d5399",
+      "conversation_name": "Pixelanea procedural shading palettes",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 25379,
+        "outputTokens": 2696,
+        "cacheReadTokens": 146674
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:07:02.019000+00:00",
+      "conversation_id": "6a5866fd-5c70-4dca-baba-3f512cd0424a",
+      "conversation_name": "Procedural shading palettes",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 4.9,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 94604,
+        "outputTokens": 4587,
+        "cacheReadTokens": 691564
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:40:10.261000+00:00",
+      "conversation_id": "6a5866fd-5c70-4dca-baba-3f512cd0424a",
+      "conversation_name": "Procedural shading palettes",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 3241,
+        "outputTokens": 838,
+        "cacheReadTokens": 227794
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:40:18.990000+00:00",
+      "conversation_id": "f1d6ce79-4afd-432d-b686-1ee79ed828ec",
+      "conversation_name": "Pixelanea frontend loading issues",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 23641,
+        "outputTokens": 1731,
+        "cacheReadTokens": 123296
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:40:33.717000+00:00",
+      "conversation_id": "6d14ef16-52ac-48f3-9e94-00f420c7037d",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 48012,
+        "outputTokens": 5412,
+        "cacheReadTokens": 609795
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:41:50.306000+00:00",
+      "conversation_id": "0cd4e52a-7a2c-4681-9525-726cdb9e4c16",
+      "conversation_name": "Phase 1 MVP backlog items",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 7.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 70241,
+        "outputTokens": 17812,
+        "cacheReadTokens": 1107305
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:57:34.732000+00:00",
+      "conversation_id": "523e8676-0002-435e-b0ef-d0c28db8b32f",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 35669,
+        "outputTokens": 3417,
+        "cacheReadTokens": 219464
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T16:58:01.151000+00:00",
+      "conversation_id": "febc8386-7c70-4349-a3f3-6c5ee5897fbc",
+      "conversation_name": "Pixelanea Phase 2 backlog",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 45529,
+        "outputTokens": 12326,
+        "cacheReadTokens": 424708
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:00:49.072000+00:00",
+      "conversation_id": "523e8676-0002-435e-b0ef-d0c28db8b32f",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 7.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 34304,
+        "outputTokens": 13468,
+        "cacheReadTokens": 1236634
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:06:18.905000+00:00",
+      "conversation_id": "523e8676-0002-435e-b0ef-d0c28db8b32f",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 10.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 31443,
+        "outputTokens": 16021,
+        "cacheReadTokens": 1868921
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:22:23.088000+00:00",
+      "conversation_id": "523e8676-0002-435e-b0ef-d0c28db8b32f",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 7.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 17100,
+        "outputTokens": 7813,
+        "cacheReadTokens": 1349886
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:30:51.031000+00:00",
+      "conversation_id": "523e8676-0002-435e-b0ef-d0c28db8b32f",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 3.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 5602,
+        "outputTokens": 2061,
+        "cacheReadTokens": 604959
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:41:20.900000+00:00",
+      "conversation_id": "15f35a51-6794-459a-a794-3f931ca2652c",
+      "conversation_name": "Stepper navigation with tabs",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 32140,
+        "outputTokens": 5980,
+        "cacheReadTokens": 265218
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:52:52.617000+00:00",
+      "conversation_id": "1b6eff99-2bdb-4cb0-9746-86a3eb105fc2",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 37465,
+        "outputTokens": 3785,
+        "cacheReadTokens": 285199
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T17:53:39.957000+00:00",
+      "conversation_id": "15d14dd3-2c84-43c2-8b35-d87e0adee0dc",
+      "conversation_name": "GIF export backlog item",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 11.3,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 80469,
+        "outputTokens": 17374,
+        "cacheReadTokens": 1845312
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:07:12.244000+00:00",
+      "conversation_id": "a8245e87-aad6-49bf-8c4e-4cd04d2a7a69",
+      "conversation_name": "Backlog feature requests",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.7,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 25437,
+        "outputTokens": 4654,
+        "cacheReadTokens": 221069
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:08:32.940000+00:00",
+      "conversation_id": "3563337b-2011-4999-b5a7-3fd567611107",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 5.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 57092,
+        "outputTokens": 10253,
+        "cacheReadTokens": 776917
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:10:54.941000+00:00",
+      "conversation_id": "16815265-ab4c-4fac-bbf2-6817ec7a832b",
+      "conversation_name": "Test validation guide for delivery",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 5.1,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 40683,
+        "outputTokens": 8024,
+        "cacheReadTokens": 820178
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:12:28.592000+00:00",
+      "conversation_id": "0ecf7acf-56f1-4061-b3dc-ae717fc4bd98",
+      "conversation_name": "Cursor prompts log request",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.5,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 38813,
+        "outputTokens": 4516,
+        "cacheReadTokens": 156241
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:16:44.798000+00:00",
+      "conversation_id": "0ecf7acf-56f1-4061-b3dc-ae717fc4bd98",
+      "conversation_name": "Cursor prompts log request",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 10.6,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 71257,
+        "outputTokens": 20349,
+        "cacheReadTokens": 1693649
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:18:22.273000+00:00",
+      "conversation_id": "a8245e87-aad6-49bf-8c4e-4cd04d2a7a69",
+      "conversation_name": "Backlog feature requests",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 4529,
+        "outputTokens": 1734,
+        "cacheReadTokens": 123930
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:18:45.086000+00:00",
+      "conversation_id": "4fed6770-93f1-449b-b742-a1e19a2e1757",
+      "conversation_name": "Backlog management and updates",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 2.8,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 45543,
+        "outputTokens": 4625,
+        "cacheReadTokens": 393940
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:19:31.907000+00:00",
+      "conversation_id": "fb8d9108-746d-4c6f-9849-4220aa9ffd7e",
+      "conversation_name": "Pixelanea backlog implementation",
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 1.4,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 27218,
+        "outputTokens": 4961,
+        "cacheReadTokens": 152772
+      },
+      "is_headless": false
+    },
+    {
+      "timestamp": "2026-07-31T18:20:40.856000+00:00",
+      "conversation_id": "52a7d450-5f8b-4317-8d4c-471be5828018",
+      "conversation_name": null,
+      "model": "default",
+      "kind": "USAGE_EVENT_KIND_INCLUDED_IN_PRO",
+      "requests_cost_units": 0.2,
+      "charged_cents": 0,
+      "usage_based_costs": "$0.00",
+      "token_usage": {
+        "inputTokens": 14388,
+        "outputTokens": 248
+      },
+      "is_headless": false
+    }
+  ]
+}

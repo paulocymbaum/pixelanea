@@ -12,7 +12,11 @@ function createContext(overrides: Partial<ToolContext> = {}): ToolContext {
   return {
     activeColorIndex: 2,
     activeFrameIndex: 0,
+    gridWidth: 2,
+    gridHeight: 2,
     readOnly: false,
+    paletteLocked: false,
+    paletteColorCount: 4,
     getPixelIndex: (cell) => pixels[cell.y * 2 + cell.x] ?? 0,
     dispatch: (command) => {
       const list = Array.isArray(command) ? command : [command];
@@ -22,6 +26,7 @@ function createContext(overrides: Partial<ToolContext> = {}): ToolContext {
       }
     },
     setActiveColorIndex: () => {},
+    setActiveTool: () => {},
     ...overrides,
   };
 }
@@ -41,6 +46,20 @@ describe("paintTool", () => {
 
   it("skips when readOnly", () => {
     const ctx = createContext({ readOnly: true });
+    const result = paintTool.onPointerDown?.(
+      pointerDown,
+      { x: 0, y: 0 },
+      ctx,
+    );
+    expect(result).toBeUndefined();
+  });
+
+  it("skips off-palette color when palette is locked", () => {
+    const ctx = createContext({
+      paletteLocked: true,
+      activeColorIndex: 5,
+      paletteColorCount: 4,
+    });
     const result = paintTool.onPointerDown?.(
       pointerDown,
       { x: 0, y: 0 },

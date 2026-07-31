@@ -93,6 +93,13 @@ export async function flushPaletteSync(): Promise<void> {
   }
 }
 
+export async function flushAllSync(): Promise<void> {
+  cancelFrameSync();
+  cancelPaletteSync();
+  await flushFrameSync();
+  await flushPaletteSync();
+}
+
 export function resetPersistState(): void {
   cancelFrameSync();
   cancelPaletteSync();

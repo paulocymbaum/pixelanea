@@ -1,0 +1,1 @@
+- ~~Adicionar paletas de sombreados ao selecionar uma cor específica (Geradas proceduralmente)~~

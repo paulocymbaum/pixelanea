@@ -1,5 +1,6 @@
 import type { components } from "./generated/schema";
 export type HealthResponse = components["schemas"]["HealthResponse"];
+export type AssetType = components["schemas"]["AssetType"];
 export type Project = components["schemas"]["Project"];
 export type Frame = components["schemas"]["Frame"];
 export type FrameMetadata = components["schemas"]["FrameMetadata"];
@@ -8,8 +9,18 @@ export type UpdateProjectRequest = components["schemas"]["UpdateProjectRequest"]
 export type PutFrameRequest = components["schemas"]["PutFrameRequest"];
 export type DuplicateFramesRequest = components["schemas"]["DuplicateFramesRequest"];
 export type DuplicateFramesResponse = components["schemas"]["DuplicateFramesResponse"];
+export type CopyFrameRequest = components["schemas"]["CopyFrameRequest"];
+export type CopyFrameResponse = components["schemas"]["CopyFrameResponse"];
+export type ReorderFramesRequest = components["schemas"]["ReorderFramesRequest"];
+export type ReorderFramesResponse = components["schemas"]["ReorderFramesResponse"];
 export type Palette = components["schemas"]["Palette"];
 export type PutPaletteRequest = components["schemas"]["PutPaletteRequest"];
+export type PixelateImportRequest = components["schemas"]["PixelateImportRequest"];
+export type PixelateImportResponse = components["schemas"]["PixelateImportResponse"];
+export type ExportGifRequest = components["schemas"]["ExportGifRequest"];
+export type OpenProjectRequest = components["schemas"]["OpenProjectRequest"];
+export type SaveProjectRequest = components["schemas"]["SaveProjectRequest"];
+export type SaveProjectResponse = components["schemas"]["SaveProjectResponse"];
 export type Color = components["schemas"]["Color"];
 export type ErrorResponse = components["schemas"]["ErrorResponse"];
 export type ApiClientConfig = {
@@ -33,6 +44,19 @@ export declare function createApiClient(config?: ApiClientConfig): {
         frameCount: number;
         fps: number;
         cellSize: number;
+        assetType: components["schemas"]["AssetType"];
+        createdAt: string;
+        updatedAt: string;
+    }>;
+    openProject: (body: OpenProjectRequest) => Promise<{
+        id: string;
+        name: string;
+        width: number;
+        height: number;
+        frameCount: number;
+        fps: number;
+        cellSize: number;
+        assetType: components["schemas"]["AssetType"];
         createdAt: string;
         updatedAt: string;
     }>;
@@ -44,6 +68,7 @@ export declare function createApiClient(config?: ApiClientConfig): {
         frameCount: number;
         fps: number;
         cellSize: number;
+        assetType: components["schemas"]["AssetType"];
         createdAt: string;
         updatedAt: string;
     }>;
@@ -55,10 +80,15 @@ export declare function createApiClient(config?: ApiClientConfig): {
         frameCount: number;
         fps: number;
         cellSize: number;
+        assetType: components["schemas"]["AssetType"];
         createdAt: string;
         updatedAt: string;
     }>;
     closeProject: (projectId: string) => Promise<void>;
+    saveProject: (projectId: string, body: SaveProjectRequest) => Promise<{
+        path: string;
+        savedAt: string;
+    }>;
     listFrames: (projectId: string) => Promise<{
         frames: FrameMetadata[];
     }>;
@@ -80,6 +110,12 @@ export declare function createApiClient(config?: ApiClientConfig): {
         project: components["schemas"]["Project"];
         frames: components["schemas"]["FrameMetadata"][];
     }>;
+    copyFrame: (projectId: string, body: CopyFrameRequest) => Promise<{
+        frame: components["schemas"]["FrameMetadata"];
+    }>;
+    reorderFrames: (projectId: string, body: ReorderFramesRequest) => Promise<{
+        frames: components["schemas"]["FrameMetadata"][];
+    }>;
     getPalette: (projectId: string) => Promise<{
         id: string;
         name: string;
@@ -90,6 +126,14 @@ export declare function createApiClient(config?: ApiClientConfig): {
         name: string;
         colors: components["schemas"]["Color"][];
     }>;
+    importPixelate: (projectId: string, body: PixelateImportRequest) => Promise<{
+        frameIndex: number;
+        width: number;
+        height: number;
+        pixels: number[];
+        palette?: components["schemas"]["Palette"];
+    }>;
+    exportGif: (projectId: string, body?: ExportGifRequest) => Promise<Blob>;
 };
 export type ApiClient = ReturnType<typeof createApiClient>;
 //# sourceMappingURL=client.d.ts.map

@@ -146,7 +146,7 @@ A free, open-source, local-only pixel art editor where anyone can pixelate image
 |--------|----------------------|
 | Blank canvas (16/32/64 presets) | Custom arbitrary canvas size UI |
 | Image import + pixelate | Batch image processing |
-| Paint, eraser, eyedropper | Fill bucket, line, shapes |
+| Paint, eraser, eyedropper, fill, line | Shapes |
 | Palette editor + presets | Palette import from LOSPEC URL |
 | Palette lock | Layer system |
 | Undo / redo (client-side) | Server-side command history |
@@ -168,6 +168,17 @@ A free, open-source, local-only pixel art editor where anyone can pixelate image
 - [ ] App runs **fully offline** after install
 - [ ] WCAG AA contrast on primary flows (Morgan projector test pass)
 - [ ] Zero P0 bugs in save/open/paint/animate paths
+
+---
+
+## Current fixes
+
+Near-term UX and export improvements — tracked here and mirrored in roadmap / domain sections below.
+
+- [x] **FIX-001** Eyedropper → paint: after absorbing a color from the canvas (eyedropper), switch active tool to paint automatically
+- [x] **FIX-002** Save as asset type — Character, Prop, Background, or Animation (*Animation* option ships after create-and-run animation workflow is complete)
+- [x] **FIX-003** Color filters as opaque overlays; placeable lighting points that subtly shift local color and shading on the image
+- [x] **FIX-004** Remove background when saving pixelated image output — toggle in import/save flow, **default on**
 
 ---
 
@@ -226,10 +237,11 @@ Goal: Shippable core — draw, pixelate, palette, undo, animate, save.
 - [x] **MVP-202** Active color selection
 - [x] **MVP-203** Keyboard shortcuts colors 1–9
 - [x] **MVP-204** Add / remove / edit colors
-- [ ] **MVP-205** Curated presets (Retro, Gameboy, Monochrome)
-- [ ] **MVP-206** Palette lock toggle
+- [x] **MVP-205** Curated presets (Retro, Gameboy, Monochrome)
+- [x] **MVP-206** Palette lock toggle
 - [x] **MVP-207** Persist palette to SQLite via API
 - [x] **MVP-208** Collapsible palette panel (remember state)
+- [x] **MVP-209** Procedural shading palettes (cell-shading, lighting, dark) from active color
 
 #### Epic 1.3 — Undo / redo
 
@@ -241,38 +253,38 @@ Goal: Shippable core — draw, pixelate, palette, undo, animate, save.
 
 #### Epic 1.4 — New project & import
 
-- [ ] **MVP-401** New project screen — two equal cards (Blank / From image)
-- [ ] **MVP-402** Resolution presets (16×16, 32×32, 64×64)
-- [ ] **MVP-403** Animation toggle on new project (8/16/32)
-- [ ] **MVP-404** C++ image decode (stb_image)
-- [ ] **MVP-405** Pixelate pipeline (downscale + quantize)
-- [ ] **MVP-406** `POST /import/pixelate` endpoint
-- [ ] **MVP-407** Import wizard UI (drop file → preset → preview → accept)
-- [ ] **MVP-408** Skippable onboarding overlay (3 steps)
+- [x] **MVP-401** New project screen — two equal cards (Blank / From image)
+- [x] **MVP-402** Resolution presets (16×16, 32×32, 64×64)
+- [x] **MVP-403** Animation toggle on new project (8/16/32)
+- [x] **MVP-404** C++ image decode (stb_image)
+- [x] **MVP-405** Pixelate pipeline (downscale + quantize)
+- [x] **MVP-406** `POST /import/pixelate` endpoint
+- [x] **MVP-407** Import wizard UI (drop file → preset → preview → accept)
+- [x] **MVP-408** Skippable onboarding overlay (3 steps)
 
 #### Epic 1.5 — Animation
 
 - [x] **MVP-501** Frame entity in DB + API
 - [x] **MVP-502** Duplicate current frame to 8/16/32 endpoint
-- [ ] **MVP-503** Frame strip UI (thumbnails + active highlight)
-- [ ] **MVP-504** Frame switch (click thumbnail)
-- [ ] **MVP-505** Animation player (play/pause)
-- [ ] **MVP-506** FPS slider (1–24, default 8)
-- [ ] **MVP-507** Loop toggle
-- [ ] **MVP-508** Read-only canvas during playback
-- [ ] **MVP-509** Frame strip highlight during play
+- [x] **MVP-503** Frame strip UI (thumbnails + active highlight)
+- [x] **MVP-504** Frame switch (click thumbnail)
+- [x] **MVP-505** Animation player (play/pause)
+- [x] **MVP-506** FPS slider (1–24, default 8)
+- [x] **MVP-507** Loop toggle
+- [x] **MVP-508** Read-only canvas during playback
+- [x] **MVP-509** Frame strip highlight during play
 
 #### Epic 1.6 — Project I/O
 
-- [ ] **MVP-601** `.pixelanea` ZIP bundle format (manifest + project.db)
-- [ ] **MVP-602** Manifest schema + checksums (SHA-256)
-- [ ] **MVP-603** Pack project on save
-- [ ] **MVP-604** Unpack + validate on open
-- [ ] **MVP-605** Save / Save As UI
-- [ ] **MVP-606** Open project file picker (`.pixelanea` filter)
+- [x] **MVP-601** `.pixelanea` ZIP bundle format (manifest + project.db)
+- [x] **MVP-602** Manifest schema + checksums (SHA-256)
+- [x] **MVP-603** Pack project on save
+- [x] **MVP-604** Unpack + validate on open
+- [x] **MVP-605** Save / Save As UI
+- [x] **MVP-606** Open project file picker (`.pixelanea` filter)
 - [x] **MVP-607** Plain-language error messages
-- [ ] **MVP-608** PNG export (current frame)
-- [ ] **MVP-609** Schema migration on open (v1)
+- [x] **MVP-608** PNG export (current frame)
+- [x] **MVP-609** Schema migration on open (v1)
 
 #### Epic 1.7 — Theme & accessibility
 
@@ -280,16 +292,16 @@ Goal: Shippable core — draw, pixelate, palette, undo, animate, save.
 - [x] **MVP-702** Dark theme (design tokens)
 - [x] **MVP-703** Follow OS preference + persist choice
 - [x] **MVP-704** Theme toggle in header
-- [ ] **MVP-705** Keyboard navigation all tools
-- [ ] **MVP-706** Focus rings (2px accent)
-- [ ] **MVP-707** `?` shortcuts overlay
+- [x] **MVP-705** Keyboard navigation all tools
+- [x] **MVP-706** Focus rings (2px accent)
+- [x] **MVP-707** `?` shortcuts overlay
 - [x] **MVP-708** `prefers-reduced-motion` support
-- [ ] **MVP-709** Optional "Show technical info" (coords, hex, index)
+- [x] **MVP-709** Optional "Show technical info" (coords, hex, index)
 
 #### Epic 1.8 — Brand assets (MVP minimum)
 
-- [ ] **MVP-801** Logo glyph + lockup SVGs (`brand/`) — glyph done; lockup pending
-- [ ] **MVP-802** Favicon set (16, 32)
+- [x] **MVP-801** Logo glyph + lockup SVGs (`brand/`)
+- [x] **MVP-802** Favicon set (16, 32)
 - [x] **MVP-803** App header lockup
 - [x] **MVP-804** Self-hosted fonts (Outfit, JetBrains Mono)
 
@@ -299,28 +311,30 @@ Goal: Polish, docs, marketing, community-ready release.
 
 #### Epic 2.1 — Export & power features
 
-- [ ] **V1-101** PNG spritesheet export (all frames)
-- [ ] **V1-102** GIF export
-- [ ] **V1-103** Export warning if off-palette pixels exist
-- [ ] **V1-104** Custom canvas size dialog
-- [ ] **V1-105** Fill bucket tool
-- [ ] **V1-106** Line tool (Bresenham)
+- [x] **V1-101** PNG spritesheet export (all frames)
+- [x] **V1-102** GIF export
+- [x] **V1-103** Export warning if off-palette pixels exist
+- [x] **V1-104** Custom canvas size dialog
+- [x] **V1-105** Fill bucket tool
+- [x] **V1-106** Line tool (Bresenham)
+- [x] **FIX-002** Save as asset type (Character, Prop, Background, Animation)
+- [x] **FIX-004** Remove background on pixelated image save (default on)
 
 #### Epic 2.2 — Animation polish
 
-- [ ] **V1-201** Onion skin overlay (frame n−1 at 30%)
-- [ ] **V1-202** Frame duplicate blank (not copy) option
-- [ ] **V1-203** Copy frame to frame
-- [ ] **V1-204** Frame reorder (drag-and-drop)
+- [x] **V1-201** Onion skin overlay (frame n−1 at 30%)
+- [x] **V1-202** Frame duplicate blank (not copy) option
+- [x] **V1-203** Copy frame to frame
+- [x] **V1-204** Frame reorder (drag-and-drop)
 
 #### Epic 2.3 — Docs & onboarding
 
-- [ ] **V1-301** README (install, features, screenshots)
-- [ ] **V1-302** CONTRIBUTING.md
-- [ ] **V1-303** User guide (docs/ or website)
+- [x] **V1-301** README (install, features, screenshots)
+- [x] **V1-302** CONTRIBUTING.md
+- [x] **V1-303** User guide (docs/ or website)
 - [ ] **V1-304** Workshop teacher kit (template `.pixelanea` + PDF)
-- [ ] **V1-305** Keyboard shortcuts reference card
-- [ ] **V1-306** First-run welcome (tagline + two front doors)
+- [x] **V1-305** Keyboard shortcuts reference card
+- [x] **V1-306** First-run welcome (tagline + two front doors)
 
 #### Epic 2.4 — Marketing & brand
 
@@ -350,6 +364,11 @@ Goal: Polish, docs, marketing, community-ready release.
 - [ ] **V1-603** P0/P1 bug burn-down
 - [ ] **V1-604** v1.0.0 GitHub release + changelog
 - [ ] **V1-605** Announce: Reddit, itch.io, Godot forums
+
+#### Epic 2.7 — UX polish (current fixes)
+
+- [x] **FIX-001** Auto-switch to paint after eyedropper (absorb color)
+- [x] **FIX-003** Opaque color overlay filters + lighting points for local color shifts
 
 ### Phase 3 — Growth *(2027 Q1+)*
 
@@ -412,7 +431,7 @@ Longer-horizon bets — validate demand before building.
 
 ### Documentation & planning
 
-- [ ] **DOC-001** README.md
+- [x] **DOC-001** README.md
 - [x] **DOC-002** ARCHITECTURE.md *(done)*
 - [x] **DOC-003** DEPENDENCIES.md *(done)*
 - [x] **DOC-004** UX.md *(done)*
@@ -447,26 +466,28 @@ Longer-horizon bets — validate demand before building.
 - [x] **BE-007** `PaletteRepository`
 - [x] **BE-008** Pixel blob encode/decode (RLE or LZ4)
 - [x] **BE-009** `POST /api/projects` — create
-- [ ] **BE-010** `POST /api/projects/open` — open bundle
+- [x] **BE-010** `POST /api/projects/open` — open bundle
 - [x] **BE-011** `GET /api/projects/{id}` — metadata
 - [x] **BE-012** `PATCH /api/projects/{id}` — update settings
-- [ ] **BE-013** `POST /api/projects/{id}/save` — write bundle
+- [x] **BE-013** `POST /api/projects/{id}/save` — write bundle
 - [x] **BE-014** `DELETE /api/projects/{id}` — close
 - [x] **BE-015** `GET/PUT /api/projects/{id}/frames/{index}`
 - [x] **BE-016** `POST /api/projects/{id}/frames/duplicate`
 - [x] **BE-017** `GET/PUT /api/projects/{id}/palette`
-- [ ] **BE-018** `POST /api/projects/{id}/import/pixelate`
-- [ ] **BE-019** Bundle pack (libzip + manifest)
-- [ ] **BE-020** Bundle unpack + checksum validation
-- [ ] **BE-021** Path traversal protection on unpack
-- [ ] **BE-022** Image decode (stb_image)
-- [ ] **BE-023** Image downscale + palette quantization
+- [x] **BE-018** `POST /api/projects/{id}/import/pixelate`
+- [x] **BE-019** Bundle pack (libzip + manifest)
+- [x] **BE-020** Bundle unpack + checksum validation
+- [x] **BE-021** Path traversal protection on unpack
+- [x] **BE-022** Image decode (stb_image)
+- [x] **BE-023** Image downscale + palette quantization
 - [x] **BE-024** `GET /api/health`
 - [x] **BE-025** Error response schema (plain-language messages)
-- [ ] **BE-026** WAL checkpoint on save
+- [x] **BE-026** WAL checkpoint on save
 - [x] **BE-027** Unit tests: repositories
-- [ ] **BE-028** Unit tests: pixelate pipeline
-- [ ] **BE-029** Unit tests: bundle I/O
+- [x] **BE-028** Unit tests: pixelate pipeline
+- [x] **BE-029** Unit tests: bundle I/O
+- [x] **FIX-002** Project metadata: asset type field (Character, Prop, Background, Animation) in manifest / DB
+- [x] **FIX-004** Pixelate pipeline: background removal on save (default enabled; transparent or keyed output)
 
 ### Frontend (React / Canvas)
 
@@ -491,47 +512,40 @@ Longer-horizon bets — validate demand before building.
 - [x] **FE-019** Tool switching + active state
 - [x] **FE-020** Command dispatch + undo stack
 - [x] **FE-021** Keyboard shortcuts handler
-- [ ] **FE-022** New project screen
-- [ ] **FE-023** Import wizard
-- [ ] **FE-024** Save / Open / Save As dialogs
-- [ ] **FE-025** Animation player component
-- [ ] **FE-026** FPS + loop controls
+- [x] **FE-022** New project screen
+- [x] **FE-023** Import wizard
+- [x] **FE-024** Save / Open / Save As dialogs
+- [x] **FE-025** Animation player component
+- [x] **FE-026** FPS + loop controls
 - [x] **FE-027** Theme provider (light/dark)
-- [ ] **FE-028** Shortcuts overlay (`?`)
-- [ ] **FE-029** Onboarding overlay (skippable)
-- [ ] **FE-030** PNG export (current frame)
-- [ ] **FE-031** Error toast / dialog components
-- [ ] **FE-032** Loading states (open project, import)
+- [x] **FE-028** Shortcuts overlay (`?`)
+- [x] **FE-029** Onboarding overlay (skippable)
+- [x] **FE-030** PNG export (current frame)
+- [x] **FE-035** PNG spritesheet export (all frames)
+- [x] **FE-036** GIF export (animated, server-side)
+- [x] **FE-031** Error toast / dialog components
+- [x] **FE-032** Loading states (open project, import)
 - [x] **FE-033** `@fontsource` Outfit + JetBrains Mono
-- [x] **FE-034** Lucide icons + custom frame icon
+- [x] **FE-037** Custom canvas size dialog (blank project)
+- [x] **FE-038** Fill bucket tool
+- [x] **FE-039** Line tool (Bresenham)
+- [x] **FIX-001** Eyedropper → auto-switch to paint after absorb color
+- [x] **FIX-002** Save As asset type picker (Character, Prop, Background, Animation)
+- [x] **FIX-003** Opaque overlay filters + lighting-point color adjustment UI
+- [x] **FIX-004** Remove-background toggle on pixelated save (default on)
 
 ### Design & brand
 
-- [ ] **BR-001** `brand/logo-lockup.svg`
+- [x] **BR-001** `brand/logo-lockup.svg`
 - [ ] **BR-002** `brand/logo-mark.svg`
 - [x] **BR-003** `brand/logo-glyph.svg`
 - [ ] **BR-004** `brand/logo-wordmark.svg`
 - [x] **BR-005** `brand/colors.css`
-- [ ] **BR-006** Favicon 16/32
+- [x] **BR-006** Favicon 16/32
 - [ ] **BR-007** App icons 180/512
 - [ ] **BR-008** `.pixelanea` file icon
 - [ ] **BR-009** README banner
 - [ ] **BR-010** Marketing landing page design
-
-### UX research & validation
-
-- [ ] **UXR-001** Riley interviews (×2)
-- [ ] **UXR-002** Casey interviews (×2)
-- [ ] **UXR-003** Morgan interviews (×2)
-- [ ] **UXR-004** Hallway test: new project flow
-- [ ] **UXR-005** Timed task: first pixel &lt;60s
-- [ ] **UXR-006** Timed task: import &lt;5min
-- [ ] **UXR-007** Timed task: 8-frame loop &lt;45min
-- [ ] **UXR-008** Classroom pilot with Morgan
-- [ ] **UXR-009** Projector contrast test
-- [ ] **UXR-010** Tagline A/B test
-- [ ] **UXR-011** Share `.pixelanea` between machines test
-- [ ] **UXR-012** Animation Sketcher week-1 retention tracking
 
 ### QA & release
 
@@ -559,7 +573,7 @@ Longer-horizon bets — validate demand before building.
 | S4 | 7–8 | MVP | Undo, eyedropper, new project + import wizard |
 | S5 | 9–10 | MVP | Animation frames, player, duplicate |
 | S6 | 11–12 | MVP | `.pixelanea` I/O, themes, MVP ship gate |
-| S7 | 13–14 | v1.0 | Export GIF/spritesheet, fill/line tools |
+| S7 | 13–14 | v1.0 | Export GIF/spritesheet, fill/line tools ✓ |
 | S8 | 15–16 | v1.0 | Docs, marketing site, brand assets |
 | S9 | 17–18 | v1.0 | QA, beta, v1.0.0 release |
 
@@ -584,4 +598,4 @@ Longer-horizon bets — validate demand before building.
 4. **Roadmap phases** — sequence delivery; don't start Phase 3 until MVP ship gate passes.
 5. **Checkboxes** — mark `[x]` when done; keep IDs stable for issue tracker linking (`MVP-106`, etc.).
 
-*Last updated: July 2026 — Phase 0 complete (P0-001–P0-013). Phase 1 in progress: canvas layer (FE-012–015, MVP-101–105), palette API (BE-007, BE-017), theme + tool rail (FE-019, FE-027, MVP-701–704). Tests: 31 Vitest + 15 Catch2 cases; CI (INF-006, INF-007); smoke scripts (`test-backend.sh`, `test-frontend.sh`).*
+*Last updated: July 2026 — Phase 0 complete. Phase 1 MVP complete. Phase 2 Epic 2.1–2.2 complete. Epic 2.3: README (V1-301), CONTRIBUTING (V1-302), user guide (V1-303), shortcuts card (V1-305), first-run welcome tagline (V1-306) complete. V1-304 workshop PDF + template file pending. Current fixes: FIX-003 complete (overlay filters/lighting).*

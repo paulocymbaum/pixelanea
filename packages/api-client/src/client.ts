@@ -1,6 +1,7 @@
 import type { components, paths } from "./generated/schema";
 
 export type HealthResponse = components["schemas"]["HealthResponse"];
+export type AssetType = components["schemas"]["AssetType"];
 export type Project = components["schemas"]["Project"];
 export type Frame = components["schemas"]["Frame"];
 export type FrameMetadata = components["schemas"]["FrameMetadata"];
@@ -9,8 +10,18 @@ export type UpdateProjectRequest = components["schemas"]["UpdateProjectRequest"]
 export type PutFrameRequest = components["schemas"]["PutFrameRequest"];
 export type DuplicateFramesRequest = components["schemas"]["DuplicateFramesRequest"];
 export type DuplicateFramesResponse = components["schemas"]["DuplicateFramesResponse"];
+export type CopyFrameRequest = components["schemas"]["CopyFrameRequest"];
+export type CopyFrameResponse = components["schemas"]["CopyFrameResponse"];
+export type ReorderFramesRequest = components["schemas"]["ReorderFramesRequest"];
+export type ReorderFramesResponse = components["schemas"]["ReorderFramesResponse"];
 export type Palette = components["schemas"]["Palette"];
 export type PutPaletteRequest = components["schemas"]["PutPaletteRequest"];
+export type PixelateImportRequest = components["schemas"]["PixelateImportRequest"];
+export type PixelateImportResponse = components["schemas"]["PixelateImportResponse"];
+export type ExportGifRequest = components["schemas"]["ExportGifRequest"];
+export type OpenProjectRequest = components["schemas"]["OpenProjectRequest"];
+export type SaveProjectRequest = components["schemas"]["SaveProjectRequest"];
+export type SaveProjectResponse = components["schemas"]["SaveProjectResponse"];
 export type Color = components["schemas"]["Color"];
 export type ErrorResponse = components["schemas"]["ErrorResponse"];
 
@@ -63,6 +74,35 @@ async function request<T>(
   return (await response.json()) as T;
 }
 
+async function requestBinary(
+  path: string,
+  options: RequestInit = {},
+  config: ApiClientConfig = {},
+): Promise<Blob> {
+  const base = config.baseUrl ?? "";
+  const response = await fetch(`${base}${path}`, {
+    ...options,
+    headers: {
+      Accept: "image/gif",
+      ...(options.body ? { "Content-Type": "application/json" } : {}),
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    let body: ErrorResponse | undefined;
+    try {
+      body = (await response.json()) as ErrorResponse;
+    } catch {
+      // non-JSON error body
+    }
+    const message = body?.message ?? `Request failed (${response.status})`;
+    throw new ApiError(response.status, message, body);
+  }
+
+  return response.blob();
+}
+
 export function createApiClient(config: ApiClientConfig = {}) {
   return {
     getHealth: () =>
@@ -79,6 +119,13 @@ export function createApiClient(config: ApiClientConfig = {}) {
         config,
       ),
 
+    openProject: (body: OpenProjectRequest) =>
+      request<Project>(
+        "/api/projects/open",
+        { method: "POST", body: JSON.stringify(body) },
+        config,
+      ),
+
     getProject: (projectId: string) =>
       request<Project>(`/api/projects/${projectId}`, {}, config),
 
@@ -91,6 +138,13 @@ export function createApiClient(config: ApiClientConfig = {}) {
 
     closeProject: (projectId: string) =>
       request<void>(`/api/projects/${projectId}`, { method: "DELETE" }, config),
+
+    saveProject: (projectId: string, body: SaveProjectRequest) =>
+      request<SaveProjectResponse>(
+        `/api/projects/${projectId}/save`,
+        { method: "POST", body: JSON.stringify(body) },
+        config,
+      ),
 
     listFrames: (projectId: string) =>
       request<{ frames: FrameMetadata[] }>(
@@ -120,6 +174,20 @@ export function createApiClient(config: ApiClientConfig = {}) {
         config,
       ),
 
+    copyFrame: (projectId: string, body: CopyFrameRequest) =>
+      request<CopyFrameResponse>(
+        `/api/projects/${projectId}/frames/copy`,
+        { method: "POST", body: JSON.stringify(body) },
+        config,
+      ),
+
+    reorderFrames: (projectId: string, body: ReorderFramesRequest) =>
+      request<ReorderFramesResponse>(
+        `/api/projects/${projectId}/frames/reorder`,
+        { method: "POST", body: JSON.stringify(body) },
+        config,
+      ),
+
     getPalette: (projectId: string) =>
       request<Palette>(`/api/projects/${projectId}/palette`, {}, config),
 
@@ -127,6 +195,23 @@ export function createApiClient(config: ApiClientConfig = {}) {
       request<Palette>(
         `/api/projects/${projectId}/palette`,
         { method: "PUT", body: JSON.stringify(body) },
+        config,
+      ),
+
+    importPixelate: (projectId: string, body: PixelateImportRequest) =>
+      request<PixelateImportResponse>(
+        `/api/projects/${projectId}/import/pixelate`,
+        { method: "POST", body: JSON.stringify(body) },
+        config,
+      ),
+
+    exportGif: (projectId: string, body?: ExportGifRequest) =>
+      requestBinary(
+        `/api/projects/${projectId}/export/gif`,
+        {
+          method: "POST",
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        },
         config,
       ),
   };

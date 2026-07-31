@@ -43,6 +43,27 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequest"
 
+  /api/projects/open:
+    post:
+      operationId: openProject
+      summary: Open a project from a .pixelanea bundle on disk
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenProjectRequest"
+      responses:
+        "200":
+          description: Project opened from bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
   /api/projects/{projectId}:
     parameters:
       - $ref: "#/components/parameters/ProjectId"
@@ -87,6 +108,31 @@ paths:
       responses:
         "204":
           description: Project closed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/save:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: saveProject
+      summary: Save project to a .pixelanea bundle on disk
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProjectRequest"
+      responses:
+        "200":
+          description: Project saved to bundle
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SaveProjectResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
         "404":
           $ref: "#/components/responses/NotFound"
 
@@ -176,6 +222,107 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/projects/{projectId}/frames/copy:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: copyFrame
+      summary: Copy pixel data from one frame into another
+      tags: [Frames]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CopyFrameRequest"
+      responses:
+        "200":
+          description: Target frame updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CopyFrameResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/frames/reorder:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: reorderFrames
+      summary: Move a frame to a new index in the strip
+      tags: [Frames]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderFramesRequest"
+      responses:
+        "200":
+          description: Frames reordered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReorderFramesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/import/pixelate:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: importPixelate
+      summary: Decode image, downscale, quantize, and apply to a frame
+      tags: [Import]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PixelateImportRequest"
+      responses:
+        "200":
+          description: Pixelated frame applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PixelateImportResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/export/gif:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: exportGif
+      summary: Export all frames as an animated GIF
+      tags: [Export]
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExportGifRequest"
+      responses:
+        "200":
+          description: Animated GIF bytes
+          content:
+            image/gif:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
   /api/projects/{projectId}/frames/{frameIndex}:
     parameters:
       - $ref: "#/components/parameters/ProjectId"
@@ -247,6 +394,12 @@ components:
             $ref: "#/components/schemas/ErrorResponse"
 
   schemas:
+    AssetType:
+      type: string
+      enum: [character, prop, background, animation]
+      default: character
+      description: Kind of pixel art asset for export and organization
+
     HealthResponse:
       type: object
       required: [status, version]
@@ -294,6 +447,8 @@ components:
           minimum: 1
           maximum: 64
           default: 16
+        assetType:
+          $ref: "#/components/schemas/AssetType"
 
     UpdateProjectRequest:
       type: object
@@ -309,10 +464,44 @@ components:
           type: integer
           minimum: 1
           maximum: 64
+        assetType:
+          $ref: "#/components/schemas/AssetType"
+
+    OpenProjectRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          minLength: 1
+          description: Absolute or relative filesystem path to a .pixelanea bundle file
+
+    SaveProjectRequest:
+      type: object
+      required: [path]
+      properties:
+        path:
+          type: string
+          minLength: 1
+          description: Destination filesystem path for the .pixelanea bundle file
+        assetType:
+          $ref: "#/components/schemas/AssetType"
+
+    SaveProjectResponse:
+      type: object
+      required: [path, savedAt]
+      properties:
+        path:
+          type: string
+          description: Resolved path where the bundle was written
+        savedAt:
+          type: string
+          format: date-time
+          description: UTC timestamp when the bundle was saved
 
     Project:
       type: object
-      required: [id, name, width, height, frameCount, fps, cellSize, createdAt, updatedAt]
+      required: [id, name, width, height, frameCount, fps, cellSize, assetType, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -329,6 +518,8 @@ components:
           type: number
         cellSize:
           type: integer
+        assetType:
+          $ref: "#/components/schemas/AssetType"
         createdAt:
           type: string
           format: date-time
@@ -387,6 +578,11 @@ components:
           minimum: 0
           default: 0
           description: Frame to copy; defaults to frame 0
+        fillMode:
+          type: string
+          enum: [copy, blank]
+          default: copy
+          description: copy duplicates source into all frames; blank keeps art only on source
 
     DuplicateFramesResponse:
       type: object
@@ -394,6 +590,44 @@ components:
       properties:
         project:
           $ref: "#/components/schemas/Project"
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/FrameMetadata"
+
+    CopyFrameRequest:
+      type: object
+      required: [sourceFrameIndex, targetFrameIndex]
+      properties:
+        sourceFrameIndex:
+          type: integer
+          minimum: 0
+        targetFrameIndex:
+          type: integer
+          minimum: 0
+
+    CopyFrameResponse:
+      type: object
+      required: [frame]
+      properties:
+        frame:
+          $ref: "#/components/schemas/FrameMetadata"
+
+    ReorderFramesRequest:
+      type: object
+      required: [fromIndex, toIndex]
+      properties:
+        fromIndex:
+          type: integer
+          minimum: 0
+        toIndex:
+          type: integer
+          minimum: 0
+
+    ReorderFramesResponse:
+      type: object
+      required: [frames]
+      properties:
         frames:
           type: array
           items:
@@ -443,3 +677,70 @@ components:
           maxItems: 256
           items:
             $ref: "#/components/schemas/Color"
+
+    ExportGifRequest:
+      type: object
+      properties:
+        fps:
+          type: number
+          minimum: 1
+          maximum: 60
+          description: Animation speed; defaults to project fps
+        loop:
+          type: boolean
+          default: true
+          description: Whether the GIF should loop indefinitely
+
+    PixelateImportRequest:
+      type: object
+      required: [imageData]
+      properties:
+        imageData:
+          type: string
+          format: byte
+          description: Base64-encoded PNG, JPEG, or BMP image bytes
+        targetWidth:
+          type: integer
+          minimum: 1
+          maximum: 512
+          description: Output grid width; defaults to project width
+        targetHeight:
+          type: integer
+          minimum: 1
+          maximum: 512
+          description: Output grid height; defaults to project height
+        maxColors:
+          type: integer
+          minimum: 2
+          maximum: 256
+          description: Extract a new palette with at most this many colors
+        frameIndex:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Frame slot to replace with pixelated result
+        removeBackground:
+          type: boolean
+          default: true
+          description: Remove detected background and output transparent pixels (index 0)
+
+    PixelateImportResponse:
+      type: object
+      required: [frameIndex, width, height, pixels]
+      properties:
+        frameIndex:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+        pixels:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+          description: Palette indices row-major (width * height)
+        palette:
+          $ref: "#/components/schemas/Palette"
+          description: Present when maxColors generated a new palette

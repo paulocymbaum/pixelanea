@@ -1,0 +1,322 @@
+import { useCallback, useState } from "react";
+import { pixelateImage } from "@/api/import";
+import { createBlankProject } from "@/api/projects";
+import {
+  fetchPalette,
+  paletteColorsFromApi,
+  paletteColorsFromPresetSlots,
+  saveImportPalette,
+} from "@/api/palette";
+import { Button } from "@/components/ui/Button";
+import { copy } from "@/content/copy";
+import { errors } from "@/content/errors";
+import { loadProjectIntoEditor } from "@/hooks/useLoadProject";
+import { useSessionStore } from "@/state/sessionStore";
+import { getPalettePreset } from "@/components/palette/palettePresets";
+import { FileDropStep } from "./FileDropStep";
+import { isAcceptedImageType } from "./fileUtils";
+import { fileToBase64 } from "./fileUtils";
+import { ImportStepIndicator } from "./ImportStepIndicator";
+import { PalettePresetStep } from "./PalettePresetStep";
+import { PreviewStep } from "./PreviewStep";
+import { ResolutionStep } from "./ResolutionStep";
+import type { ImportWizardStep } from "./types";
+import { IMPORT_WIZARD_STEPS } from "./types";
+
+type PixelateWizardProps = {
+  onComplete: () => void;
+  onBack: () => void;
+};
+
+const DEFAULT_PROJECT = {
+  name: "Imported project",
+  frameCount: 1,
+  fps: 8,
+  cellSize: 16,
+} as const;
+
+export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
+  const lastResolution = useSessionStore((s) => s.lastResolution);
+  const lastPalettePreset = useSessionStore((s) => s.lastPalettePreset);
+  const removeBackground = useSessionStore((s) => s.removeBackground);
+  const setLastResolution = useSessionStore((s) => s.setLastResolution);
+  const setLastPalettePreset = useSessionStore((s) => s.setLastPalettePreset);
+  const setRemoveBackground = useSessionStore((s) => s.setRemoveBackground);
+  const setHasVisited = useSessionStore((s) => s.setHasVisited);
+  const setLastEntryPath = useSessionStore((s) => s.setLastEntryPath);
+
+  const [step, setStep] = useState<ImportWizardStep>("file");
+  const [file, setFile] = useState<File | null>(null);
+  const [imageData, setImageData] = useState<string | null>(null);
+  const [resolution, setResolution] = useState(lastResolution);
+  const [palettePreset, setPalettePreset] = useState(
+    lastPalettePreset ?? "retro",
+  );
+  const [projectId, setProjectId] = useState<string | null>(null);
+  const [previewPixels, setPreviewPixels] = useState<Uint8Array | null>(null);
+  const [previewPalette, setPreviewPalette] = useState<readonly string[]>([]);
+  const [previewWidth, setPreviewWidth] = useState<number>(resolution);
+  const [previewHeight, setPreviewHeight] = useState<number>(resolution);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const stepIndex = IMPORT_WIZARD_STEPS.indexOf(step);
+
+  const handleFileSelected = async (selected: File) => {
+    setError(null);
+    if (!isAcceptedImageType(selected.type)) {
+      setError(errors.importFileType);
+      return;
+    }
+    try {
+      const encoded = await fileToBase64(selected);
+      setFile(selected);
+      setImageData(encoded);
+    } catch {
+      setError(errors.importFileRead);
+    }
+  };
+
+  const runPreview = useCallback(async () => {
+    if (!imageData) {
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    const created = await createBlankProject({
+      ...DEFAULT_PROJECT,
+      width: resolution,
+      height: resolution,
+    });
+
+    if (!created.ok) {
+      setError(created.message);
+      setIsLoading(false);
+      return;
+    }
+
+    const preset = getPalettePreset(palettePreset);
+    if (preset) {
+      const saved = await saveImportPalette(created.project.id, preset.colors);
+      if (!saved.ok) {
+        setError(saved.message);
+        setIsLoading(false);
+        return;
+      }
+    }
+
+    const pixelate = await pixelateImage(created.project.id, {
+      imageData,
+      targetWidth: resolution,
+      targetHeight: resolution,
+      frameIndex: 0,
+      removeBackground,
+    });
+
+    if (!pixelate.ok) {
+      setError(pixelate.message);
+      setIsLoading(false);
+      return;
+    }
+
+    const { response } = pixelate;
+    const pixels = new Uint8Array(response.pixels.length);
+    for (let i = 0; i < response.pixels.length; i++) {
+      pixels[i] = response.pixels[i] ?? 0;
+    }
+
+    let palette: readonly string[] = [];
+    if (response.palette) {
+      palette = paletteColorsFromApi(response.palette);
+    } else {
+      const fetched = await fetchPalette(created.project.id);
+      if (fetched.ok) {
+        palette = paletteColorsFromApi(fetched.palette);
+      } else if (preset) {
+        palette = paletteColorsFromPresetSlots(preset.colors);
+      }
+    }
+
+    setProjectId(created.project.id);
+    setPreviewPixels(pixels);
+    setPreviewPalette(palette);
+    setPreviewWidth(response.width);
+    setPreviewHeight(response.height);
+    setIsLoading(false);
+  }, [imageData, resolution, palettePreset, removeBackground]);
+
+  const goNext = async () => {
+    if (step === "file") {
+      if (!file || !imageData) {
+        setError(errors.importFileType);
+        return;
+      }
+      setStep("resolution");
+      return;
+    }
+
+    if (step === "resolution") {
+      setLastResolution(resolution);
+      setRemoveBackground(removeBackground);
+      setStep("palette");
+      return;
+    }
+
+    if (step === "palette") {
+      setLastPalettePreset(palettePreset);
+      setStep("preview");
+      await runPreview();
+      return;
+    }
+
+    if (step === "preview" && projectId) {
+      const loaded = await loadProjectIntoEditor(projectId);
+      if (!loaded.ok) {
+        setError(loaded.message);
+        return;
+      }
+      setHasVisited(true);
+      setLastEntryPath("import");
+      onComplete();
+    }
+  };
+
+  const goBack = () => {
+    setError(null);
+    if (step === "file") {
+      onBack();
+      return;
+    }
+    const prev = IMPORT_WIZARD_STEPS[stepIndex - 1];
+    if (prev) {
+      setStep(prev);
+    }
+  };
+
+  const goToStep = (targetStep: ImportWizardStep) => {
+    const targetIndex = IMPORT_WIZARD_STEPS.indexOf(targetStep);
+    if (targetIndex > stepIndex) {
+      return;
+    }
+    setError(null);
+    setStep(targetStep);
+  };
+
+  const canContinue =
+    step === "file"
+      ? Boolean(file && imageData)
+      : step === "preview"
+        ? Boolean(previewPixels && !isLoading && !error)
+        : true;
+
+  return (
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6 p-6">
+      <div>
+        <h1 className="text-2xl font-semibold text-primary">
+          {copy.importWizardTitle}
+        </h1>
+        <ImportStepIndicator
+          currentStep={step}
+          onStepSelect={goToStep}
+          className="mt-4"
+        />
+      </div>
+
+      <div
+        id="import-wizard-panel-file"
+        role="tabpanel"
+        aria-labelledby="import-wizard-tab-file"
+        hidden={step !== "file"}
+      >
+        {step === "file" ? (
+          <FileDropStep
+            file={file}
+            error={error}
+            onFileSelected={handleFileSelected}
+          />
+        ) : null}
+      </div>
+
+      <div
+        id="import-wizard-panel-resolution"
+        role="tabpanel"
+        aria-labelledby="import-wizard-tab-resolution"
+        hidden={step !== "resolution"}
+      >
+        {step === "resolution" ? (
+          <ResolutionStep
+            value={resolution}
+            onChange={setResolution}
+            removeBackground={removeBackground}
+            onRemoveBackgroundChange={setRemoveBackground}
+          />
+        ) : null}
+      </div>
+
+      <div
+        id="import-wizard-panel-palette"
+        role="tabpanel"
+        aria-labelledby="import-wizard-tab-palette"
+        hidden={step !== "palette"}
+      >
+        {step === "palette" ? (
+          <PalettePresetStep
+            value={palettePreset}
+            onChange={setPalettePreset}
+          />
+        ) : null}
+      </div>
+
+      <div
+        id="import-wizard-panel-preview"
+        role="tabpanel"
+        aria-labelledby="import-wizard-tab-preview"
+        hidden={step !== "preview"}
+      >
+        {step === "preview" && previewPixels ? (
+          <PreviewStep
+            pixels={previewPixels}
+            gridWidth={previewWidth}
+            gridHeight={previewHeight}
+            paletteColors={previewPalette}
+            isLoading={isLoading}
+            error={error}
+          />
+        ) : null}
+
+        {step === "preview" && !previewPixels && isLoading ? (
+          <PreviewStep
+            pixels={new Uint8Array()}
+            gridWidth={resolution}
+            gridHeight={resolution}
+            paletteColors={[]}
+            isLoading
+            error={error}
+          />
+        ) : null}
+
+        {step === "preview" && !previewPixels && !isLoading && error ? (
+          <p className="text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+
+      <div className="flex justify-between gap-3">
+        <Button type="button" variant="secondary" onClick={goBack}>
+          {copy.importWizardBack}
+        </Button>
+        <Button
+          type="button"
+          variant="primary"
+          disabled={!canContinue || isLoading}
+          onClick={() => void goNext()}
+        >
+          {step === "preview" ? copy.importWizardAccept : copy.importWizardNext}
+        </Button>
+      </div>
+    </div>
+  );
+}

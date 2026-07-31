@@ -1,0 +1,214 @@
+import { useState } from "react";
+import { ImagePlus, Pencil } from "lucide-react";
+import { createBlankProject } from "@/api/projects";
+import { Button } from "@/components/ui/Button";
+import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
+import { AnimationFrameCountStep } from "@/components/project/AnimationFrameCountStep";
+import { CanvasSizeStep } from "@/components/project/CanvasSizeStep";
+import type { CanvasSize } from "@/components/project/canvasSize";
+import { matchesResolutionPreset } from "@/components/project/canvasSize";
+import { copy } from "@/content/copy";
+import { errors } from "@/content/errors";
+import { loadProjectIntoEditor } from "@/hooks/useLoadProject";
+import { cn } from "@/lib/cn";
+import { useSessionStore } from "@/state/sessionStore";
+import { useUiStore } from "@/state/uiStore";
+
+type NewProjectPageProps = {
+  onOpenEditor: (entryPath: "blank" | "import") => void;
+  onStartImport: () => void;
+};
+
+export function NewProjectPage({
+  onOpenEditor,
+  onStartImport,
+}: NewProjectPageProps) {
+  const hasVisited = useSessionStore((s) => s.hasVisited);
+  const lastEntryPath = useSessionStore((s) => s.lastEntryPath);
+  const lastCanvasSize = useSessionStore((s) => s.lastCanvasSize);
+  const lastFrameCount = useSessionStore((s) => s.lastFrameCount);
+  const setHasVisited = useSessionStore((s) => s.setHasVisited);
+  const setLastEntryPath = useSessionStore((s) => s.setLastEntryPath);
+  const setLastResolution = useSessionStore((s) => s.setLastResolution);
+  const setLastCanvasSize = useSessionStore((s) => s.setLastCanvasSize);
+  const setLastFrameCount = useSessionStore((s) => s.setLastFrameCount);
+  const setOnboardingDismissed = useUiStore((s) => s.setOnboardingDismissed);
+
+  const [selectedPath, setSelectedPath] = useState<"blank" | "import" | null>(
+    null,
+  );
+  const [canvasSize, setCanvasSize] = useState<CanvasSize>(lastCanvasSize);
+  const [frameCount, setFrameCount] =
+    useState<AnimationFramePreset>(lastFrameCount);
+  const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const createBlank = async (
+    size: CanvasSize,
+    frames: AnimationFramePreset,
+  ) => {
+    setIsCreating(true);
+    setError(null);
+
+    const created = await createBlankProject({
+      name: copy.projectPlaceholder,
+      width: size.width,
+      height: size.height,
+      frameCount: frames,
+      fps: 8,
+      cellSize: 16,
+    });
+
+    if (!created.ok) {
+      setError(created.message);
+      setIsCreating(false);
+      return;
+    }
+
+    const loaded = await loadProjectIntoEditor(created.project.id);
+    if (!loaded.ok) {
+      setError(loaded.message);
+      setIsCreating(false);
+      return;
+    }
+
+    setLastCanvasSize(size);
+    if (matchesResolutionPreset(size, 16)) {
+      setLastResolution(16);
+    } else if (matchesResolutionPreset(size, 32)) {
+      setLastResolution(32);
+    } else if (matchesResolutionPreset(size, 64)) {
+      setLastResolution(64);
+    }
+    setLastFrameCount(frames);
+    setLastEntryPath("blank");
+    setHasVisited(true);
+    setOnboardingDismissed(false);
+    setIsCreating(false);
+    onOpenEditor("blank");
+  };
+
+  const quickStart = async () => {
+    if (lastEntryPath === "import") {
+      onStartImport();
+      return;
+    }
+    await createBlank(lastCanvasSize, lastFrameCount);
+  };
+
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-surface p-6">
+      <div className="w-full max-w-3xl">
+        <header className="mb-8 text-center">
+          <img
+            src="/logo-glyph.svg"
+            alt=""
+            className="mx-auto mb-4 h-12 w-12"
+            width={48}
+            height={48}
+          />
+          <p className="text-sm font-medium uppercase tracking-wide text-accent">
+            {copy.tagline}
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold text-primary">
+            {copy.newProjectTitle}
+          </h1>
+          <p className="mt-2 text-base text-secondary">
+            {copy.newProjectSubtitle}
+          </p>
+        </header>
+
+        {hasVisited ? (
+          <div className="mb-8 flex flex-col items-center gap-3">
+            <Button
+              type="button"
+              variant="primary"
+              className="min-h-12 px-6"
+              disabled={isCreating}
+              onClick={() => void quickStart()}
+            >
+              {lastEntryPath === "import"
+                ? copy.newProjectImportTitle
+                : copy.newProjectQuickStart(
+                    lastCanvasSize.width,
+                    lastCanvasSize.height,
+                  )}
+            </Button>
+            <button
+              type="button"
+              className="text-sm text-secondary underline-offset-2 hover:underline"
+              onClick={() => setSelectedPath(null)}
+            >
+              {copy.newProjectChooseAgain}
+            </button>
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setSelectedPath("blank")}
+            className={cn(
+              "flex min-h-40 flex-col items-center justify-center gap-3 rounded-panel border-2 bg-elevated p-6 text-center transition-colors hover:border-accent",
+              selectedPath === "blank"
+                ? "border-accent bg-accent-muted"
+                : "border-border",
+            )}
+          >
+            <Pencil className="h-10 w-10 text-accent" strokeWidth={1.5} />
+            <span className="text-lg font-semibold text-primary">
+              {copy.newProjectBlankTitle}
+            </span>
+            <span className="text-sm text-secondary">
+              {copy.newProjectBlankDescription}
+            </span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onStartImport()}
+            className={cn(
+              "flex min-h-40 flex-col items-center justify-center gap-3 rounded-panel border-2 border-border bg-elevated p-6 text-center transition-colors hover:border-accent",
+            )}
+          >
+            <ImagePlus className="h-10 w-10 text-accent" strokeWidth={1.5} />
+            <span className="text-lg font-semibold text-primary">
+              {copy.newProjectImportTitle}
+            </span>
+            <span className="text-sm text-secondary">
+              {copy.newProjectImportDescription}
+            </span>
+          </button>
+        </div>
+
+        {selectedPath === "blank" ? (
+          <div className="mt-8 rounded-panel border border-border bg-elevated p-6">
+            <h2 className="mb-4 text-base font-semibold text-primary">
+              {copy.newProjectResolutionLabel}
+            </h2>
+            <CanvasSizeStep value={canvasSize} onChange={setCanvasSize} />
+            <div className="mt-6">
+              <AnimationFrameCountStep value={frameCount} onChange={setFrameCount} />
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button
+                type="button"
+                variant="primary"
+                disabled={isCreating}
+                onClick={() => void createBlank(canvasSize, frameCount)}
+              >
+                {copy.newProjectCreateBlank}
+              </Button>
+            </div>
+          </div>
+        ) : null}
+
+        {error ? (
+          <p className="mt-4 text-center text-sm text-danger" role="alert">
+            {error || errors.createProjectFailed}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}

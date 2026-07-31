@@ -13,11 +13,16 @@ export function useToolInput() {
     return {
       activeColorIndex: state.activeColorIndex,
       activeFrameIndex: state.activeFrameIndex,
+      gridWidth: state.gridWidth,
+      gridHeight: state.gridHeight,
       readOnly: state.readOnly,
+      paletteLocked: state.paletteLocked,
+      paletteColorCount: state.paletteColors.length,
       getPixelIndex: (cell) =>
         state.pixels[cell.y * state.gridWidth + cell.x] ?? 0,
       dispatch: state.dispatch,
       setActiveColorIndex: state.setActiveColorIndex,
+      setActiveTool: state.setActiveTool,
     };
   }, []);
 

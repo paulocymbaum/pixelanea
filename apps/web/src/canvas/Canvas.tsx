@@ -1,4 +1,5 @@
 import { useEditorStore } from "@/state/editorStore";
+import { hasActiveColorFilters } from "@/lib/colorFilters";
 import { useCallback, useEffect, useRef } from "react";
 import {
   isCellInBounds,
@@ -22,6 +23,16 @@ export function Canvas() {
   const gridHeight = useEditorStore((s) => s.gridHeight);
   const pixels = useEditorStore((s) => s.pixels);
   const paletteColors = useEditorStore((s) => s.paletteColors);
+  const activeFrameIndex = useEditorStore((s) => s.activeFrameIndex);
+  const frameCount = useEditorStore((s) => s.frameCount);
+  const framePixelsByIndex = useEditorStore((s) => s.framePixelsByIndex);
+  const onionSkinEnabled = useEditorStore((s) => s.onionSkinEnabled);
+  const colorFilters = useEditorStore((s) => s.colorFilters);
+  const placingLighting = useEditorStore((s) => s.placingLighting);
+  const addColorFilterLightingPoint = useEditorStore(
+    (s) => s.addColorFilterLightingPoint,
+  );
+  const isPlaying = useEditorStore((s) => s.isPlaying);
   const zoom = useEditorStore((s) => s.zoom);
   const panX = useEditorStore((s) => s.panX);
   const panY = useEditorStore((s) => s.panY);
@@ -45,6 +56,19 @@ export function Canvas() {
     const ctx = setupHiDpiCanvas(canvas, cssWidth, cssHeight);
     const tokens = readCanvasTokens(canvas);
 
+    const showOnionSkin =
+      onionSkinEnabled &&
+      !readOnly &&
+      !isPlaying &&
+      frameCount > 1 &&
+      activeFrameIndex > 0;
+    const onionSkinPixels = showOnionSkin
+      ? framePixelsByIndex[activeFrameIndex - 1]
+      : undefined;
+
+    const showFilterPreview =
+      !readOnly && hasActiveColorFilters(colorFilters);
+
     renderGrid({
       ctx,
       cssWidth,
@@ -55,8 +79,26 @@ export function Canvas() {
       paletteColors,
       viewport: { zoom, panX, panY },
       tokens,
+      onionSkinPixels,
+      colorFilters: showFilterPreview ? colorFilters : undefined,
+      showLightingMarkers: showFilterPreview && !isPlaying,
     });
-  }, [gridWidth, gridHeight, pixels, paletteColors, zoom, panX, panY]);
+  }, [
+    gridWidth,
+    gridHeight,
+    pixels,
+    paletteColors,
+    zoom,
+    panX,
+    panY,
+    activeFrameIndex,
+    frameCount,
+    framePixelsByIndex,
+    onionSkinEnabled,
+    colorFilters,
+    readOnly,
+    isPlaying,
+  ]);
 
   useEffect(() => {
     redraw();
@@ -127,25 +169,45 @@ export function Canvas() {
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (cell && !readOnly) {
-      toolInput.onPointerMove(event.nativeEvent, cell);
+    if (!cell || readOnly || placingLighting) {
+      return;
     }
+    toolInput.onPointerMove(event.nativeEvent, cell);
   };
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (cell && !readOnly) {
-      toolInput.onPointerDown(event.nativeEvent, cell);
+    if (!cell || readOnly) {
+      return;
     }
+
+    if (placingLighting) {
+      addColorFilterLightingPoint({
+        x: cell.x,
+        y: cell.y,
+        radius: 5,
+        intensity: 0.5,
+      });
+      return;
+    }
+
+    toolInput.onPointerDown(event.nativeEvent, cell);
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (cell && !readOnly) {
-      toolInput.onPointerUp(event.nativeEvent, cell);
+    if (!cell || readOnly || placingLighting) {
+      return;
     }
+    toolInput.onPointerUp(event.nativeEvent, cell);
   };
+
+  const canvasCursor = readOnly
+    ? "not-allowed"
+    : placingLighting
+      ? "crosshair"
+      : getToolCursor(activeTool);
 
   const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
@@ -173,7 +235,7 @@ export function Canvas() {
         ref={canvasRef}
         className="block h-full w-full touch-none"
         aria-label="Pixel canvas"
-        style={{ cursor: readOnly ? "not-allowed" : getToolCursor(activeTool) }}
+        style={{ cursor: canvasCursor }}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}

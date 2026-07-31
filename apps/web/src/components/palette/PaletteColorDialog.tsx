@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/Dialog";
 import { Button } from "@/components/ui/Button";
 import { copy } from "@/content/copy";
+import { ShadingPalettePicker } from "./ShadingPalettePicker";
 
 export type PaletteColorDialogMode = "add" | "edit";
 
@@ -69,6 +70,11 @@ export function PaletteColorDialog({
             aria-label={copy.paletteColorPickerLabel}
           />
         </div>
+
+        <ShadingPalettePicker
+          baseColor={draftColor}
+          onSelectShade={setDraftColor}
+        />
 
         <DialogFooter>
           <Button

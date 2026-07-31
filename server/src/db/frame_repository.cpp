@@ -169,7 +169,11 @@ domain::Result<domain::DuplicateFramesResult> FrameRepository::duplicate(
   }
 
   const auto& source_frame = source.value();
-  const auto blob = PixelBlobCodec::encode(source_frame.pixels);
+  const auto source_blob = PixelBlobCodec::encode(source_frame.pixels);
+  const std::size_t cell_count =
+      static_cast<std::size_t>(source_frame.width) * static_cast<std::size_t>(source_frame.height);
+  const std::vector<uint8_t> empty_indices(cell_count, 0);
+  const auto empty_blob = PixelBlobCodec::encode(empty_indices);
   const std::string now = domain::utc_now_iso8601();
 
   auto& connection = projects_.connection_for(id);
@@ -196,6 +200,11 @@ domain::Result<domain::DuplicateFramesResult> FrameRepository::duplicate(
       "updated_at) VALUES (?, ?, ?, ?, ?, ?)";
 
   for (int index = 0; index < params.target_frame_count; ++index) {
+    const bool use_source =
+        params.fill_mode == domain::DuplicateFillMode::Copy ||
+        index == params.source_frame_index;
+    const auto& blob = use_source ? source_blob : empty_blob;
+
     sqlite3_stmt* stmt = nullptr;
     if (sqlite3_prepare_v2(connection.handle(), frame_sql, -1, &stmt, nullptr) != SQLITE_OK) {
       return domain::Result<domain::DuplicateFramesResult>::fail(
@@ -251,6 +260,128 @@ domain::Result<domain::DuplicateFramesResult> FrameRepository::duplicate(
   result.project = std::move(project.value());
   result.frames = std::move(frames.value());
   return domain::Result<domain::DuplicateFramesResult>::ok(std::move(result));
+}
+
+domain::Result<domain::FrameMetadata> FrameRepository::copy_frame(
+    const domain::ProjectId& id, const domain::CopyFrameParams& params) {
+  if (!projects_.has(id)) {
+    return domain::Result<domain::FrameMetadata>::fail("project not found");
+  }
+
+  if (params.source_frame_index < 0 || params.target_frame_index < 0) {
+    return domain::Result<domain::FrameMetadata>::fail("invalid frame index");
+  }
+
+  if (params.source_frame_index == params.target_frame_index) {
+    return domain::Result<domain::FrameMetadata>::fail("source and target must differ");
+  }
+
+  auto project = projects_.get(id);
+  if (!project.has_value()) {
+    return domain::Result<domain::FrameMetadata>::fail(project.error());
+  }
+
+  const int frame_count = project.value().frame_count;
+  if (params.source_frame_index >= frame_count || params.target_frame_index >= frame_count) {
+    return domain::Result<domain::FrameMetadata>::fail("frame not found");
+  }
+
+  auto source = get(id, params.source_frame_index);
+  if (!source.has_value()) {
+    return domain::Result<domain::FrameMetadata>::fail("frame not found");
+  }
+
+  domain::Frame target;
+  target.index = params.target_frame_index;
+  target.width = source.value().width;
+  target.height = source.value().height;
+  target.pixels = source.value().pixels;
+
+  const auto saved = put(id, target);
+  if (!saved.has_value()) {
+    return domain::Result<domain::FrameMetadata>::fail(saved.error());
+  }
+
+  log_.info("frame.copied",
+            {{"project_id", id.value},
+             {"source_frame_index", params.source_frame_index},
+             {"target_frame_index", params.target_frame_index}});
+  return saved;
+}
+
+domain::Result<std::vector<domain::FrameMetadata>> FrameRepository::reorder(
+    const domain::ProjectId& id, const domain::ReorderFramesParams& params) {
+  if (!projects_.has(id)) {
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail("project not found");
+  }
+
+  if (params.from_index < 0 || params.to_index < 0) {
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail("invalid frame index");
+  }
+
+  if (params.from_index == params.to_index) {
+    return list(id);
+  }
+
+  auto project = projects_.get(id);
+  if (!project.has_value()) {
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail(project.error());
+  }
+
+  const int frame_count = project.value().frame_count;
+  if (params.from_index >= frame_count || params.to_index >= frame_count) {
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail("frame not found");
+  }
+
+  std::vector<domain::Frame> frames;
+  for (int index = 0; index < frame_count; ++index) {
+    auto frame = get(id, index);
+    if (!frame.has_value()) {
+      return domain::Result<std::vector<domain::FrameMetadata>>::fail(frame.error());
+    }
+    frames.push_back(std::move(frame.value()));
+  }
+
+  const auto moved = std::move(frames[params.from_index]);
+  frames.erase(frames.begin() + params.from_index);
+  frames.insert(frames.begin() + params.to_index, std::move(moved));
+
+  for (int index = 0; index < static_cast<int>(frames.size()); ++index) {
+    frames[index].index = index;
+    const auto saved = put(id, frames[index]);
+    if (!saved.has_value()) {
+      return domain::Result<std::vector<domain::FrameMetadata>>::fail(saved.error());
+    }
+  }
+
+  const std::string now = domain::utc_now_iso8601();
+  auto& connection = projects_.connection_for(id);
+  const char* project_sql = "UPDATE projects SET updated_at = ? WHERE id = ?";
+  sqlite3_stmt* project_stmt = nullptr;
+  if (sqlite3_prepare_v2(connection.handle(), project_sql, -1, &project_stmt, nullptr) !=
+      SQLITE_OK) {
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail(
+        sqlite3_errmsg(connection.handle()));
+  }
+  sqlite3_bind_text(project_stmt, 1, now.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_text(project_stmt, 2, id.value.c_str(), -1, SQLITE_TRANSIENT);
+  if (sqlite3_step(project_stmt) != SQLITE_DONE) {
+    const std::string message = sqlite3_errmsg(connection.handle());
+    sqlite3_finalize(project_stmt);
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail(message);
+  }
+  sqlite3_finalize(project_stmt);
+
+  auto listed = list(id);
+  if (!listed.has_value()) {
+    return domain::Result<std::vector<domain::FrameMetadata>>::fail(listed.error());
+  }
+
+  log_.info("frame.reordered",
+            {{"project_id", id.value},
+             {"from_index", params.from_index},
+             {"to_index", params.to_index}});
+  return listed;
 }
 
 }  // namespace pixelanea::db

@@ -9,5 +9,6 @@ export const eyedropperTool: Tool = {
     }
     const index = ctx.getPixelIndex(cell);
     ctx.setActiveColorIndex(index);
+    ctx.setActiveTool("paint");
   },
 };

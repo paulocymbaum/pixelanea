@@ -1,5 +1,7 @@
 #include "db/connection.hpp"
 
+#include "domain/result.hpp"
+
 #include <sqlite3.h>
 
 #include <stdexcept>
@@ -40,6 +42,16 @@ std::unique_ptr<Connection> Connection::open(const std::filesystem::path& db_pat
   }
 
   return connection;
+}
+
+domain::VoidResult Connection::checkpoint_wal() const {
+  char* err = nullptr;
+  if (sqlite3_exec(db_, "PRAGMA wal_checkpoint(FULL);", nullptr, nullptr, &err) != SQLITE_OK) {
+    const std::string message = err ? err : "failed to checkpoint WAL";
+    sqlite3_free(err);
+    return domain::VoidResult::fail(message);
+  }
+  return domain::VoidResult::ok();
 }
 
 }  // namespace pixelanea::db

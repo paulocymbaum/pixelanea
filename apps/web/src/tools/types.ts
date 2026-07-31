@@ -1,13 +1,19 @@
 import type { CellCoord } from "@/canvas/coordinates";
+import type { ToolId } from "@/content/tools";
 import type { Command } from "@/state/commands/types";
 
 export type ToolContext = {
   activeColorIndex: number;
   activeFrameIndex: number;
+  gridWidth: number;
+  gridHeight: number;
   readOnly: boolean;
+  paletteLocked: boolean;
+  paletteColorCount: number;
   getPixelIndex: (cell: CellCoord) => number;
   dispatch: (command: Command | Command[]) => void;
   setActiveColorIndex: (index: number) => void;
+  setActiveTool: (tool: ToolId) => void;
 };
 
 export interface Tool {

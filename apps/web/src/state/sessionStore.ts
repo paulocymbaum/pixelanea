@@ -1,13 +1,33 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type { PalettePresetId } from "@/components/palette/palettePresets";
+import type { ResolutionPreset } from "@/components/import/resolutionPresets";
+import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
+import type { CanvasSize } from "@/components/project/canvasSize";
+
 export type ThemeMode = "light" | "dark";
+export type EntryPath = "blank" | "import";
 
 type SessionState = {
   theme: ThemeMode | "system";
   palettePanelWidth: number;
+  lastPalettePreset: PalettePresetId | null;
+  hasVisited: boolean;
+  lastEntryPath: EntryPath;
+  lastResolution: ResolutionPreset;
+  lastCanvasSize: CanvasSize;
+  lastFrameCount: AnimationFramePreset;
+  removeBackground: boolean;
   setTheme: (theme: SessionState["theme"]) => void;
   setPalettePanelWidth: (width: number) => void;
+  setLastPalettePreset: (preset: PalettePresetId | null) => void;
+  setHasVisited: (visited: boolean) => void;
+  setLastEntryPath: (path: EntryPath) => void;
+  setLastResolution: (resolution: ResolutionPreset) => void;
+  setLastCanvasSize: (size: CanvasSize) => void;
+  setLastFrameCount: (frameCount: AnimationFramePreset) => void;
+  setRemoveBackground: (removeBackground: boolean) => void;
 };
 
 const STORAGE_KEY = "pixelanea-session";
@@ -17,8 +37,22 @@ export const useSessionStore = create<SessionState>()(
     (set) => ({
       theme: "system",
       palettePanelWidth: 240,
+      lastPalettePreset: null,
+      hasVisited: false,
+      lastEntryPath: "blank",
+      lastResolution: 32,
+      lastCanvasSize: { width: 32, height: 32 },
+      lastFrameCount: 1,
+      removeBackground: true,
       setTheme: (theme) => set({ theme }),
       setPalettePanelWidth: (width) => set({ palettePanelWidth: width }),
+      setLastPalettePreset: (lastPalettePreset) => set({ lastPalettePreset }),
+      setHasVisited: (hasVisited) => set({ hasVisited }),
+      setLastEntryPath: (lastEntryPath) => set({ lastEntryPath }),
+      setLastResolution: (lastResolution) => set({ lastResolution }),
+      setLastCanvasSize: (lastCanvasSize) => set({ lastCanvasSize }),
+      setLastFrameCount: (lastFrameCount) => set({ lastFrameCount }),
+      setRemoveBackground: (removeBackground) => set({ removeBackground }),
     }),
     { name: STORAGE_KEY },
   ),

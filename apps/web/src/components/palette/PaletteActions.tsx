@@ -30,8 +30,6 @@ export function PaletteActions({ className }: PaletteActionsProps) {
   const addPaletteColor = useEditorStore((s) => s.addPaletteColor);
   const updatePaletteColor = useEditorStore((s) => s.updatePaletteColor);
   const removePaletteColor = useEditorStore((s) => s.removePaletteColor);
-  const savePalette = useEditorStore((s) => s.savePalette);
-
   const [colorDialogOpen, setColorDialogOpen] = useState(false);
   const [colorDialogMode, setColorDialogMode] =
     useState<PaletteColorDialogMode>("add");
@@ -40,6 +38,7 @@ export function PaletteActions({ className }: PaletteActionsProps) {
   const activeHex = colors[activeIndex] ?? copy.paletteDefaultNewColor;
   const canAdd = colors.length < PALETTE_MAX_COLORS;
   const canRemove = colors.length > PALETTE_MIN_COLORS;
+  const paletteLocked = useEditorStore((s) => s.paletteLocked);
   const colorInUse = isColorIndexInUse(pixels, activeIndex);
 
   const openColorDialog = (mode: PaletteColorDialogMode) => {
@@ -53,7 +52,6 @@ export function PaletteActions({ className }: PaletteActionsProps) {
     } else {
       updatePaletteColor(activeIndex, hex);
     }
-    savePalette();
   };
 
   const handleRemove = () => {
@@ -78,7 +76,7 @@ export function PaletteActions({ className }: PaletteActionsProps) {
           type="button"
           variant="secondary"
           size="default"
-          disabled={!canAdd}
+          disabled={!canAdd || paletteLocked}
           onClick={() => openColorDialog("add")}
           className="min-h-10"
         >
@@ -89,6 +87,7 @@ export function PaletteActions({ className }: PaletteActionsProps) {
           type="button"
           variant="secondary"
           size="default"
+          disabled={paletteLocked}
           onClick={() => openColorDialog("edit")}
           className="min-h-10"
         >
@@ -99,7 +98,7 @@ export function PaletteActions({ className }: PaletteActionsProps) {
           type="button"
           variant="secondary"
           size="default"
-          disabled={!canRemove}
+          disabled={!canRemove || paletteLocked}
           onClick={handleRemove}
           className="min-h-10"
         >

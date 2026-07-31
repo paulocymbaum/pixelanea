@@ -1,4 +1,9 @@
+import { ColorFiltersSection } from "@/components/filters/ColorFiltersSection";
 import { PaletteActions } from "@/components/palette/PaletteActions";
+import { PaletteLock } from "@/components/palette/PaletteLock";
+import { PalettePresets } from "@/components/palette/PalettePresets";
+import { PaletteSaveButton } from "@/components/palette/PaletteSaveButton";
+import { PaletteShadingSection } from "@/components/palette/PaletteShadingSection";
 import { PaletteSwatchGrid } from "@/components/palette/PaletteSwatchGrid";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
@@ -38,23 +43,30 @@ export function RightPalettePanel() {
       style={{ width }}
       aria-label="Palette"
     >
-      <div className="flex items-center justify-between border-b border-border px-3 py-2">
+      <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2">
         <h2 className="text-md font-medium text-primary">Palette</h2>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={toggle}
-          aria-label="Collapse palette panel"
-        >
+        <div className="flex items-center gap-2">
+          {projectId ? <PaletteLock /> : null}
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={toggle}
+            aria-label="Collapse palette panel"
+          >
           <ChevronRight className="h-5 w-5" strokeWidth={1.5} />
-        </Button>
+          </Button>
+        </div>
       </div>
       <div className="flex flex-1 flex-col overflow-y-auto">
         {projectId ? (
           <>
             <PaletteSwatchGrid />
+            <PaletteShadingSection />
+            <ColorFiltersSection />
+            <PalettePresets />
             <PaletteActions />
+            <PaletteSaveButton />
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center p-4 text-secondary">
