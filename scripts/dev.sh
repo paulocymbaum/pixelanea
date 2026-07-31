@@ -208,10 +208,7 @@ start_frontend() {
     exit 1
   fi
 
-  if [[ ! -d "${ROOT_DIR}/node_modules" ]]; then
-    echo "==> Installing frontend dependencies..."
-    (cd "${ROOT_DIR}" && pnpm install)
-  fi
+  "${ROOT_DIR}/scripts/deps-cache.sh" install
 
   echo "==> Starting Vite on ${VITE_URL} (proxies /api → ${API_URL})"
   cd "${ROOT_DIR}"

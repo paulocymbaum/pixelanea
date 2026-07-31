@@ -53,10 +53,14 @@ ProjectRepository::ProjectRepository(logging::Logger& logger)
 domain::Result<domain::Project> ProjectRepository::create(
     const domain::CreateProjectParams& params) {
   if (params.name.empty() || params.width <= 0 || params.height <= 0) {
+    log_.warn("project.create_invalid_params", {{"name", params.name}, {"width", params.width},
+                                                 {"height", params.height}});
     return domain::Result<domain::Project>::fail("invalid project parameters");
   }
   if (params.frame_count != 1 && params.frame_count != 8 && params.frame_count != 16 &&
       params.frame_count != 32) {
+    log_.warn("project.create_invalid_params",
+              {{"frame_count", params.frame_count}});
     return domain::Result<domain::Project>::fail("frameCount must be 1, 8, 16, or 32");
   }
 
@@ -152,7 +156,9 @@ domain::Result<domain::Project> ProjectRepository::update(
       "WHERE id = ?";
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
-    return domain::Result<domain::Project>::fail(sqlite3_errmsg(connection.handle()));
+    const std::string message = sqlite3_errmsg(connection.handle());
+    log_.error("project.update_failed", {{"project_id", id.value}, {"error", message}});
+    return domain::Result<domain::Project>::fail(message);
   }
 
   const std::string asset_type = domain::asset_type_to_string(project.asset_type);
@@ -166,6 +172,7 @@ domain::Result<domain::Project> ProjectRepository::update(
   if (sqlite3_step(stmt) != SQLITE_DONE) {
     const std::string message = sqlite3_errmsg(connection.handle());
     sqlite3_finalize(stmt);
+    log_.error("project.update_failed", {{"project_id", id.value}, {"error", message}});
     return domain::Result<domain::Project>::fail(message);
   }
   sqlite3_finalize(stmt);
@@ -195,6 +202,8 @@ domain::Result<domain::Project> ProjectRepository::open_from_bundle(
   if (!unpacked.has_value()) {
     std::error_code ec;
     std::filesystem::remove_all(extract_dir, ec);
+    log_.error("project.unpack_bundle_failed",
+               {{"bundle_path", bundle_path.string()}, {"error", unpacked.error()}});
     return domain::Result<domain::Project>::fail(unpacked.error());
   }
 
@@ -214,6 +223,9 @@ domain::Result<domain::Project> ProjectRepository::open_from_bundle(
     if (has(project.value().id)) {
       std::error_code ec;
       std::filesystem::remove_all(extract_dir, ec);
+      log_.warn("project.already_open",
+                {{"project_id", project.value().id.value},
+                 {"bundle_path", bundle_path.string()}});
       return domain::Result<domain::Project>::fail("project is already open");
     }
 
@@ -252,18 +264,30 @@ domain::VoidResult ProjectRepository::save_to_bundle(const domain::ProjectId& id
   auto& handle = projects_.at(id.value);
   const auto checkpoint = handle.connection->checkpoint_wal();
   if (!checkpoint.has_value()) {
+    log_.error("project.checkpoint_failed",
+               {{"project_id", id.value}, {"error", checkpoint.error()}});
     return checkpoint;
   }
 
   const auto updated = update(id, domain::UpdateProjectParams{});
   if (!updated.has_value()) {
+    log_.error("project.save_prepare_failed",
+               {{"project_id", id.value}, {"error", updated.error()}});
     return domain::VoidResult::fail(updated.error());
   }
 
   bundle::PackBundleParams params;
   params.db_path = handle.db_path;
   params.project = updated.value();
-  return bundle::pack_bundle(params, bundle_path);
+  const auto packed = bundle::pack_bundle(params, bundle_path);
+  if (!packed.has_value()) {
+    log_.error("project.pack_bundle_failed",
+               {{"project_id", id.value},
+                {"bundle_path", bundle_path.string()},
+                {"error", packed.error()}});
+    return packed;
+  }
+  return domain::VoidResult::ok();
 }
 
 Connection& ProjectRepository::connection_for(const domain::ProjectId& id) {

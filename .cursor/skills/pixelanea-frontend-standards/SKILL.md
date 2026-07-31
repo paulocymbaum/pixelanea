@@ -60,7 +60,7 @@ Pixelanea frontend is split into **chrome** (modern app UI) and **viewport** (pi
 | **UI primitives** | `components/ui/` | Button, Dialog, Tooltip, Slider — Radix + CVA + tokens | [DESIGN § Components](DESIGN.md) — 40×40 touch targets, focus rings |
 | **Canvas** | `canvas/` | Coordinates, renderer, input router; functional canvas tokens | [DESIGN § Canvas rendering](DESIGN.md) — HiDPI, no brand in viewport |
 | **Tools** | `tools/` | Pointer/keyboard → `Command`; respect `readOnly` | Built-in tools table in ARCHITECTURE.md |
-| **State** | `state/` | Editor store, UI store, session persistence, shortcuts | Undo cap 500; debounced autosave; panel collapse memory |
+| **State** | `state/` | Editor store, UI store, session persistence, sync coordinator, shortcuts | Undo cap 500; debounced autosave via `SyncCoordinator`; panel collapse memory |
 | **Content** | `content/` | Externalized microcopy (i18n-ready) | [UX § microcopy](UX.md) — plain language, no error codes |
 | **API** | `api/` | Thin wrappers over generated OpenAPI client | Contract-first; Vite proxy `/api` → `127.0.0.1:8787` |
 | **Styles** | `styles/` | CSS variables, Tailwind extension, theme | [DESIGN § tokens](DESIGN.md) — light/dark, `prefers-reduced-motion` |
@@ -99,8 +99,10 @@ Organize by UX domain, not by atomic design level:
 | `uiStore` | Session | Panel open/collapse, onboarding dismissed, wizard step |
 | `sessionStore` | `localStorage` | Theme, last palette preset, panel collapse, first-visit preference |
 | `shortcuts.ts` | — | Single keyboard map (colors 1–9, tools, undo, zoom) |
+| `persist.ts` | — | Façade over `sync/SyncCoordinator` — **only** autosave entry point |
+| `sync/` | — | Serialized frame/palette PUT queue, snapshot cloning, coalescing |
 
-Debounce autosave lives in one module (`state/persist.ts` or `api/frames.ts`) — not per component.
+Backend sync lives in **`state/persist.ts` + `state/sync/`** — not in components, tools, or `api/` callers. See [When to use the sync layer](#when-to-use-the-sync-layer) below.
 
 ### Content layer (`content/`)
 
@@ -182,7 +184,7 @@ Canvas renderer reads functional tokens (`checker-a`, `grid-line`, `onion-skin`)
 - **One API contract:** `contracts/openapi.yaml` → generated TS client.
 - **One coordinate system:** `canvas/coordinates.ts` only.
 - **One undo path:** `Command` → store → local grid update.
-- **One autosave policy:** debounced `PUT /frames/{index}` in one module.
+- **One autosave policy:** `scheduleFrameSync` / `schedulePaletteSync` via `state/persist.ts` → `SyncCoordinator` — never per-component timers or direct `saveFrame`/`savePalette` from UI.
 - **One design source:** [DESIGN.md](../../../DESIGN.md) tokens — no hard-coded hex in components.
 - **One keyboard map:** `state/shortcuts.ts` — no scattered `useEffect` key listeners.
 - **One copy source:** `content/` — no duplicate error strings.
@@ -213,7 +215,7 @@ Canvas renderer reads functional tokens (`checker-a`, `grid-line`, `onion-skin`)
 | Paint drag | 60fps feel | Local grid mutation; redraw affected cells only |
 | Frame switch | Instant | Local frame cache; prefetch adjacent frames |
 | Animation playback | Steady FPS | `requestAnimationFrame` + FPS timing; `readOnly` canvas |
-| Autosave | Non-blocking | Debounce `PUT /frames`; never await on pointer move |
+| Autosave | Non-blocking | `scheduleFrameSync` / `schedulePaletteSync`; `flush*` before switch/save/export |
 | Panel toggle | 150ms | CSS transition; respect `prefers-reduced-motion` |
 
 Canvas: subscribe to grid/frame slices only; cache checkerboard off hot path; grid lines at ≥8× zoom only.
@@ -227,8 +229,28 @@ pointer event → canvas (cell coord) → active Tool → Command | void
                                                       ↓
                               local grid update + undo push + canvas redraw
                                                       ↓
-                              debounced PUT /frames/{index} (on save/autosave)
+                              scheduleFrameSync / schedulePaletteSync (debounced)
+                                                      ↓
+                              SyncCoordinator → PUT /frames | PUT /palette
+                                                      ↓
+                              flush* before frame switch, save bundle, export, play
 ```
+
+## When to use the sync layer
+
+All backend persistence for the active frame and palette goes through **`state/persist.ts`**. The coordinator (`state/sync/SyncCoordinator`) handles debounce, serialization, and race prevention.
+
+| You need to… | Call | Do **not** |
+|--------------|------|------------|
+| Persist after paint / undo / palette edit | `scheduleFrameSync()` / `schedulePaletteSync()` from `editorStore` | `saveFrame` / `savePalette` in components |
+| Guarantee data is on server before next step | `flushFrameSync()`, `flushPaletteSync()`, or `flushAllSync()` | `await schedule*` (schedule is fire-and-forget) |
+| Switch frame or reload frame list | `await flushFrameSync()` when `isDirty` | Skip flush and load next frame |
+| Save `.pixelanea` bundle | `await flushAllSync()` | Save while debounce timer pending without flush |
+| Export spritesheet/GIF or start playback | `await flushFrameSync()` when dirty | Export from stale local-only grid |
+| Open / load new project | `resetPersistState()` | Leave in-flight PUT callbacks updating old project |
+| User clicks palette Save | `flushPaletteSync()` (via `editorStore.savePalette`) | Second debounce path in the panel |
+
+**Add new sync behavior** by extending `SyncCoordinator` or `persist.ts` — not by adding `setTimeout` in a component. **Never** split frame blobs into partial updates; always send the full `Uint8Array` per frame.
 
 Import pixelate: `components/import/` → `POST /import/pixelate` → frame load → render. No client-side quantization.
 
@@ -245,7 +267,7 @@ Before merging `apps/web` changes:
 - [ ] User copy from `content/`, not inline strings (except dev-only)
 - [ ] Progressive disclosure rules respected (frame strip, technical info, confirms)
 - [ ] Toolbar tools have icon + label; active state uses border + weight
-- [ ] Autosave through shared debounced path
+- [ ] Autosave through `persist.ts` / `SyncCoordinator` (no direct `saveFrame`/`savePalette` in UI)
 - [ ] OpenAPI updated + client regenerated if API changed
 
 ## Additional resources

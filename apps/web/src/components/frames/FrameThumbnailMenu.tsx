@@ -24,7 +24,7 @@ export function FrameThumbnailMenu({
   const projectId = useEditorStore((s) => s.projectId);
   const framePixelsByIndex = useEditorStore((s) => s.framePixelsByIndex);
   const applyFramePixelsAtIndex = useEditorStore((s) => s.applyFramePixelsAtIndex);
-  const setSyncStatus = useEditorStore((s) => s.setSyncStatus);
+  const setFrameSyncStatus = useEditorStore((s) => s.setFrameSyncStatus);
 
   const handleCopyFrom = async (sourceIndex: number) => {
     if (!projectId || sourceIndex === frameIndex) {
@@ -37,7 +37,7 @@ export function FrameThumbnailMenu({
     });
 
     if (!result.ok) {
-      setSyncStatus("error", result.message);
+      setFrameSyncStatus("error", result.message);
       return;
     }
 
@@ -49,7 +49,7 @@ export function FrameThumbnailMenu({
 
     const fetched = await fetchFrame(projectId, frameIndex);
     if (!fetched.ok) {
-      setSyncStatus("error", fetched.message);
+      setFrameSyncStatus("error", fetched.message);
       return;
     }
 

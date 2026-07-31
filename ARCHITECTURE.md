@@ -117,9 +117,11 @@ pages/           → route-level composition
 components/      → palette, toolbar, frame picker, animation controls
 canvas/          → viewport, coordinate transforms, renderer
 tools/           → paint, eraser, eyedropper, frame tools
-state/           → editor store (active tool, color, frame, undo stack)
+state/           → editor store, sync coordinator, undo stack
 api/             → generated client from contracts/openapi.yaml
 ```
+
+`state/persist.ts` is the **only** entry point for scheduling or flushing backend writes. It delegates to `state/sync/SyncCoordinator` — see [Backend sync](#backend-sync-synccoordinator) below.
 
 ### Canvas
 
@@ -170,7 +172,51 @@ interface Tool {
 | **Frame duplicate** | Copies current art into an 8, 16, or 32 frame set |
 | **Import pixelate** | Sends source image to backend; receives pixel grid |
 
-Global **Undo** (Ctrl+Z) and **Redo** (Ctrl+Shift+Z) operate on a command stack in the frontend for instant feedback. The stack is flushed to the backend on save or debounced autosave.
+Global **Undo** (Ctrl+Z) and **Redo** (Ctrl+Shift+Z) operate on a command stack in the frontend for instant feedback. The stack is flushed to the backend via the [sync coordinator](#backend-sync-synccoordinator) on save, frame switch, export, or debounced autosave.
+
+### Backend sync (SyncCoordinator)
+
+Local grid edits are instant; persistence to the C++ API is **asynchronous** and must not race. `state/sync/SyncCoordinator` serializes outbound `PUT` requests per resource key and coalesces rapid mutations into the latest snapshot.
+
+```text
+pointer → Tool → Command → editorStore.dispatch (local pixels + isDirty)
+                                    ↓
+                          persist.scheduleFrameSync()  ─┐
+                          persist.schedulePaletteSync() ─┤ debounce 500ms
+                                    ↓                    │
+                          SyncCoordinator                │
+                            ├── lane frame:{projectId}:{index}  (serial)
+                            └── lane palette:{projectId}          (serial)
+                                    ↓
+                          api/frames.saveFrame | api/palette.savePalette
+```
+
+| Module | Role |
+|--------|------|
+| `state/persist.ts` | Public façade: `schedule*`, `flush*`, `reset` — **only** module that components/store call for backend sync |
+| `state/sync/syncCoordinator.ts` | Debounce, per-key queue, in-flight coalescing, epoch reset |
+| `state/sync/snapshots.ts` | Clone frame/palette buffers from `editorStore` (no aliasing live memory) |
+| `state/sync/types.ts` | `SyncKey`, snapshot types, `SYNC_DEBOUNCE_MS` |
+
+**Lane rules:**
+
+- One in-flight HTTP request per key (`frame:proj:0`, `palette:proj`).
+- Edits during an in-flight `PUT` **replace** the pending snapshot (latest-wins); no parallel writes for the same key.
+- Frame and palette lanes may run **in parallel** (different keys).
+- Always send **full** frame blobs and palette arrays — no partial PATCH.
+
+**When to use `schedule*` vs `flush*`:**
+
+| Situation | API | Why |
+|-----------|-----|-----|
+| Paint, undo, redo, palette edit | `scheduleFrameSync()` / `schedulePaletteSync()` | Debounce bursts; coalesce under load |
+| Frame switch, reload frames | `flushFrameSync()` | Must persist active frame before loading another |
+| Save / Save As bundle | `flushAllSync()` | Bundle must reflect latest frame + palette |
+| Export spritesheet / GIF, start playback | `flushFrameSync()` | Downstream reads need committed grid |
+| Open / new project | `resetPersistState()` | Cancel timers; invalidate in-flight callbacks |
+| Immediate palette save button | `flushPaletteSync()` | User expects instant persist |
+
+**Do not:** call `api/frames.saveFrame` or `api/palette.savePalette` from components, tools, or canvas. **Do not:** add per-component debounce timers or `setTimeout` for autosave.
 
 ### Animation preview
 
@@ -446,7 +492,8 @@ sequenceDiagram
     Store->>Store: push undo stack, update local grid
     Canvas->>Canvas: re-render cell
 
-    Note over Store,API: debounced autosave (or explicit save)
+    Note over Store,API: scheduleFrameSync (debounced) or flush* (explicit)
+    Store->>Store: SyncCoordinator coalesce + serial PUT
     Store->>API: PUT /frames/0
     API->>DB: UPDATE frames SET pixel_blob = ...
 
@@ -499,7 +546,7 @@ class PaintCellCommand implements Command {
 
 - Stack cap: 500 commands (configurable)
 - Eraser tool produces `ClearCellCommand` (same undo path as paint)
-- Save/autosave persists the **resulting grid**, not the full command history
+- Save/autosave persists the **resulting grid**, not the full command history (via `SyncCoordinator`; see [Backend sync](#backend-sync-synccoordinator))
 - Optional future: `history_checkpoints` table for session recovery
 
 ---

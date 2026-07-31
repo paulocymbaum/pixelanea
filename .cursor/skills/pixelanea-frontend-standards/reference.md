@@ -39,7 +39,8 @@ apps/web/src/
 │   ├── sessionStore.ts          # theme, collapse prefs (localStorage)
 │   ├── shortcuts.ts             # single keyboard map
 │   ├── commands/                # PaintCellCommand, ClearCellCommand, …
-│   └── persist.ts               # debounced frame PUT
+│   ├── persist.ts               # façade: schedule* / flush* / reset
+│   └── sync/                    # SyncCoordinator, snapshots, types
 ├── content/
 │   ├── copy.ts                  # success, empty states
 │   ├── errors.ts                # user-facing error strings
@@ -244,7 +245,48 @@ interface Command {
 }
 ```
 
-Stack cap: 500. Save persists resulting grid, not history.
+Stack cap: 500. Save persists resulting grid, not history (via `SyncCoordinator`).
+
+## Backend sync (`state/persist.ts` + `state/sync/`)
+
+The sync layer (sometimes called the “throttle layer” in planning docs) is **not** a pointer-event throttle. It is a **serialized write coordinator**: debounce + per-key queue + latest-wins coalescing for `PUT /frames` and `PUT /palette`.
+
+```text
+editorStore mutation → scheduleFrameSync | schedulePaletteSync
+                              ↓
+                     SyncCoordinator (500ms debounce per lane)
+                              ↓
+                     api/frames | api/palette
+```
+
+### When to use
+
+| API | Use when |
+|-----|----------|
+| `scheduleFrameSync()` | After `dispatch`, undo, redo — paint path; debounced |
+| `schedulePaletteSync()` | After palette add/edit/remove/preset; debounced |
+| `flushFrameSync()` | Before frame switch, export, playback; `await` when `isDirty` |
+| `flushPaletteSync()` | Palette Save button; immediate persist |
+| `flushAllSync()` | Before bundle save (`useProjectFileActions`) |
+| `resetPersistState()` | On project load / open — cancel pending work |
+
+### When **not** to use / anti-patterns
+
+- **Do not** call `saveFrame` / `savePalette` from `components/`, `canvas/`, or `tools/`.
+- **Do not** add component-level `setTimeout` debounce for autosave.
+- **Do not** `await` on pointer-move paths — only `schedule*`.
+- **Do not** partial frame PATCH — full `Uint8Array` per PUT only.
+
+### Modules
+
+| File | Role |
+|------|------|
+| `persist.ts` | Public API; wires store callbacks to coordinator |
+| `sync/syncCoordinator.ts` | Serial queue, in-flight coalesce, epoch reset |
+| `sync/snapshots.ts` | Clone pixels/colors from `editorStore` |
+| `sync/types.ts` | `SyncKey`, `SYNC_DEBOUNCE_MS` |
+
+See [ARCHITECTURE.md](../../../ARCHITECTURE.md#backend-sync-synccoordinator) for the full lane diagram.
 
 ## Keyboard map (`state/shortcuts.ts`)
 
@@ -392,6 +434,8 @@ No emoji celebrations; no raw HTTP codes in UI.
 | 12 dockable panels | Max 6–8 tools; collapsible right panel |
 | Modal on tool switch | 0ms switch; no dialog |
 | Scattered `keydown` listeners | `state/shortcuts.ts` |
+| Direct `saveFrame` / `savePalette` in components | `persist.schedule*` / `persist.flush*` |
+| Per-component autosave `setTimeout` | `state/sync/SyncCoordinator` |
 | DOM overlay on canvas cells | Canvas 2D only |
 | Theme hard-coded in components | `styles/tokens.css` + `sessionStore.theme` |
 
@@ -415,7 +459,7 @@ No emoji celebrations; no raw HTTP codes in UI.
 5. `state/editorStore` + commands
 6. `tools/` + `toolbar/`
 7. `pages/EditorPage` wire-up
-8. `api/` + persist debounce
+8. `api/` + `persist.ts` / `sync/SyncCoordinator`
 9. `components/import/` wizard (Casey flow)
 10. `components/animation/` + frame strip
 11. `content/` pass for all strings
@@ -430,6 +474,7 @@ No emoji celebrations; no raw HTTP codes in UI.
 | **Palette** | Ordered colors; may be locked |
 | **Bundle** | `.pixelanea` ZIP — backend only |
 | **Command** | Reversible edit for undo/redo |
+| **Sync lane** | Serialized PUT queue: `frame:{project}:{index}` or `palette:{project}` |
 | **Tool** | Interaction mode (paint, eraser, …) |
 | **Chrome** | App shell outside the canvas viewport |
 | **Viewport** | Canvas area where pixel art is drawn |

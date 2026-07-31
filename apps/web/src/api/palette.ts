@@ -1,6 +1,6 @@
 import type { Palette, PutPaletteRequest } from "@pixelanea/api-client";
 import { getApiClient } from "./client";
-import { mapApiError } from "./errors";
+import { logAndMapApiError } from "@/logging/apiError";
 
 /** Map API palette slots to a sparse color array indexed by pixel palette index. */
 export function paletteColorsFromApi(palette: Palette): string[] {
@@ -53,7 +53,10 @@ export async function savePalette(
     await getApiClient().putPalette(projectId, paletteColorsToApi(colors));
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("savePalette", error, { projectId }),
+    };
   }
 }
 
@@ -68,7 +71,10 @@ export async function saveImportPalette(
     );
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("saveImportPalette", error, { projectId }),
+    };
   }
 }
 
@@ -79,6 +85,9 @@ export async function fetchPalette(
     const palette = await getApiClient().getPalette(projectId);
     return { ok: true, palette };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("fetchPalette", error, { projectId }),
+    };
   }
 }

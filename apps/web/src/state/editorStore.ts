@@ -22,8 +22,10 @@ import {
   flushFrameSync,
   flushPaletteSync,
   scheduleFrameSync,
+  schedulePaletteSync,
 } from "@/state/persist";
 import { fetchFrame, pixelsFromFrame } from "@/api/frames";
+import { logger } from "@/logging/logger";
 import { resolveAllFramePixels, writeFramePixels } from "@/state/frameCache";
 import {
   computeFilterCellChanges,
@@ -43,6 +45,22 @@ function createEmptyPixels(width: number, height: number): Uint8Array {
 }
 
 export type SyncStatus = "idle" | "syncing" | "error";
+
+function reconcileDerivedSync(
+  frameSyncStatus: SyncStatus,
+  paletteSyncStatus: SyncStatus,
+  frameSyncError: string | null,
+  paletteSyncError: string | null,
+): { syncStatus: SyncStatus; syncError: string | null } {
+  const syncStatus: SyncStatus =
+    frameSyncStatus === "error" || paletteSyncStatus === "error"
+      ? "error"
+      : frameSyncStatus === "syncing" || paletteSyncStatus === "syncing"
+        ? "syncing"
+        : "idle";
+  const syncError = frameSyncError ?? paletteSyncError;
+  return { syncStatus, syncError };
+}
 
 type EditorState = {
   projectId: string | null;
@@ -73,7 +91,11 @@ type EditorState = {
   redoStack: Command[];
   isDirty: boolean;
   isPaletteDirty: boolean;
+  frameSyncStatus: SyncStatus;
+  paletteSyncStatus: SyncStatus;
   syncStatus: SyncStatus;
+  frameSyncError: string | null;
+  paletteSyncError: string | null;
   syncError: string | null;
   bundlePath: string | null;
   assetType: AssetType;
@@ -128,7 +150,8 @@ type EditorState = {
   savePalette: () => void;
   markFrameSynced: () => void;
   markPaletteSynced: () => void;
-  setSyncStatus: (status: SyncStatus, error?: string | null) => void;
+  setFrameSyncStatus: (status: SyncStatus, error?: string | null) => void;
+  setPaletteSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setBundlePath: (path: string | null) => void;
   setAssetType: (assetType: AssetType) => void;
   reloadAllFrames: (
@@ -182,7 +205,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   redoStack: [],
   isDirty: false,
   isPaletteDirty: false,
+  frameSyncStatus: "idle",
+  paletteSyncStatus: "idle",
   syncStatus: "idle",
+  frameSyncError: null,
+  paletteSyncError: null,
   syncError: null,
   bundlePath: null,
   assetType: DEFAULT_ASSET_TYPE,
@@ -214,7 +241,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       redoStack: [],
       isDirty: false,
       isPaletteDirty: false,
+      frameSyncStatus: "idle",
+      paletteSyncStatus: "idle",
       syncStatus: "idle",
+      frameSyncError: null,
+      paletteSyncError: null,
       syncError: null,
       isPlaying: false,
       readOnly: false,
@@ -256,9 +287,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       paletteColors,
       activeColorIndex,
       isPaletteDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      paletteSyncStatus: "idle",
+      paletteSyncError: null,
+      ...reconcileDerivedSync(
+        state.frameSyncStatus,
+        "idle",
+        state.frameSyncError,
+        null,
+      ),
     });
+    schedulePaletteSync();
   },
 
   switchFrame: async (index) => {
@@ -288,7 +326,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     if (!nextPixels && state.projectId) {
       const result = await fetchFrame(state.projectId, index);
       if (!result.ok) {
-        get().setSyncStatus("error", result.message);
+        logger.error("editorStore", "switch_frame_fetch_failed", {
+          projectId: state.projectId,
+          frameIndex: index,
+          message: result.message,
+        });
+        get().setFrameSyncStatus("error", result.message);
         return;
       }
       nextPixels = pixelsFromFrame(result.frame);
@@ -305,8 +348,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: [],
       redoStack: [],
       isDirty: false,
-      syncStatus: "idle",
-      syncError: null,
+      frameSyncStatus: "idle",
+      paletteSyncStatus: "idle",
+      frameSyncError: null,
+      paletteSyncError: null,
+      ...reconcileDerivedSync("idle", "idle", null, null),
     });
   },
 
@@ -498,8 +544,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: pushCommands(state.undoStack, commands),
       redoStack: [],
       isDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      frameSyncStatus: "idle",
+      frameSyncError: null,
+      ...reconcileDerivedSync(
+        "idle",
+        get().paletteSyncStatus,
+        null,
+        get().paletteSyncError,
+      ),
     });
 
     scheduleFrameSync();
@@ -525,8 +577,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: state.undoStack.slice(0, -1),
       redoStack: [...state.redoStack, command],
       isDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      frameSyncStatus: "idle",
+      frameSyncError: null,
+      ...reconcileDerivedSync(
+        "idle",
+        state.paletteSyncStatus,
+        null,
+        state.paletteSyncError,
+      ),
     });
 
     scheduleFrameSync();
@@ -552,8 +610,14 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: pushCommands(state.undoStack, [command]),
       redoStack: state.redoStack.slice(0, -1),
       isDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      frameSyncStatus: "idle",
+      frameSyncError: null,
+      ...reconcileDerivedSync(
+        "idle",
+        state.paletteSyncStatus,
+        null,
+        state.paletteSyncError,
+      ),
     });
 
     scheduleFrameSync();
@@ -575,9 +639,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       paletteColors,
       activeColorIndex: paletteColors.length - 1,
       isPaletteDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      paletteSyncStatus: "idle",
+      paletteSyncError: null,
+      ...reconcileDerivedSync(
+        get().frameSyncStatus,
+        "idle",
+        get().frameSyncError,
+        null,
+      ),
     });
+    schedulePaletteSync();
   },
 
   updatePaletteColor: (index, hexInput) => {
@@ -597,9 +668,16 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       paletteColors,
       isPaletteDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      paletteSyncStatus: "idle",
+      paletteSyncError: null,
+      ...reconcileDerivedSync(
+        state.frameSyncStatus,
+        "idle",
+        state.frameSyncError,
+        null,
+      ),
     });
+    schedulePaletteSync();
   },
 
   savePalette: () => {
@@ -638,31 +716,80 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeColorIndex,
       isDirty: true,
       isPaletteDirty: true,
-      syncStatus: "idle",
-      syncError: null,
+      frameSyncStatus: "idle",
+      paletteSyncStatus: "idle",
+      frameSyncError: null,
+      paletteSyncError: null,
+      ...reconcileDerivedSync("idle", "idle", null, null),
     });
 
     scheduleFrameSync();
+    schedulePaletteSync();
   },
 
   markFrameSynced: () =>
-    set((state) => ({
-      isDirty: false,
-      ...(state.isPaletteDirty
-        ? {}
-        : { syncStatus: "idle" as SyncStatus, syncError: null }),
-    })),
+    set((state) => {
+      const frameSyncStatus: SyncStatus = "idle";
+      const frameSyncError = null;
+      return {
+        isDirty: false,
+        frameSyncStatus,
+        frameSyncError,
+        ...reconcileDerivedSync(
+          frameSyncStatus,
+          state.paletteSyncStatus,
+          frameSyncError,
+          state.paletteSyncError,
+        ),
+      };
+    }),
 
   markPaletteSynced: () =>
-    set((state) => ({
-      isPaletteDirty: false,
-      ...(state.isDirty
-        ? {}
-        : { syncStatus: "idle" as SyncStatus, syncError: null }),
-    })),
+    set((state) => {
+      const paletteSyncStatus: SyncStatus = "idle";
+      const paletteSyncError = null;
+      return {
+        isPaletteDirty: false,
+        paletteSyncStatus,
+        paletteSyncError,
+        ...reconcileDerivedSync(
+          state.frameSyncStatus,
+          paletteSyncStatus,
+          state.frameSyncError,
+          paletteSyncError,
+        ),
+      };
+    }),
 
-  setSyncStatus: (status, error = null) =>
-    set({ syncStatus: status, syncError: error }),
+  setFrameSyncStatus: (status, error = null) =>
+    set((state) => {
+      const frameSyncError = status === "error" ? error : null;
+      return {
+        frameSyncStatus: status,
+        frameSyncError,
+        ...reconcileDerivedSync(
+          status,
+          state.paletteSyncStatus,
+          frameSyncError,
+          state.paletteSyncError,
+        ),
+      };
+    }),
+
+  setPaletteSyncStatus: (status, error = null) =>
+    set((state) => {
+      const paletteSyncError = status === "error" ? error : null;
+      return {
+        paletteSyncStatus: status,
+        paletteSyncError,
+        ...reconcileDerivedSync(
+          state.frameSyncStatus,
+          status,
+          state.frameSyncError,
+          paletteSyncError,
+        ),
+      };
+    }),
 
   setBundlePath: (bundlePath) => set({ bundlePath }),
   setAssetType: (assetType) => set({ assetType }),
@@ -689,7 +816,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
 
     if (!result.ok) {
-      get().setSyncStatus("error", result.message);
+      logger.error("editorStore", "reload_all_frames_failed", {
+        projectId: state.projectId,
+        frameCount,
+        message: result.message,
+      });
+      get().setFrameSyncStatus("error", result.message);
       return { ok: false };
     }
 
@@ -703,8 +835,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: [],
       redoStack: [],
       isDirty: false,
-      syncStatus: "idle",
-      syncError: null,
+      frameSyncStatus: "idle",
+      paletteSyncStatus: "idle",
+      frameSyncError: null,
+      paletteSyncError: null,
+      ...reconcileDerivedSync("idle", "idle", null, null),
     });
 
     return { ok: true };
@@ -725,8 +860,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         undoStack: [],
         redoStack: [],
         isDirty: false,
-        syncStatus: "idle",
-        syncError: null,
+        frameSyncStatus: "idle",
+        paletteSyncStatus: "idle",
+        frameSyncError: null,
+        paletteSyncError: null,
+        ...reconcileDerivedSync("idle", "idle", null, null),
       });
       return;
     }

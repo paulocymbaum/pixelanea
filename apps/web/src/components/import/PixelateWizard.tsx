@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { pixelateImage } from "@/api/import";
 import { createBlankProject } from "@/api/projects";
+import { errorDetail, logger } from "@/logging/logger";
 import {
   fetchPalette,
   paletteColorsFromApi,
@@ -72,7 +73,8 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       const encoded = await fileToBase64(selected);
       setFile(selected);
       setImageData(encoded);
-    } catch {
+    } catch (error) {
+      logger.error("PixelateWizard", "file_read_failed", { error: errorDetail(error) });
       setError(errors.importFileRead);
     }
   };

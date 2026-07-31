@@ -15,6 +15,12 @@
     "lint": "pnpm --filter @pixelanea/web lint",
     "test:unit": "pnpm --filter @pixelanea/web test",
     "generate:api": "pnpm --filter @pixelanea/api-client generate",
+    "deps:hash": "python3 scripts/deps-hash.py",
+    "deps:install": "./scripts/deps-cache.sh install",
+    "deps:status": "./scripts/deps-cache.sh status",
+    "assets:hash": "python3 scripts/assets-hash.py",
+    "assets:build": "./scripts/assets-cache.sh ensure-all",
+    "assets:status": "./scripts/assets-cache.sh status",
     "test:backend": "./scripts/test-backend.sh",
     "test:frontend": "./scripts/test-frontend.sh",
     "test": "pnpm test:backend && pnpm test:frontend"

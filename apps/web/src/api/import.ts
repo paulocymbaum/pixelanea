@@ -1,6 +1,6 @@
 import type { PixelateImportRequest, PixelateImportResponse } from "@pixelanea/api-client";
 import { getApiClient } from "./client";
-import { mapApiError } from "./errors";
+import { logAndMapApiError } from "@/logging/apiError";
 
 export type PixelateResult =
   | { ok: true; response: PixelateImportResponse }
@@ -14,6 +14,6 @@ export async function pixelateImage(
     const response = await getApiClient().importPixelate(projectId, body);
     return { ok: true, response };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return { ok: false, message: logAndMapApiError("pixelateImage", error, { projectId }) };
   }
 }

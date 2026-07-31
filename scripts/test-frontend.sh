@@ -34,23 +34,24 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-# 1: install (idempotent)
-if pnpm install >/dev/null 2>&1; then
+# 1: install (cache-aware)
+if ./scripts/deps-cache.sh install >/dev/null 2>&1; then
   pass "pnpm install"
 else
   fail "pnpm install"
 fi
 
-# 2: codegen
-if pnpm generate:api >/dev/null 2>&1 \
+# 2: codegen (cache-aware)
+if ./scripts/assets-cache.sh ensure-api >/dev/null 2>&1 \
   && [[ -f packages/api-client/src/generated/schema.ts ]]; then
   pass "pnpm generate:api"
 else
   fail "pnpm generate:api"
 fi
 
-# 3: build
-if pnpm build >/dev/null 2>&1 && [[ -f apps/web/dist/index.html ]]; then
+# 3: build (cache-aware; vite only — tsc is not required for smoke tests)
+if ./scripts/assets-cache.sh ensure-web >/dev/null 2>&1 \
+  && [[ -f apps/web/dist/index.html ]]; then
   pass "pnpm build"
 else
   fail "pnpm build"

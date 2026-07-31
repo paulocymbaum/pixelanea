@@ -10,6 +10,8 @@ apps/web/node_modules/.tmp/
 
 # Local tooling
 .venv-build/
+.cache/deps/
+.cache/assets/
 
 # Environment
 .env

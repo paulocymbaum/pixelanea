@@ -15,6 +15,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Debug)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build/pixelanea-server
+            server/build/pixelanea_tests
+            .cache/assets
+          key: pixelanea-assets-${{ steps.assets-hash.outputs.hash }}
+
       - uses: pnpm/action-setup@v4
         with:
           version: 9.15.4
@@ -22,13 +54,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
 
-      - name: Install frontend dependencies
-        run: pnpm install
+      - name: Install dependencies
+        run: ./scripts/deps-cache.sh install
 
-      - name: Generate API client
-        run: pnpm generate:api
+      - name: Ensure API client assets
+        run: ./scripts/assets-cache.sh ensure-api
 
       - name: Lint
         run: pnpm lint
@@ -37,23 +68,17 @@ jobs:
         run: pnpm --filter @pixelanea/web test
 
       - name: Build frontend
-        run: pnpm --filter @pixelanea/api-client build && pnpm --filter @pixelanea/web exec vite build
+        run: ./scripts/assets-cache.sh ensure-web
 
       - name: Install backend build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y cmake g++ gcc curl python3
 
-      - name: Configure backend
-        run: |
-          cmake -S server -B server/build \
-            -DCMAKE_BUILD_TYPE=Debug \
-            -DCMAKE_CXX_COMPILER=g++ \
-            -DCMAKE_C_COMPILER=gcc \
-            -G "Unix Makefiles"
-
       - name: Build backend
-        run: cmake --build server/build
+        env:
+          CMAKE_BUILD_TYPE: Debug
+        run: ./scripts/assets-cache.sh ensure-server
 
       - name: Backend unit tests
         run: ctest --test-dir server/build --output-on-failure

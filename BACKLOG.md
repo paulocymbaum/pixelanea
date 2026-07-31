@@ -249,7 +249,7 @@ Goal: Shippable core — draw, pixelate, palette, undo, animate, save.
 - [x] **MVP-302** Client-side undo stack (cap 500)
 - [x] **MVP-303** Ctrl+Z / Ctrl+Shift+Z
 - [x] **MVP-304** Toolbar undo/redo buttons
-- [x] **MVP-305** Debounced frame sync to backend
+- [x] **MVP-305** Debounced frame sync to backend (serial coordinator + palette lane)
 
 #### Epic 1.4 — New project & import
 
@@ -529,6 +529,7 @@ Longer-horizon bets — validate demand before building.
 - [x] **FE-037** Custom canvas size dialog (blank project)
 - [x] **FE-038** Fill bucket tool
 - [x] **FE-039** Line tool (Bresenham)
+- [x] **FE-040** Sync coordinator — serialized frame/palette PUT with debounce + coalescing
 - [x] **FIX-001** Eyedropper → auto-switch to paint after absorb color
 - [x] **FIX-002** Save As asset type picker (Character, Prop, Background, Animation)
 - [x] **FIX-003** Opaque overlay filters + lighting-point color adjustment UI

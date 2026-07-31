@@ -8,7 +8,7 @@ import type {
   ReorderFramesResponse,
 } from "@pixelanea/api-client";
 import { getApiClient } from "./client";
-import { mapApiError } from "./errors";
+import { logAndMapApiError } from "@/logging/apiError";
 
 export function pixelsFromFrame(frame: Frame): Uint8Array {
   const count = frame.width * frame.height;
@@ -31,7 +31,10 @@ export async function fetchFrame(
     const frame = await getApiClient().getFrame(projectId, frameIndex);
     return { ok: true, frame };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("fetchFrame", error, { projectId, frameIndex }),
+    };
   }
 }
 
@@ -46,7 +49,10 @@ export async function saveFrame(
     });
     return { ok: true };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("saveFrame", error, { projectId, frameIndex }),
+    };
   }
 }
 
@@ -60,7 +66,10 @@ export async function duplicateFrames(
     const response = await getApiClient().duplicateFrames(projectId, body);
     return { ok: true, response };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("duplicateFrames", error, { projectId }),
+    };
   }
 }
 
@@ -72,7 +81,10 @@ export async function copyFrame(
     const response = await getApiClient().copyFrame(projectId, body);
     return { ok: true, response };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("copyFrame", error, { projectId }),
+    };
   }
 }
 
@@ -86,6 +98,9 @@ export async function reorderFrames(
     const response = await getApiClient().reorderFrames(projectId, body);
     return { ok: true, response };
   } catch (error) {
-    return { ok: false, message: mapApiError(error) };
+    return {
+      ok: false,
+      message: logAndMapApiError("reorderFrames", error, { projectId }),
+    };
   }
 }

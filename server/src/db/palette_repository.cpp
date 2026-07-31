@@ -122,6 +122,8 @@ domain::Result<domain::Palette> PaletteRepository::put_default(const domain::Pro
 
   auto validated = validate_palette_colors(palette);
   if (!validated.has_value()) {
+    log_.warn("palette.validation_failed",
+              {{"project_id", id.value}, {"error", validated.error()}});
     return validated;
   }
 
@@ -132,12 +134,15 @@ domain::Result<domain::Palette> PaletteRepository::put_default(const domain::Pro
   sqlite3_stmt* palette_stmt = nullptr;
   if (sqlite3_prepare_v2(connection.handle(), palette_sql, -1, &palette_stmt, nullptr) !=
       SQLITE_OK) {
-    return domain::Result<domain::Palette>::fail(sqlite3_errmsg(connection.handle()));
+    const std::string message = sqlite3_errmsg(connection.handle());
+    log_.error("palette.put_failed", {{"project_id", id.value}, {"error", message}});
+    return domain::Result<domain::Palette>::fail(message);
   }
 
   sqlite3_bind_text(palette_stmt, 1, id.value.c_str(), -1, SQLITE_TRANSIENT);
   if (sqlite3_step(palette_stmt) != SQLITE_ROW) {
     sqlite3_finalize(palette_stmt);
+    log_.warn("palette.not_found", {{"project_id", id.value}});
     return domain::Result<domain::Palette>::fail("palette not found");
   }
 

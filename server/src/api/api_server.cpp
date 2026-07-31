@@ -153,6 +153,19 @@ domain::ReorderFramesParams parse_reorder_frames_request(const nlohmann::json& b
   return params;
 }
 
+httplib::Response respond_error(const logging::ScopedLogger& log, int status,
+                                std::string_view event, const std::string& message,
+                                nlohmann::json fields = nlohmann::json::object()) {
+  fields["status"] = status;
+  fields["error"] = message;
+  if (status >= 500) {
+    log.error(event, std::move(fields));
+  } else {
+    log.warn(event, std::move(fields));
+  }
+  return error_response(status, message);
+}
+
 }  // namespace
 
 ApiServer::ApiServer(db::ProjectRepository& projects, db::FrameRepository& frames,
@@ -174,14 +187,14 @@ void ApiServer::register_routes(httplib::Server& server) const {
     try {
       body = nlohmann::json::parse(req.body);
     } catch (const nlohmann::json::exception&) {
-      res = error_response(400, "invalid JSON body");
+      res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
       return;
     }
 
     const auto params = parse_create_request(body);
     auto result = projects_.create(params);
     if (!result.has_value()) {
-      res = error_response(400, result.error());
+      res = respond_error(log_, 400, "project.create_failed", result.error());
       return;
     }
     res = json_response(201, project_to_json(result.value()));
@@ -192,19 +205,21 @@ void ApiServer::register_routes(httplib::Server& server) const {
     try {
       body = nlohmann::json::parse(req.body);
     } catch (const nlohmann::json::exception&) {
-      res = error_response(400, "invalid JSON body");
+      res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
       return;
     }
 
     if (!body.contains("path") || body.at("path").get<std::string>().empty()) {
-      res = error_response(400, "path is required");
+      res = respond_error(log_, 400, "request.missing_field", "path is required",
+                          {{"field", "path"}});
       return;
     }
 
     const auto bundle_path = std::filesystem::path(body.at("path").get<std::string>());
     auto result = projects_.open_from_bundle(bundle_path);
     if (!result.has_value()) {
-      res = error_response(400, result.error());
+      res = respond_error(log_, 400, "project.open_failed", result.error(),
+                          {{"path", bundle_path.string()}});
       return;
     }
     res = json_response(200, project_to_json(result.value()));
@@ -215,7 +230,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
     const domain::ProjectId id(req.matches[1]);
     auto result = projects_.get(id);
     if (!result.has_value()) {
-      res = error_response(404, result.error());
+      res = respond_error(log_, 404, "project.not_found", result.error(),
+                          {{"project_id", id.value}});
       return;
     }
     res = json_response(200, project_to_json(result.value()));
@@ -228,14 +244,15 @@ void ApiServer::register_routes(httplib::Server& server) const {
     try {
       body = nlohmann::json::parse(req.body);
     } catch (const nlohmann::json::exception&) {
-      res = error_response(400, "invalid JSON body");
+      res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
       return;
     }
 
     auto result = projects_.update(id, parse_update_request(body));
     if (!result.has_value()) {
       const int status = result.error() == "project not found" ? 404 : 400;
-      res = error_response(status, result.error());
+      res = respond_error(log_, status, "project.update_failed", result.error(),
+                          {{"project_id", id.value}});
       return;
     }
     res = json_response(200, project_to_json(result.value()));
@@ -246,7 +263,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
     const domain::ProjectId id(req.matches[1]);
     auto result = projects_.close(id);
     if (!result.has_value()) {
-      res = error_response(404, result.error());
+      res = respond_error(log_, 404, "project.close_failed", result.error(),
+                          {{"project_id", id.value}});
       return;
     }
     res.status = 204;
@@ -260,12 +278,13 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   body = nlohmann::json::parse(req.body);
                 } catch (const nlohmann::json::exception&) {
-                  res = error_response(400, "invalid JSON body");
+                  res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
                   return;
                 }
 
                 if (!body.contains("path") || body.at("path").get<std::string>().empty()) {
-                  res = error_response(400, "path is required");
+                  res = respond_error(log_, 400, "request.missing_field", "path is required",
+                                      {{"field", "path"}, {"project_id", id.value}});
                   return;
                 }
 
@@ -277,7 +296,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                   auto updated = projects_.update(id, update_params);
                   if (!updated.has_value()) {
                     const int status = updated.error() == "project not found" ? 404 : 400;
-                    res = error_response(status, updated.error());
+                    res = respond_error(log_, status, "project.update_failed", updated.error(),
+                                        {{"project_id", id.value}});
                     return;
                   }
                 }
@@ -285,7 +305,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 auto result = projects_.save_to_bundle(id, bundle_path);
                 if (!result.has_value()) {
                   const int status = result.error() == "project not found" ? 404 : 400;
-                  res = error_response(status, result.error());
+                  res = respond_error(log_, status, "project.save_failed", result.error(),
+                                      {{"project_id", id.value}, {"path", bundle_path.string()}});
                   return;
                 }
 
@@ -301,7 +322,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
     const domain::ProjectId id(req.matches[1]);
     auto result = frames_.list(id);
     if (!result.has_value()) {
-      res = error_response(404, result.error());
+      res = respond_error(log_, 404, "frame.list_failed", result.error(),
+                          {{"project_id", id.value}});
       return;
     }
 
@@ -320,7 +342,7 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   body = nlohmann::json::parse(req.body);
                 } catch (const nlohmann::json::exception&) {
-                  res = error_response(400, "invalid JSON body");
+                  res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
                   return;
                 }
 
@@ -328,7 +350,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   params = parse_duplicate_frames_request(body);
                 } catch (const std::exception& ex) {
-                  res = error_response(400, ex.what());
+                  res = respond_error(log_, 400, "request.invalid_body", ex.what(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -338,7 +361,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                       result.error() == "project not found" || result.error() == "frame not found"
                           ? 404
                           : 400;
-                  res = error_response(status, result.error());
+                  res = respond_error(log_, status, "frame.duplicate_failed", result.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -359,7 +383,7 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   body = nlohmann::json::parse(req.body);
                 } catch (const nlohmann::json::exception&) {
-                  res = error_response(400, "invalid JSON body");
+                  res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
                   return;
                 }
 
@@ -367,7 +391,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   params = parse_copy_frame_request(body);
                 } catch (const std::exception& ex) {
-                  res = error_response(400, ex.what());
+                  res = respond_error(log_, 400, "request.invalid_body", ex.what(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -377,7 +402,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                       result.error() == "project not found" || result.error() == "frame not found"
                           ? 404
                           : 400;
-                  res = error_response(status, result.error());
+                  res = respond_error(log_, status, "frame.copy_failed", result.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -393,7 +419,7 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   body = nlohmann::json::parse(req.body);
                 } catch (const nlohmann::json::exception&) {
-                  res = error_response(400, "invalid JSON body");
+                  res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
                   return;
                 }
 
@@ -401,7 +427,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   params = parse_reorder_frames_request(body);
                 } catch (const std::exception& ex) {
-                  res = error_response(400, ex.what());
+                  res = respond_error(log_, 400, "request.invalid_body", ex.what(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -411,7 +438,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                       result.error() == "project not found" || result.error() == "frame not found"
                           ? 404
                           : 400;
-                  res = error_response(status, result.error());
+                  res = respond_error(log_, status, "frame.reorder_failed", result.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -428,7 +456,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
     const int frame_index = std::stoi(req.matches[2]);
     auto result = frames_.get(id, frame_index);
     if (!result.has_value()) {
-      res = error_response(404, result.error());
+      res = respond_error(log_, 404, "frame.get_failed", result.error(),
+                          {{"project_id", id.value}, {"frame_index", frame_index}});
       return;
     }
     res = json_response(200, frame_to_json(result.value()));
@@ -443,13 +472,14 @@ void ApiServer::register_routes(httplib::Server& server) const {
     try {
       body = nlohmann::json::parse(req.body);
     } catch (const nlohmann::json::exception&) {
-      res = error_response(400, "invalid JSON body");
+      res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
       return;
     }
 
     auto project = projects_.get(id);
     if (!project.has_value()) {
-      res = error_response(404, project.error());
+      res = respond_error(log_, 404, "project.not_found", project.error(),
+                          {{"project_id", id.value}});
       return;
     }
 
@@ -464,7 +494,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
       const int status = result.error() == "project not found" || result.error() == "frame not found"
                              ? 404
                              : 400;
-      res = error_response(status, result.error());
+      res = respond_error(log_, status, "frame.put_failed", result.error(),
+                          {{"project_id", id.value}, {"frame_index", frame_index}});
       return;
     }
     res = json_response(200, frame_metadata_to_json(result.value()));
@@ -475,7 +506,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
     const domain::ProjectId id(req.matches[1]);
     auto result = palettes_.get_default(id);
     if (!result.has_value()) {
-      res = error_response(404, result.error());
+      res = respond_error(log_, 404, "palette.get_failed", result.error(),
+                          {{"project_id", id.value}});
       return;
     }
     res = json_response(200, palette_to_json(result.value()));
@@ -489,7 +521,7 @@ void ApiServer::register_routes(httplib::Server& server) const {
     try {
       body = nlohmann::json::parse(req.body);
     } catch (const nlohmann::json::exception&) {
-      res = error_response(400, "invalid JSON body");
+      res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
       return;
     }
 
@@ -498,7 +530,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
       const int status = result.error() == "project not found" || result.error() == "palette not found"
                              ? 404
                              : 400;
-      res = error_response(status, result.error());
+      res = respond_error(log_, status, "palette.put_failed", result.error(),
+                          {{"project_id", id.value}});
       return;
     }
     res = json_response(200, palette_to_json(result.value()));
@@ -512,18 +545,20 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 try {
                   body = nlohmann::json::parse(req.body);
                 } catch (const nlohmann::json::exception&) {
-                  res = error_response(400, "invalid JSON body");
+                  res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
                   return;
                 }
 
                 auto project = projects_.get(id);
                 if (!project.has_value()) {
-                  res = error_response(404, project.error());
+                  res = respond_error(log_, 404, "project.not_found", project.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
                 if (!body.contains("imageData")) {
-                  res = error_response(400, "imageData is required");
+                  res = respond_error(log_, 400, "request.missing_field", "imageData is required",
+                                      {{"project_id", id.value}, {"field", "imageData"}});
                   return;
                 }
 
@@ -531,7 +566,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                 const auto image_bytes =
                     decode_base64(body.at("imageData").get<std::string>(), decode_error);
                 if (!decode_error.empty()) {
-                  res = error_response(400, decode_error);
+                  res = respond_error(log_, 400, "import.decode_failed", decode_error,
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -549,7 +585,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                   frame_index = body.at("frameIndex").get<int>();
                 }
                 if (frame_index < 0 || frame_index >= project.value().frame_count) {
-                  res = error_response(400, "invalid frame index");
+                  res = respond_error(log_, 400, "import.invalid_frame_index", "invalid frame index",
+                                      {{"project_id", id.value}, {"frame_index", frame_index}});
                   return;
                 }
 
@@ -565,7 +602,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
 
                 auto palette_result = palettes_.get_default(id);
                 if (!palette_result.has_value()) {
-                  res = error_response(404, palette_result.error());
+                  res = respond_error(log_, 404, "palette.get_failed", palette_result.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -580,7 +618,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
 
                 auto pixelated = image::pixelate(params);
                 if (!pixelated.has_value()) {
-                  res = error_response(400, pixelated.error());
+                  res = respond_error(log_, 400, "import.pixelate_failed", pixelated.error(),
+                                      {{"project_id", id.value}, {"frame_index", frame_index}});
                   return;
                 }
 
@@ -593,7 +632,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                                 palette_put.error() == "palette not found"
                             ? 404
                             : 400;
-                    res = error_response(status, palette_put.error());
+                    res = respond_error(log_, status, "palette.put_failed", palette_put.error(),
+                                        {{"project_id", id.value}});
                     return;
                   }
                   palette_result = palette_put;
@@ -611,7 +651,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                       saved.error() == "project not found" || saved.error() == "frame not found"
                           ? 404
                           : 400;
-                  res = error_response(status, saved.error());
+                  res = respond_error(log_, status, "import.frame_save_failed", saved.error(),
+                                      {{"project_id", id.value}, {"frame_index", frame_index}});
                   return;
                 }
 
@@ -634,25 +675,30 @@ void ApiServer::register_routes(httplib::Server& server) const {
                   try {
                     body = nlohmann::json::parse(req.body);
                   } catch (const nlohmann::json::exception&) {
-                    res = error_response(400, "invalid JSON body");
+                    res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
                     return;
                   }
                 }
 
                 auto project = projects_.get(id);
                 if (!project.has_value()) {
-                  res = error_response(404, project.error());
+                  res = respond_error(log_, 404, "project.not_found", project.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
                 if (project.value().frame_count <= 1) {
-                  res = error_response(400, "GIF export requires more than one frame");
+                  res = respond_error(log_, 400, "export.gif_insufficient_frames",
+                                      "GIF export requires more than one frame",
+                                      {{"project_id", id.value},
+                                       {"frame_count", project.value().frame_count}});
                   return;
                 }
 
                 auto palette_result = palettes_.get_default(id);
                 if (!palette_result.has_value()) {
-                  res = error_response(404, palette_result.error());
+                  res = respond_error(log_, 404, "palette.get_failed", palette_result.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 
@@ -661,7 +707,9 @@ void ApiServer::register_routes(httplib::Server& server) const {
                   fps = body.at("fps").get<double>();
                 }
                 if (fps < 1.0 || fps > 60.0) {
-                  res = error_response(400, "fps must be between 1 and 60");
+                  res = respond_error(log_, 400, "export.gif_invalid_fps",
+                                      "fps must be between 1 and 60",
+                                      {{"project_id", id.value}, {"fps", fps}});
                   return;
                 }
 
@@ -681,7 +729,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
                      ++frame_index) {
                   auto frame = frames_.get(id, frame_index);
                   if (!frame.has_value()) {
-                    res = error_response(404, frame.error());
+                    res = respond_error(log_, 404, "frame.get_failed", frame.error(),
+                                        {{"project_id", id.value}, {"frame_index", frame_index}});
                     return;
                   }
                   params.frames.push_back(std::move(frame.value().pixels));
@@ -689,7 +738,8 @@ void ApiServer::register_routes(httplib::Server& server) const {
 
                 auto encoded = gif::encode_gif(params);
                 if (!encoded.has_value()) {
-                  res = error_response(400, encoded.error());
+                  res = respond_error(log_, 400, "export.gif_encode_failed", encoded.error(),
+                                      {{"project_id", id.value}});
                   return;
                 }
 

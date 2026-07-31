@@ -58,7 +58,7 @@ export function useProjectFileActions({
       if (!result.ok) {
         setDialogError(result.message || errors.saveProjectFailed);
         if (!saveAsDialogOpen && !overwriteOpen) {
-          useEditorStore.getState().setSyncStatus("error", result.message);
+          useEditorStore.getState().setFrameSyncStatus("error", result.message);
         }
         return;
       }

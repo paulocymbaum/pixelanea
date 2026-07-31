@@ -24,7 +24,7 @@ export function BottomFrameStrip() {
   const gridHeight = useEditorStore((s) => s.gridHeight);
   const switchFrame = useEditorStore((s) => s.switchFrame);
   const reloadAllFrames = useEditorStore((s) => s.reloadAllFrames);
-  const setSyncStatus = useEditorStore((s) => s.setSyncStatus);
+  const setFrameSyncStatus = useEditorStore((s) => s.setFrameSyncStatus);
 
   if (frameCount <= 1) {
     return null;
@@ -41,7 +41,7 @@ export function BottomFrameStrip() {
     });
 
     if (!result.ok) {
-      setSyncStatus("error", result.message);
+      setFrameSyncStatus("error", result.message);
       return;
     }
 

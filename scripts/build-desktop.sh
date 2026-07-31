@@ -30,42 +30,16 @@ ensure_pnpm() {
   command -v pnpm >/dev/null 2>&1
 }
 
-echo "==> Building backend (Release)..."
-CMAKE_ARGS=(
-  -S "${ROOT_DIR}/server"
-  -B "${BUILD_DIR}"
-  -DCMAKE_BUILD_TYPE=Release
-  -DCMAKE_CXX_COMPILER="${CXX:-g++}"
-  -DCMAKE_C_COMPILER="${CC:-gcc}"
-)
-
-if [[ ! -f "${BUILD_DIR}/CMakeCache.txt" ]]; then
-  if command -v ninja >/dev/null 2>&1; then
-    CMAKE_ARGS+=("-G" "Ninja")
-  else
-    CMAKE_ARGS+=("-G" "Unix Makefiles")
-  fi
-fi
-
-if [[ -n "${VCPKG_ROOT:-}" && -f "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ]]; then
-  CMAKE_ARGS+=("-DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-fi
-
-"${CMAKE_BIN}" "${CMAKE_ARGS[@]}"
-"${CMAKE_BIN}" --build "${BUILD_DIR}"
-
 if ! ensure_pnpm; then
   echo "pnpm not found. Install with: corepack enable && corepack prepare pnpm@9.15.4 --activate" >&2
   exit 1
 fi
 
-if [[ ! -d "${ROOT_DIR}/node_modules" ]]; then
-  echo "==> Installing frontend dependencies..."
-  (cd "${ROOT_DIR}" && pnpm install)
-fi
+"${ROOT_DIR}/scripts/deps-cache.sh" install
 
-echo "==> Building frontend..."
-(cd "${ROOT_DIR}" && pnpm --filter @pixelanea/api-client build && pnpm --filter @pixelanea/web exec vite build)
+echo "==> Building desktop assets (Release)..."
+export CMAKE_BUILD_TYPE=Release
+"${ROOT_DIR}/scripts/assets-cache.sh" ensure-all --build-type Release
 
 if [[ ! -f "${WEB_DIST}/index.html" ]]; then
   echo "ERROR: frontend build missing ${WEB_DIST}/index.html" >&2

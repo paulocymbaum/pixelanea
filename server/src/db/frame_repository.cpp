@@ -56,7 +56,10 @@ domain::Result<domain::Frame> FrameRepository::get(const domain::ProjectId& id,
 
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
-    return domain::Result<domain::Frame>::fail(sqlite3_errmsg(connection.handle()));
+    const std::string message = sqlite3_errmsg(connection.handle());
+    log_.error("frame.get_failed", {{"project_id", id.value}, {"frame_index", frame_index},
+                                     {"error", message}});
+    return domain::Result<domain::Frame>::fail(message);
   }
 
   sqlite3_bind_text(stmt, 1, id.value.c_str(), -1, SQLITE_TRANSIENT);
@@ -99,6 +102,11 @@ domain::Result<domain::FrameMetadata> FrameRepository::put(const domain::Project
   const std::size_t expected =
       static_cast<std::size_t>(frame.width) * static_cast<std::size_t>(frame.height);
   if (frame.pixels.size() != expected) {
+    log_.warn("frame.put_invalid_pixels",
+              {{"project_id", id.value},
+               {"frame_index", frame.index},
+               {"expected", static_cast<int>(expected)},
+               {"actual", static_cast<int>(frame.pixels.size())}});
     return domain::Result<domain::FrameMetadata>::fail("pixel count does not match frame size");
   }
 
@@ -112,7 +120,10 @@ domain::Result<domain::FrameMetadata> FrameRepository::put(const domain::Project
 
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
-    return domain::Result<domain::FrameMetadata>::fail(sqlite3_errmsg(connection.handle()));
+    const std::string message = sqlite3_errmsg(connection.handle());
+    log_.error("frame.put_failed",
+               {{"project_id", id.value}, {"frame_index", frame.index}, {"error", message}});
+    return domain::Result<domain::FrameMetadata>::fail(message);
   }
 
   sqlite3_bind_int(stmt, 1, frame.width);
@@ -125,10 +136,14 @@ domain::Result<domain::FrameMetadata> FrameRepository::put(const domain::Project
   if (sqlite3_step(stmt) != SQLITE_DONE) {
     const std::string message = sqlite3_errmsg(connection.handle());
     sqlite3_finalize(stmt);
+    log_.error("frame.put_failed",
+               {{"project_id", id.value}, {"frame_index", frame.index}, {"error", message}});
     return domain::Result<domain::FrameMetadata>::fail(message);
   }
   if (sqlite3_changes(connection.handle()) == 0) {
     sqlite3_finalize(stmt);
+    log_.warn("frame.not_found",
+              {{"project_id", id.value}, {"frame_index", frame.index}});
     return domain::Result<domain::FrameMetadata>::fail("frame not found");
   }
   sqlite3_finalize(stmt);

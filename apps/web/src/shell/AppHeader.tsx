@@ -13,6 +13,7 @@ import {
 } from "@/canvas/offPaletteCheck";
 import { copy } from "@/content/copy";
 import { exportProjectGif } from "@/api/export";
+import { errorDetail, logger } from "@/logging/logger";
 import {
   useActiveFrameIndex,
   useCanRedo,
@@ -176,7 +177,7 @@ export function AppHeader({ onNewProject, onProjectOpened }: AppHeaderProps) {
       });
 
       if (!resolved.ok) {
-        state.setSyncStatus("error", resolved.message);
+        state.setFrameSyncStatus("error", resolved.message);
         return;
       }
 
@@ -222,7 +223,7 @@ export function AppHeader({ onNewProject, onProjectOpened }: AppHeaderProps) {
       });
 
       if (!resolved.ok) {
-        state.setSyncStatus("error", resolved.message);
+        state.setFrameSyncStatus("error", resolved.message);
         return;
       }
 
@@ -244,7 +245,11 @@ export function AppHeader({ onNewProject, onProjectOpened }: AppHeaderProps) {
             } catch (error) {
               const message =
                 error instanceof Error ? error.message : "GIF export failed";
-              state.setSyncStatus("error", message);
+              logger.error("AppHeader", "gif_export_failed", {
+                projectId: state.projectId,
+                error: errorDetail(error),
+              });
+              state.setFrameSyncStatus("error", message);
             }
           })();
         },

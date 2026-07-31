@@ -18,7 +18,7 @@ const {
     frameCount: 1,
     setBundlePath: vi.fn(),
     setAssetType: vi.fn(),
-    setSyncStatus: vi.fn(),
+    setFrameSyncStatus: vi.fn(),
   },
 }));
 
@@ -60,7 +60,7 @@ describe("useProjectFileActions", () => {
     showToastMock.mockReset();
     editorState.setBundlePath.mockReset();
     editorState.setAssetType.mockReset();
-    editorState.setSyncStatus.mockReset();
+    editorState.setFrameSyncStatus.mockReset();
     editorState.projectId = "project-1";
     editorState.bundlePath = "/tmp/current.pixelanea";
     editorState.assetType = "character";
