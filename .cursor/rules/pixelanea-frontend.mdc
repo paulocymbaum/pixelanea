@@ -1,0 +1,48 @@
+---
+description: Pixelanea React frontend architecture, shell layout, and UX/DESIGN standards
+globs: apps/web/**/*
+alwaysApply: false
+---
+
+# Pixelanea Frontend Practices
+
+Full reference: [PRACTICES.md](../../PRACTICES.md) · Skill: `.cursor/skills/pixelanea-frontend-standards/`
+
+## Layers (`apps/web/src`)
+
+```text
+pages/ → shell/, components/, canvas/
+shell/ → header, layout, tool rail, palette slot, frame strip (hidden if frameCount ≤ 1)
+components/{toolbar,palette,frames,animation,project,import,onboarding}/
+components/ui/ → Radix + CVA primitives (no store imports)
+canvas/ + tools/ → commands; coordinates in canvas/ only
+state/ → editorStore, uiStore, sessionStore, shortcuts.ts
+content/ → all user-facing strings
+api/ → generated OpenAPI wrappers
+styles/ → tokens.css, theme.css
+```
+
+## Chrome vs viewport
+
+- **Chrome:** `accent`, Outfit, panels — [DESIGN.md](../../DESIGN.md)
+- **Viewport:** `checker-a`, `grid-line`, user swatches only — no brand greens on pixels
+- Single `<canvas>` — no DOM per pixel
+
+## Rules
+
+1. **No backend leakage** — no SQLite, ZIP, blob encoding, or hand-rolled fetch DTOs.
+2. **Two front doors** — blank canvas and import wizard are equal entry paths ([UX.md](../../UX.md)).
+3. **Tool plugin model** — new edits = `Tool` + `Command`; register in `tools/`.
+4. **Progressive disclosure** — frame strip when `frameCount > 1`; technical info opt-in.
+5. **Confirm sparingly** — only delete, overwrite, duplicate frames, remove in-use color.
+6. **Copy in `content/`** — plain language; no error codes or emoji toasts.
+7. **Accessibility** — icon + label on tools; active state = accent + 3px left border + weight.
+
+## Before merging
+
+- [ ] Generated client types for all API calls
+- [ ] Coordinate math only in `canvas/`
+- [ ] `readOnly` honored during playback
+- [ ] Design tokens for chrome; functional tokens for canvas
+- [ ] Shared debounced autosave path
+- [ ] OpenAPI updated if contract changed

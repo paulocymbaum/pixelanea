@@ -1,0 +1,58 @@
+---
+description: React 19 + Zustand antipatterns and other frontend pitfalls that cause blank screens or layer violations
+globs: apps/web/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Pixelanea Frontend Antipatterns
+
+Stack: **React 19**, **Zustand 5**, **Vite**, generated **OpenAPI client**, **Radix** primitives.
+
+Symptom of many of these: **blank or black screen** with no UI — React crashes before paint.
+
+## Zustand selectors
+
+Never return a **new object or array** from a selector without shallow compare. React 19 + Zustand will infinite-loop (`Maximum update depth exceeded`, `getSnapshot should be cached`).
+
+```typescript
+// ❌ BAD — new object every snapshot → blank screen
+useUiStore((s) => ({ status: s.apiStatus, version: s.apiVersion }));
+
+// ✅ GOOD — primitive or stable reference
+const status = useUiStore((s) => s.apiStatus);
+const version = useUiStore((s) => s.apiVersion);
+
+// ✅ GOOD — multi-field object with useShallow
+useUiStore(useShallow((s) => ({ status: s.apiStatus, version: s.apiVersion })));
+```
+
+Same rule for arrays: `useStore((s) => s.items.filter(...))` needs `useShallow` or a memoized selector.
+
+**Prefer:** one primitive per selector, or `useShallow` for tuples/objects.
+
+## React state & effects
+
+- **No `setState` / store updates during render** — only in event handlers or effects.
+- **Stable effect deps** — don't pass inline objects/arrays to `useEffect` deps; extract primitives.
+- **Don't subscribe to the whole store** — `useStore()` without a selector re-renders on every change.
+
+## Layer boundaries (see `pixelanea-frontend.mdc`)
+
+| Anti-pattern | Fix |
+|--------------|-----|
+| `fetch('/api/...')` or hand-rolled DTOs in components | `api/` wrappers + `@pixelanea/api-client` |
+| Store imports in `components/ui/` | Pass props/callbacks from shell or feature components |
+| Canvas coordinate math outside `canvas/` | Keep grid math in `canvas/` only |
+| User-facing strings inline in JSX | `content/` copy maps |
+
+## Browser / theme
+
+- **`window` / `document` in module scope** — breaks SSR/tests; use effects or guarded helpers.
+- **Theme class** — apply via `applyThemeToDocument` in bootstrap effect, not only on toggle.
+
+## Review checklist
+
+- [ ] Store selectors return primitives, or use `useShallow`
+- [ ] No new object/array literals in selectors without shallow compare
+- [ ] API calls go through `apps/web/src/api/`
+- [ ] UI still paints after change (no empty `#root`)

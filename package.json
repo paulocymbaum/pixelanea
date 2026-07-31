@@ -1,0 +1,18 @@
+{
+  "name": "pixelanea",
+  "private": true,
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "./scripts/dev.sh",
+    "dev:web": "pnpm --filter @pixelanea/web dev",
+    "dev:api": "./scripts/dev.sh --backend-only",
+    "build": "pnpm -r build",
+    "build:server": "./scripts/dev.sh --build-only",
+    "lint": "pnpm --filter @pixelanea/web lint",
+    "test:unit": "pnpm --filter @pixelanea/web test",
+    "generate:api": "pnpm --filter @pixelanea/api-client generate",
+    "test:backend": "./scripts/test-backend.sh",
+    "test:frontend": "./scripts/test-frontend.sh",
+    "test": "pnpm test:backend && pnpm test:frontend"
+  }
+}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+server/build/
+apps/web/dist/
+apps/web/node_modules/.vite/
+apps/web/node_modules/.tmp/
+
+# Local tooling
+.venv-build/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+*.swp
+*.swo
+
+# Generated skill run artifacts (reproducible locally)
+.cursor/skill-outputs/

@@ -1,0 +1,18 @@
+/**
+ * Theme behavior — class toggles on <html> via sessionStore bootstrap.
+ * Default: OS preference on first launch; user choice persisted in localStorage.
+ */
+
+@layer utilities {
+  .transition-panel {
+    transition-property: width, opacity, transform;
+    transition-duration: 150ms;
+    transition-timing-function: ease-in-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .transition-panel {
+      transition-duration: 0ms;
+    }
+  }
+}

@@ -1,0 +1,445 @@
+openapi: 3.1.0
+info:
+  title: Pixelanea API
+  version: 1.0.0
+  description: Local-only pixel art editor backend API.
+
+servers:
+  - url: http://127.0.0.1:8787
+    description: Local development server
+
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      tags: [System]
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+
+  /api/projects:
+    post:
+      operationId: createProject
+      summary: Create a new project
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProjectRequest"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/projects/{projectId}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getProject
+      summary: Get project metadata
+      tags: [Projects]
+      responses:
+        "200":
+          description: Project metadata
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateProject
+      summary: Update project settings
+      tags: [Projects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProjectRequest"
+      responses:
+        "200":
+          description: Updated project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      operationId: closeProject
+      summary: Close project and release resources
+      tags: [Projects]
+      responses:
+        "204":
+          description: Project closed
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/palette:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: getPalette
+      summary: Get default palette
+      tags: [Palettes]
+      responses:
+        "200":
+          description: Default palette
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Palette"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: putPalette
+      summary: Replace default palette colors
+      tags: [Palettes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutPaletteRequest"
+      responses:
+        "200":
+          description: Palette updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Palette"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/frames:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    get:
+      operationId: listFrames
+      summary: List frame metadata
+      tags: [Frames]
+      responses:
+        "200":
+          description: Frame list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [frames]
+                properties:
+                  frames:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/FrameMetadata"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/frames/duplicate:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+    post:
+      operationId: duplicateFrames
+      summary: Duplicate source frame into 8, 16, or 32 frames
+      tags: [Frames]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DuplicateFramesRequest"
+      responses:
+        "200":
+          description: Frames duplicated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DuplicateFramesResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/projects/{projectId}/frames/{frameIndex}:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/FrameIndex"
+    get:
+      operationId: getFrame
+      summary: Get frame pixel data
+      tags: [Frames]
+      responses:
+        "200":
+          description: Frame data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Frame"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      operationId: putFrame
+      summary: Replace frame pixel data
+      tags: [Frames]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PutFrameRequest"
+      responses:
+        "200":
+          description: Frame updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FrameMetadata"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FrameIndex:
+      name: frameIndex
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status, version]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+        version:
+          type: string
+          example: "1.0.0"
+
+    ErrorResponse:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+    CreateProjectRequest:
+      type: object
+      required: [name, width, height]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        width:
+          type: integer
+          minimum: 1
+          maximum: 512
+        height:
+          type: integer
+          minimum: 1
+          maximum: 512
+        frameCount:
+          type: integer
+          enum: [1, 8, 16, 32]
+          default: 1
+        fps:
+          type: number
+          minimum: 1
+          maximum: 60
+          default: 8
+        cellSize:
+          type: integer
+          minimum: 1
+          maximum: 64
+          default: 16
+
+    UpdateProjectRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        fps:
+          type: number
+          minimum: 1
+          maximum: 60
+        cellSize:
+          type: integer
+          minimum: 1
+          maximum: 64
+
+    Project:
+      type: object
+      required: [id, name, width, height, frameCount, fps, cellSize, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        width:
+          type: integer
+        height:
+          type: integer
+        frameCount:
+          type: integer
+        fps:
+          type: number
+        cellSize:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FrameMetadata:
+      type: object
+      required: [index, width, height, updatedAt]
+      properties:
+        index:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+        updatedAt:
+          type: string
+          format: date-time
+
+    Frame:
+      allOf:
+        - $ref: "#/components/schemas/FrameMetadata"
+        - type: object
+          required: [pixels]
+          properties:
+            pixels:
+              type: array
+              items:
+                type: integer
+                minimum: 0
+                maximum: 255
+              description: Palette indices row-major (width * height)
+
+    PutFrameRequest:
+      type: object
+      required: [pixels]
+      properties:
+        pixels:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+
+    DuplicateFramesRequest:
+      type: object
+      required: [frameCount]
+      properties:
+        frameCount:
+          type: integer
+          enum: [8, 16, 32]
+        sourceFrameIndex:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Frame to copy; defaults to frame 0
+
+    DuplicateFramesResponse:
+      type: object
+      required: [project, frames]
+      properties:
+        project:
+          $ref: "#/components/schemas/Project"
+        frames:
+          type: array
+          items:
+            $ref: "#/components/schemas/FrameMetadata"
+
+    Color:
+      type: object
+      required: [slot, hex]
+      properties:
+        slot:
+          type: integer
+          minimum: 0
+          maximum: 255
+        hex:
+          type: string
+          pattern: "^#[0-9A-Fa-f]{6}$"
+          example: "#FF0044"
+        name:
+          type: string
+
+    Palette:
+      type: object
+      required: [id, name, colors]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        colors:
+          type: array
+          minItems: 1
+          maxItems: 256
+          items:
+            $ref: "#/components/schemas/Color"
+
+    PutPaletteRequest:
+      type: object
+      required: [colors]
+      properties:
+        name:
+          type: string
+          minLength: 1
+        colors:
+          type: array
+          minItems: 1
+          maxItems: 256
+          items:
+            $ref: "#/components/schemas/Color"

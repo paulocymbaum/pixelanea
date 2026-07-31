@@ -1,0 +1,55 @@
+---
+description: Pixelanea agent CLI tools in .cursor/tools/ for locating code by layer and name
+alwaysApply: true
+---
+
+# Agent Tools
+
+Run these from the repo root via the Shell tool. Output is JSON on stdout.
+
+## When to use
+
+Prefer these over blind `grep` or directory walks when you know the **layer** but not the file path.
+
+1. Run `--list-layers` if unsure which layer fits.
+2. Search with one or more symbol names (positional args or a JSON array).
+3. Read the top `matches` (`file`, `line`, `similarity`) before opening files.
+
+## Tools
+
+| Tool | Use for |
+|------|---------|
+| `search_frontend_elements.py` | React layers under `apps/web/src/` |
+| `search_backend_elements.py` | C++/SQL layers under `server/` |
+
+### Frontend search
+
+```bash
+python3 .cursor/tools/search_frontend_elements.py --list-layers
+python3 .cursor/tools/search_frontend_elements.py --layer shell AppHeader LeftToolRail
+python3 .cursor/tools/search_frontend_elements.py --layer state editorStore undo
+python3 .cursor/tools/search_frontend_elements.py --layer canvas '["PixelCanvas","ToolContext"]'
+```
+
+Layers: `pages`, `shell`, `components`, `ui`, `toolbar`, `palette`, `frames`, `animation`, `project`, `import`, `onboarding`, `canvas`, `tools`, `state`, `content`, `api`, `styles`.
+
+### Backend search
+
+```bash
+python3 .cursor/tools/search_backend_elements.py --list-layers
+python3 .cursor/tools/search_backend_elements.py --layer domain Frame PixelGrid
+python3 .cursor/tools/search_backend_elements.py --layer db ProjectRepository
+python3 .cursor/tools/search_backend_elements.py --layer api '["put_frame","FrameRepository"]'
+```
+
+Layers: `api`, `domain`, `db`, `migrations`, `export`, `image`. Aliases: `persistence`/`repository` → `db`, `handlers` → `api`, `bundle` → `export`, `pixelate` → `image`.
+
+## Options
+
+- `--min-similarity` (default `0.62`) — raise to narrow results
+- `--max-matches` (default `25`) — cap per query term
+
+## Do not
+
+- Edit scripts in `.cursor/tools/` for one-off searches — pass different queries instead.
+- Use these to bypass layer boundaries in [pixelanea-core.mdc](./pixelanea-core.mdc).

@@ -1,0 +1,2 @@
+export { ApiError, createApiClient, type ApiClient, type ApiClientConfig, type CreateProjectRequest, type ErrorResponse, type Frame, type FrameMetadata, type HealthResponse, type Project, type PutFrameRequest, type Palette, type PutPaletteRequest, type Color, type UpdateProjectRequest, } from "./client";
+//# sourceMappingURL=index.d.ts.map

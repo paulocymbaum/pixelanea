@@ -1,0 +1,44 @@
+---
+description: Pixelanea monorepo dependency direction and shared engineering principles
+alwaysApply: true
+---
+
+# Pixelanea Core Practices
+
+Full reference: [PRACTICES.md](../../PRACTICES.md)
+
+## Dependency direction (non-negotiable)
+
+- `apps/web` → generated client from `contracts/openapi.yaml` → `server/api/`
+- `server/api/` → `domain/` ← `db/`, `export/`, `image/`
+- `domain/` is pure: no SQL, HTTP, ZIP, or stb
+
+Never reverse these edges. UI never calls SQLite; domain never knows about React.
+
+## Single sources of truth
+
+| Concern | Source |
+|---------|--------|
+| API shape | `contracts/openapi.yaml` |
+| DB schema | `server/db/migrations/` |
+| Pixel blob encoding | `domain/` or shared `db/` codec |
+| Bundle manifest | `server/export/` |
+| UI design tokens | `DESIGN.md` |
+
+## SOLID summary
+
+- **SRP:** One layer per concern (render / tool / command / persist / transport).
+- **OCP:** Extend via new `Tool`, `Command`, repository, or export encoder—not `if` chains in cores.
+- **LSP:** Tools honor `readOnly`; repos work for temp and on-disk DBs alike.
+- **ISP:** Narrow interfaces (`ToolContext`, per-aggregate repositories).
+- **DIP:** Handlers and components depend on abstractions (repos, generated client)—not concretions.
+
+## DRY
+
+Extract when the same **rule** would diverge if edited in one place. Don't abstract one-off code.
+
+## Clean Code
+
+- Domain glossary: pixel grid, frame, palette, bundle, command, tool.
+- Short functions; early returns; no swallowed errors.
+- Comment why, not what.

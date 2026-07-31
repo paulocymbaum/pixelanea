@@ -1,0 +1,44 @@
+/**
+ * Semantic design tokens — maps DESIGN.md roles to CSS variables.
+ * Named palette source: brand/colors.css
+ */
+@import "../../../../brand/colors.css";
+
+:root {
+  --color-bg-canvas: #e6e6e8;
+  --color-bg-surface: var(--mist);
+  --color-bg-elevated: var(--cloud);
+  --color-border: #d1d1d6;
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--stone);
+  --color-accent: var(--pixelanea-green);
+  --color-accent-hover: #325a48;
+  --color-accent-muted: #d8ebe2;
+  --color-danger: var(--ember);
+  --color-focus-ring: var(--pixelanea-green);
+
+  /* Canvas functional tokens — not brand */
+  --color-checker-a: #cccccc;
+  --color-checker-b: #ffffff;
+  --color-grid-line: rgba(0, 0, 0, 0.08);
+  --color-onion-skin: rgba(130, 196, 166, 0.25);
+}
+
+.dark {
+  --color-bg-canvas: #121214;
+  --color-bg-surface: #1c1c21;
+  --color-bg-elevated: #26262d;
+  --color-border: #3a3a44;
+  --color-text-primary: var(--ink-dark);
+  --color-text-secondary: var(--stone-dark);
+  --color-accent: var(--pixelanea-mint);
+  --color-accent-hover: #9dd4b8;
+  --color-accent-muted: #1e3329;
+  --color-danger: var(--ember-dark);
+  --color-focus-ring: var(--pixelanea-mint);
+
+  --color-checker-a: #2a2a30;
+  --color-checker-b: #1f1f24;
+  --color-grid-line: rgba(255, 255, 255, 0.06);
+  --color-onion-skin: rgba(130, 196, 166, 0.25);
+}

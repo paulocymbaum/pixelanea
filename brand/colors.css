@@ -1,0 +1,18 @@
+/**
+ * Pixelanea named brand palette — canonical hex values from DESIGN.md.
+ * Consumed by apps/web/src/styles/tokens.css for semantic role mapping.
+ * Do not use these directly in React chrome; prefer Tailwind semantic tokens.
+ */
+:root {
+  --pixelanea-green: #3f6f5a;
+  --pixelanea-mint: #82c4a6;
+  --sprout: #5aaf82;
+  --ink: #18181b;
+  --stone: #52525b;
+  --mist: #f4f4f6;
+  --cloud: #ffffff;
+  --ember: #c45c4a;
+  --ember-dark: #e07060;
+  --ink-dark: #ededef;
+  --stone-dark: #9b99a4;
+}

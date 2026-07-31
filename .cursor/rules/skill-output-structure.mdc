@@ -1,0 +1,57 @@
+---
+description: File structure for persisting skill run outputs by feature, layer, and step
+alwaysApply: true
+---
+
+# Skill Output Structure
+
+When a skill produces deliverables worth keeping (audits, plans, checklists, step summaries), write them under `.cursor/skill-outputs/` — never scatter skill artifacts in source trees.
+
+## Path layout
+
+```text
+.cursor/skill-outputs/
+  {feature}/
+    {layer}/
+      {timestamp}_{skill-name}/
+        {NN}_{step-slug}.md
+```
+
+| Segment | Format | Example |
+|---------|--------|---------|
+| `feature` | kebab-case product area | `editor`, `export`, `onboarding` |
+| `layer` | kebab-case layer from [pixelanea-agent-tools.mdc](./pixelanea-agent-tools.mdc) | `canvas`, `domain`, `api` |
+| `timestamp` | `YYYYMMDDTHHMMSS` (UTC, sortable) | `20260731T054200` |
+| `skill-name` | kebab-case; basename of the skill folder | `pixelanea-frontend-standards` |
+| `step` | `{NN}_{step-slug}.md` — zero-padded, 2+ digits | `01_audit-tool-context.md` |
+
+## Example
+
+```text
+.cursor/skill-outputs/
+  editor/
+    canvas/
+      20260731T054200_pixelanea-frontend-standards/
+        01_audit-tool-context.md
+        02_refactor-input-routing.md
+    domain/
+      20260731T061500_pixelanea-cpp-standards/
+        01_review-frame-model.md
+```
+
+## Step file contents
+
+Each `{NN}_{step-slug}.md` should be self-contained:
+
+1. **Goal** — what this step set out to do (one sentence).
+2. **Outcome** — decisions, findings, or changes produced.
+3. **Files** — paths touched or reviewed (if any).
+
+Keep steps atomic: one concern per file; add `02_`, `03_`, … for later steps in the same run.
+
+## When to write
+
+- **Do** persist outputs when the skill spans multiple steps or the user may revisit the work.
+- **Do** create the full directory chain before writing the first step file.
+- **Don't** write here for trivial one-line answers or pure in-chat explanations.
+- **Don't** duplicate source code — link paths and summarize instead.
