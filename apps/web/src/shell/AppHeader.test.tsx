@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
+import { useUiStore } from "@/state/uiStore";
 import { AppHeader } from "./AppHeader";
 
 const fileActionsMock = vi.hoisted(() => ({
@@ -20,7 +21,19 @@ vi.mock("@/components/project/useProjectFileActions", () => ({
 
 describe("AppHeader", () => {
   beforeEach(() => {
-    useEditorStore.setState({ projectName: "Untitled project", projectId: "p1" });
+    useEditorStore.setState({
+      projectName: "Untitled project",
+      projectId: "p1",
+      isDirty: false,
+      isPaletteDirty: false,
+      syncStatus: "idle",
+      syncError: null,
+      frameSyncStatus: "idle",
+      paletteSyncStatus: "idle",
+      frameSyncError: null,
+      paletteSyncError: null,
+    });
+    useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
     useSessionStore.setState({ theme: "light" });
     document.documentElement.classList.remove("dark");
     fileActionsMock.onNewProject.mockReset();
@@ -70,5 +83,22 @@ describe("AppHeader", () => {
 
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(useSessionStore.getState().theme).toBe("dark");
+  });
+
+  it("shows unsaved indicator next to project name when dirty", () => {
+    useEditorStore.setState({ isDirty: true });
+    render(<AppHeader onNewProject={() => {}} />);
+
+    expect(
+      screen.getByText(`· ${copy.statusUnsavedIndicator}`),
+    ).toBeInTheDocument();
+  });
+
+  it("hides unsaved indicator when clean", () => {
+    render(<AppHeader onNewProject={() => {}} />);
+
+    expect(
+      screen.queryByText(`· ${copy.statusUnsavedIndicator}`),
+    ).not.toBeInTheDocument();
   });
 });

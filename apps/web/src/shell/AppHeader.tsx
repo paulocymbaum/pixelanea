@@ -13,6 +13,7 @@ import {
 } from "@/canvas/offPaletteCheck";
 import { copy } from "@/content/copy";
 import { exportProjectGif } from "@/api/export";
+import { useProjectStatus } from "@/hooks/useProjectStatus";
 import { errorDetail, logger } from "@/logging/logger";
 import {
   useActiveFrameIndex,
@@ -80,6 +81,7 @@ export function AppHeader({ onNewProject, onProjectOpened }: AppHeaderProps) {
   const projectName = useProjectName();
   const frameIndex = useActiveFrameIndex();
   const frameCount = useFrameCount();
+  const projectStatus = useProjectStatus();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
   const undo = useEditorStore((s) => s.undo);
@@ -332,6 +334,11 @@ export function AppHeader({ onNewProject, onProjectOpened }: AppHeaderProps) {
         <div className="flex-1 text-center text-md text-primary">
           {projectName}
           {frameCount > 1 ? ` · Frame ${frameIndex + 1}` : null}
+          {projectStatus.kind === "unsaved" ? (
+            <span className="ml-2 text-sm font-normal text-secondary">
+              {`· ${copy.statusUnsavedIndicator}`}
+            </span>
+          ) : null}
         </div>
 
         <ThemeToggle />

@@ -402,6 +402,7 @@ Parallelize only when [file conflict matrix](#file-conflict-matrix) allows.
 | **Batch** | **B01** |
 | **Priority** | P1 |
 | **Effort** | S (~1h) |
+| **Status** | ✅ **Done** — `pnpm --filter web exec tsc --noEmit` already in `.github/workflows/build.yml` frontend job |
 
 **Steps**
 
@@ -437,6 +438,7 @@ Parallelize only when [file conflict matrix](#file-conflict-matrix) allows.
 | **Priority** | P0 |
 | **Critique** | C8 |
 | **Effort** | S |
+| **Status** | ✅ **Done** — Import removed from registry; `PAINT_TOOL_IDS` + separate Duplicate frames chrome action; `LeftToolRail` tests pass shape |
 
 **Steps**
 
@@ -465,6 +467,7 @@ Parallelize only when [file conflict matrix](#file-conflict-matrix) allows.
 | **Priority** | P1 |
 | **Critique** | C10 |
 | **Effort** | S |
+| **Status** | ✅ **Done** — `checkHealth` only in `App.tsx`; removed from `EditorPage` |
 
 **Steps:** Keep `checkHealth` in `App.tsx` only; remove from `EditorPage.tsx`. Update tests.
 
@@ -541,6 +544,7 @@ Parallelize only when [file conflict matrix](#file-conflict-matrix) allows.
 | **Priority** | P0 |
 | **Critique** | C2 |
 | **Effort** | M |
+| **Status** | ✅ **Done** (2026-08-01) — `lib/projectStatus.ts` + matrix tests + `hooks/useProjectStatus.ts` |
 
 **Implementation**
 
@@ -587,6 +591,7 @@ export type ProjectStatus =
 | **Batch** | **B06** |
 | **Priority** | P0 |
 | **Depends on** | S1-201 |
+| **Status** | ✅ **Done** (2026-08-01) — project status primary; server version only with technical info |
 
 **Steps**
 
@@ -607,6 +612,7 @@ export type ProjectStatus =
 | **Critique** | C2 supplement |
 | **Effort** | S |
 | **Depends on** | S1-201 |
+| **Status** | ✅ **Done** (2026-08-01) — subtle `· Unsaved` next to project name when dirty |
 
 **Steps:** Dot or text next to project name in `AppHeader` when `unsaved` — subtle, `text-secondary`. Redundant with status bar is OK (header = glance, bar = detail).
 
@@ -936,6 +942,7 @@ Only if play-click &gt; 100ms in profile.
 | | |
 |---|---|
 | **Batch** | **B03** |
+| **Status** | ✅ **Done** — `ToolId` = keys of `registry` only; `PAINT_TOOL_IDS` exported
 
 Exhaustive `ToolId` = keys of `registry` + nothing else. TypeScript exhaustiveness in `getToolCursor`.
 
@@ -1360,19 +1367,19 @@ Re-run and paste results into `.cursor/skill-outputs/mvp/sprint1/close_audit.md`
 | Batch | ID | Title | P | Effort |
 |-------|-----|-------|---|--------|
 | B01 | S1-106 | Fix paintMatrix.test.ts CI | P0 | S | ✅ Done |
-| B01 | S1-910 | Typecheck in CI | P1 | S |
+| B01 | S1-910 | Typecheck in CI | P1 | S | ✅ Done |
 | B14 | S1-904 | ci-sprint1.sh | P1 | S |
 | B02 | S1-205 | Unsaved navigation guard (full) | P0 | M |
-| B03 | S1-101 | Remove broken Import tool + registry pattern | P0 | S |
-| B03 | S1-102 | Dedupe health check | P1 | S |
-| B03 | S1-804 | ToolId cleanup | P1 | S |
+| B03 | S1-101 | Remove broken Import tool + registry pattern | P0 | S | ✅ Done |
+| B03 | S1-102 | Dedupe health check | P1 | S | ✅ Done |
+| B03 | S1-804 | ToolId cleanup | P1 | S | ✅ Done |
 | B04 | S1-103 | Single animation path + chips | P0 | M |
 | B04 | S1-401 | Frame strip CTA | P0 | S |
 | B05 | S1-104 | Feature-flag exports/onion | P1 | S |
 | B05 | S1-105 | Remove Edit menu | P1 | S |
-| B06 | S1-201 | Project status model | P0 | M |
-| B06 | S1-202 | StatusBar rewrite | P0 | M |
-| B06 | S1-204 | Header save indicator | P1 | S |
+| B06 | S1-201 | Project status model | P0 | M | ✅ Done |
+| B06 | S1-202 | StatusBar rewrite | P0 | M | ✅ Done |
+| B06 | S1-204 | Header save indicator | P1 | S | ✅ Done |
 | B12 | S1-203 | Connection banner | P2 | S |
 | B07 | S1-301 | File-picker abstraction | P0 | M |
 | B07 | S1-302 | Server zenity dialog | P0 | L |
