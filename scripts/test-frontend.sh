@@ -163,7 +163,6 @@ fi
 
 DESIGN_TEST_OK=true
 for f in \
-  apps/web/src/lib/cn.test.ts \
   apps/web/src/components/ui/Button.test.tsx \
   apps/web/src/components/ui/DropdownMenu.test.tsx \
   apps/web/src/components/ui/Dialog.test.tsx \

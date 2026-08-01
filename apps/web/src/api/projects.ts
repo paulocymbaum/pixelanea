@@ -2,7 +2,9 @@ import type { AssetType, CreateProjectRequest, Project } from "@pixelanea/api-cl
 import { fetchFrame, pixelsFromFrame } from "./frames";
 import { fetchPalette, paletteColorsFromApi } from "./palette";
 import { getApiClient } from "./client";
+import { mapBundleApiError } from "./errors";
 import { logAndMapApiError } from "@/logging/apiError";
+import { errors } from "@/content/errors";
 
 export type ProjectResult =
   | { ok: true; project: Project }
@@ -116,7 +118,25 @@ export async function openProjectFromBundle(
     const project = await getApiClient().openProject({ path });
     return { ok: true, project };
   } catch (error) {
-    return { ok: false, message: logAndMapApiError("openProjectFromBundle", error, { path }) };
+    logAndMapApiError("openProjectFromBundle", error, { path });
+    return {
+      ok: false,
+      message: mapBundleApiError(error, errors.openProjectFailed),
+    };
+  }
+}
+
+export async function closeProjectSession(
+  projectId: string,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await getApiClient().closeProject(projectId);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message: logAndMapApiError("closeProjectSession", error, { projectId }),
+    };
   }
 }
 
@@ -132,9 +152,10 @@ export async function saveProjectToBundle(
     });
     return { ok: true, path: response.path };
   } catch (error) {
+    logAndMapApiError("saveProjectToBundle", error, { projectId, path });
     return {
       ok: false,
-      message: logAndMapApiError("saveProjectToBundle", error, { projectId, path }),
+      message: mapBundleApiError(error, errors.saveProjectFailed),
     };
   }
 }

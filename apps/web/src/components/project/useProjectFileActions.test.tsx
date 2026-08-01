@@ -1,17 +1,24 @@
 import { act, fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { copy } from "@/content/copy";
+import { errors } from "@/content/errors";
 import { useProjectFileActions } from "./useProjectFileActions";
 
 const {
   saveProjectToBundleMock,
+  openProjectFromBundleMock,
+  loadProjectIntoEditorMock,
   flushAllSyncMock,
   showToastMock,
+  pickProjectPathMock,
   editorState,
 } = vi.hoisted(() => ({
   saveProjectToBundleMock: vi.fn(),
+  openProjectFromBundleMock: vi.fn(),
+  loadProjectIntoEditorMock: vi.fn(),
   flushAllSyncMock: vi.fn(),
   showToastMock: vi.fn(),
+  pickProjectPathMock: vi.fn(),
   editorState: {
     projectId: "project-1",
     bundlePath: "/tmp/current.pixelanea",
@@ -27,8 +34,12 @@ const {
 }));
 
 vi.mock("@/api/projects", () => ({
-  openProjectFromBundle: vi.fn(),
+  openProjectFromBundle: openProjectFromBundleMock,
   saveProjectToBundle: saveProjectToBundleMock,
+}));
+
+vi.mock("@/lib/filePicker", () => ({
+  pickProjectPath: pickProjectPathMock,
 }));
 
 vi.mock("@/state/persist", () => ({
@@ -45,8 +56,8 @@ vi.mock("@/state/editorStore", () => ({
     selector(editorState),
 }));
 
-vi.mock("@/hooks/useLoadProject", () => ({
-  loadProjectIntoEditor: vi.fn(),
+vi.mock("@/lib/loadProject", () => ({
+  loadProjectIntoEditor: loadProjectIntoEditorMock,
 }));
 
 vi.mock("./OverwriteConfirmDialog", () => ({
@@ -71,6 +82,9 @@ function FileActionsHarness({
       <button type="button" onClick={actions.onOpenProject}>
         harness:open
       </button>
+      <button type="button" onClick={actions.onSaveAs}>
+        harness:save-as
+      </button>
       {actions.dialogs}
     </>
   );
@@ -79,8 +93,11 @@ function FileActionsHarness({
 describe("useProjectFileActions", () => {
   beforeEach(() => {
     saveProjectToBundleMock.mockReset();
+    openProjectFromBundleMock.mockReset();
+    loadProjectIntoEditorMock.mockReset();
     flushAllSyncMock.mockReset();
     showToastMock.mockReset();
+    pickProjectPathMock.mockReset();
     editorState.setBundlePath.mockReset();
     editorState.setAssetType.mockReset();
     editorState.setFrameSyncStatus.mockReset();
@@ -96,6 +113,15 @@ describe("useProjectFileActions", () => {
       ok: true,
       path: "/tmp/current.pixelanea",
     });
+    pickProjectPathMock.mockResolvedValue({
+      ok: true,
+      path: "/tmp/picked.pixelanea",
+    });
+    openProjectFromBundleMock.mockResolvedValue({
+      ok: true,
+      project: { id: "project-2" },
+    });
+    loadProjectIntoEditorMock.mockResolvedValue({ ok: true });
   });
 
   it("passes current asset type when saving to existing bundle path", async () => {
@@ -204,5 +230,131 @@ describe("useProjectFileActions", () => {
 
     expect(onNewProject).not.toHaveBeenCalled();
     expect(result.current.isFileNavigationDisabled).toBe(true);
+  });
+
+  it("opens projects from the native picker without showing the fallback dialog", async () => {
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.onOpenProject();
+    });
+
+    expect(pickProjectPathMock).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "open", defaultPath: "/tmp/current.pixelanea" }),
+      expect.any(Object),
+    );
+    expect(openProjectFromBundleMock).toHaveBeenCalledWith("/tmp/picked.pixelanea");
+    expect(loadProjectIntoEditorMock).toHaveBeenCalled();
+  });
+
+  it("does not toast when the picker is cancelled", async () => {
+    pickProjectPathMock.mockResolvedValue({ ok: false, cancelled: true });
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.onOpenProject();
+    });
+
+    expect(showToastMock).not.toHaveBeenCalled();
+    expect(openProjectFromBundleMock).not.toHaveBeenCalled();
+  });
+
+  it("toasts picker errors without opening the project", async () => {
+    pickProjectPathMock.mockResolvedValue({
+      ok: false,
+      cancelled: false,
+      message: errors.filePickerUnavailable,
+    });
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.onOpenProject();
+    });
+
+    expect(showToastMock).toHaveBeenCalledWith(errors.filePickerUnavailable);
+    expect(openProjectFromBundleMock).not.toHaveBeenCalled();
+  });
+
+  it("uses the native picker for save as", async () => {
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.onSaveAs();
+    });
+
+    expect(pickProjectPathMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: "saveAs",
+        defaultPath: "/tmp/current.pixelanea",
+        defaultName: "current",
+      }),
+      expect.any(Object),
+    );
+  });
+
+  it("uses the native picker when saving without a bundle path", async () => {
+    editorState.bundlePath = null;
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.onSave();
+    });
+
+    expect(pickProjectPathMock).toHaveBeenCalledWith(
+      expect.objectContaining({ mode: "saveAs" }),
+      expect.any(Object),
+    );
+    expect(saveProjectToBundleMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks save while sync is in flight", async () => {
+    editorState.syncStatus = "syncing";
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    expect(result.current.canSave).toBe(false);
+
+    await act(async () => {
+      await result.current.onSave();
+    });
+
+    expect(saveProjectToBundleMock).not.toHaveBeenCalled();
+    expect(pickProjectPathMock).not.toHaveBeenCalled();
+  });
+
+  it("blocks save as while sync is in flight", async () => {
+    editorState.syncStatus = "syncing";
+    const { result } = renderHook(() =>
+      useProjectFileActions({ onNewProject: vi.fn() }),
+    );
+
+    await act(async () => {
+      await result.current.onSaveAs();
+    });
+
+    expect(pickProjectPathMock).not.toHaveBeenCalled();
+  });
+
+  it("does not prompt to discard while sync is in flight", () => {
+    const onNewProject = vi.fn();
+    editorState.isDirty = true;
+    editorState.syncStatus = "syncing";
+    render(<FileActionsHarness onNewProject={onNewProject} />);
+
+    fireEvent.click(screen.getByText("harness:new"));
+
+    expect(onNewProject).not.toHaveBeenCalled();
+    expect(screen.queryByText(copy.discardChangesTitle)).not.toBeInTheDocument();
   });
 });

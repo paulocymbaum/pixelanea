@@ -102,6 +102,7 @@ type EditorState = {
   redoStack: Command[];
   isDirty: boolean;
   isPaletteDirty: boolean;
+  bundleDirty: boolean;
   frameSyncStatus: SyncStatus;
   paletteSyncStatus: SyncStatus;
   syncStatus: SyncStatus;
@@ -230,6 +231,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   redoStack: [],
   isDirty: false,
   isPaletteDirty: false,
+  bundleDirty: false,
   frameSyncStatus: "idle",
   paletteSyncStatus: "idle",
   syncStatus: "idle",
@@ -270,6 +272,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       redoStack: [],
       isDirty: false,
       isPaletteDirty: false,
+      bundleDirty: false,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
       syncStatus: "idle",
@@ -316,6 +319,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       paletteColors,
       activeColorIndex,
       isPaletteDirty: true,
+      bundleDirty: true,
       paletteSyncStatus: "idle",
       paletteSyncError: null,
       ...reconcileDerivedSync(
@@ -567,6 +571,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: pushCommands(state.undoStack, commands),
       redoStack: [],
       isDirty: true,
+      bundleDirty: true,
       frameSyncStatus: "idle",
       frameSyncError: null,
       ...reconcileDerivedSync(
@@ -600,6 +605,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: state.undoStack.slice(0, -1),
       redoStack: [...state.redoStack, command],
       isDirty: true,
+      bundleDirty: true,
       frameSyncStatus: "idle",
       frameSyncError: null,
       ...reconcileDerivedSync(
@@ -633,6 +639,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       undoStack: pushCommands(state.undoStack, [command]),
       redoStack: state.redoStack.slice(0, -1),
       isDirty: true,
+      bundleDirty: true,
       frameSyncStatus: "idle",
       frameSyncError: null,
       ...reconcileDerivedSync(
@@ -662,6 +669,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       paletteColors,
       activeColorIndex: paletteColors.length - 1,
       isPaletteDirty: true,
+      bundleDirty: true,
       paletteSyncStatus: "idle",
       paletteSyncError: null,
       ...reconcileDerivedSync(
@@ -691,6 +699,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({
       paletteColors,
       isPaletteDirty: true,
+      bundleDirty: true,
       paletteSyncStatus: "idle",
       paletteSyncError: null,
       ...reconcileDerivedSync(
@@ -739,6 +748,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       activeColorIndex,
       isDirty: true,
       isPaletteDirty: true,
+      bundleDirty: true,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
       frameSyncError: null,
@@ -814,7 +824,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       };
     }),
 
-  setBundlePath: (bundlePath) => set({ bundlePath }),
+  setBundlePath: (bundlePath) => set({ bundlePath, bundleDirty: false }),
   setAssetType: (assetType) => set({ assetType }),
 
   reloadAllFrames: async (frameCount, activeIndex = 0) => {

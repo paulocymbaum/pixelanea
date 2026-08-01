@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/Button";
 import { copy } from "@/content/copy";
 import { cn } from "@/lib/cn";
 import {
@@ -6,16 +5,8 @@ import {
   usePaletteLocked,
 } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
-import {
-  PALETTE_PRESETS,
-  type PalettePresetId,
-} from "./palettePresets";
-
-const PRESET_COPY: Record<PalettePresetId, string> = {
-  retro: copy.palettePresetRetro,
-  gameboy: copy.palettePresetGameboy,
-  monochrome: copy.palettePresetMonochrome,
-};
+import type { PalettePresetId } from "./palettePresets";
+import { PalettePresetGrid } from "./PalettePresetGrid";
 
 type PalettePresetsProps = {
   className?: string;
@@ -37,21 +28,11 @@ export function PalettePresets({ className }: PalettePresetsProps) {
       <span className="text-sm font-medium text-primary">
         {copy.palettePresetsLabel}
       </span>
-      <div className="flex flex-wrap gap-2">
-        {PALETTE_PRESETS.map((preset) => (
-          <Button
-            key={preset.id}
-            type="button"
-            variant={lastPreset === preset.id ? "primary" : "secondary"}
-            size="default"
-            disabled={locked}
-            onClick={() => handleApply(preset.id, preset.colors)}
-            className="min-h-10"
-          >
-            {PRESET_COPY[preset.id]}
-          </Button>
-        ))}
-      </div>
+      <PalettePresetGrid
+        selectedId={lastPreset}
+        disabled={locked}
+        onSelect={(preset) => handleApply(preset.id, preset.colors)}
+      />
     </div>
   );
 }

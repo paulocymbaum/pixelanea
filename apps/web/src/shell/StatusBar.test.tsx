@@ -32,17 +32,15 @@ describe("StatusBar", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
-  it("shows checking message without API jargon", () => {
+  it("shows checking message while connection is pending", () => {
     render(<StatusBar />);
     expect(screen.getByText(copy.statusChecking)).toBeInTheDocument();
-    expect(screen.queryByText(copy.apiConnected)).not.toBeInTheDocument();
   });
 
   it("shows saved status when connected and clean", () => {
     useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
     render(<StatusBar />);
     expect(screen.getByText(copy.statusSaved)).toBeInTheDocument();
-    expect(screen.queryByText(copy.apiConnected)).not.toBeInTheDocument();
   });
 
   it("appends server version only when technical info is on", () => {
@@ -71,10 +69,17 @@ describe("StatusBar", () => {
     expect(screen.getByText(copy.statusSaving)).toBeInTheDocument();
   });
 
-  it("shows disconnected message", () => {
+  it("does not repeat disconnect message when API is disconnected", () => {
     useUiStore.setState({ apiStatus: "disconnected", apiVersion: null });
     render(<StatusBar />);
-    expect(screen.getByText(errors.apiDisconnected)).toBeInTheDocument();
+    expect(screen.queryByText(errors.apiDisconnected)).not.toBeInTheDocument();
+  });
+
+  it("shows ready when connected with no project", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: null });
+    useEditorStore.setState({ projectId: null });
+    render(<StatusBar />);
+    expect(screen.getByText(copy.statusReady)).toBeInTheDocument();
   });
 
   it("shows hover cell coordinates", () => {

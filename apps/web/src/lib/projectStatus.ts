@@ -3,20 +3,22 @@
  *
  * Priority order (why: trust / save state before API jargon):
  * 1. checking
- * 2. disconnected
- * 3. error (sync)
- * 4. saving
- * 5. unsaved (`isDirty` || `isPaletteDirty`)
- * 6. saved
- * 7. idle
+ * 2. error (sync)
+ * 3. saving
+ * 4. unsaved (`isDirty` || `isPaletteDirty`)
+ * 5. saved
+ * 6. idle
+ *
+ * Disconnect UX is owned by ConnectionBanner — not repeated here.
  */
+import { useMemo } from "react";
 import { copy } from "@/content/copy";
-import { errors } from "@/content/errors";
+import { useEditorStore } from "@/state/editorStore";
+import { useUiStore } from "@/state/uiStore";
 
 export type ProjectStatus =
-  | { kind: "idle" }
+  | { kind: "idle"; label?: string }
   | { kind: "checking" }
-  | { kind: "disconnected"; label: string }
   | { kind: "saving"; label: string }
   | { kind: "unsaved"; label: string }
   | { kind: "saved"; label: string }
@@ -35,10 +37,6 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
 
   if (apiStatus === "checking") {
     return { kind: "checking" };
-  }
-
-  if (apiStatus === "disconnected") {
-    return { kind: "disconnected", label: errors.apiDisconnected };
   }
 
   if (syncStatus === "error") {
@@ -61,5 +59,30 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
     return { kind: "saved", label: copy.statusSaved };
   }
 
+  if (apiStatus === "connected") {
+    return { kind: "idle", label: copy.statusReady };
+  }
+
   return { kind: "idle" };
+}
+
+/** Single subscription point for shell chrome status (AppHeader, StatusBar). */
+export function useDerivedProjectStatus(): ProjectStatus {
+  const hasProject = useEditorStore((s) => s.projectId != null);
+  const isDirty = useEditorStore((s) => s.isDirty);
+  const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
+  const syncStatus = useEditorStore((s) => s.syncStatus);
+  const apiStatus = useUiStore((s) => s.apiStatus);
+
+  return useMemo(
+    () =>
+      deriveProjectStatus({
+        hasProject,
+        apiStatus,
+        syncStatus,
+        isDirty,
+        isPaletteDirty,
+      }),
+    [hasProject, apiStatus, syncStatus, isDirty, isPaletteDirty],
+  );
 }

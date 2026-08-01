@@ -21,6 +21,7 @@ Prefer these over blind `grep` or directory walks when you know the **layer** bu
 |------|---------|
 | `search_frontend_elements.py` | React layers under `apps/web/src/` |
 | `search_backend_elements.py` | C++/SQL layers under `server/` |
+| `loop_management.js` | Continue/stop decisions for agent orchestration loops |
 
 ### Frontend search
 

@@ -13,7 +13,7 @@ vi.mock("@/api/projects", () => ({
   createBlankProject: createBlankProjectMock,
 }));
 
-vi.mock("@/hooks/useLoadProject", () => ({
+vi.mock("@/lib/loadProject", () => ({
   loadProjectIntoEditor: loadProjectIntoEditorMock,
 }));
 
@@ -39,6 +39,26 @@ describe("NewProjectPage", () => {
     render(<NewProjectPage onOpenEditor={() => {}} onStartImport={() => {}} />);
     expect(screen.getByText(copy.newProjectBlankTitle)).toBeInTheDocument();
     expect(screen.getByText(copy.newProjectImportTitle)).toBeInTheDocument();
+  });
+
+  it("shows animation hint on the blank card before expanding", () => {
+    render(<NewProjectPage onOpenEditor={() => {}} onStartImport={() => {}} />);
+    expect(screen.getByText(copy.newProjectBlankAnimationHint)).toBeInTheDocument();
+  });
+
+  it("applies matching entry card styles to blank and import paths", () => {
+    render(<NewProjectPage onOpenEditor={() => {}} onStartImport={() => {}} />);
+
+    const blankCard = screen
+      .getByText(copy.newProjectBlankTitle)
+      .closest("button");
+    const importCard = screen
+      .getByText(copy.newProjectImportTitle)
+      .closest("button");
+
+    expect(blankCard).toBeTruthy();
+    expect(importCard).toBeTruthy();
+    expect(blankCard?.className).toBe(importCard?.className);
   });
 
   it("shows resolution presets when blank is selected", () => {

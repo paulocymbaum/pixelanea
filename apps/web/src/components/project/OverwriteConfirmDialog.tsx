@@ -14,6 +14,7 @@ type OverwriteConfirmDialogProps = {
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isSubmitting?: boolean;
+  error?: string | null;
 };
 
 export function OverwriteConfirmDialog({
@@ -21,6 +22,7 @@ export function OverwriteConfirmDialog({
   onOpenChange,
   onConfirm,
   isSubmitting = false,
+  error = null,
 }: OverwriteConfirmDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -29,6 +31,12 @@ export function OverwriteConfirmDialog({
           <DialogTitle>{copy.projectOverwriteTitle}</DialogTitle>
           <DialogDescription>{copy.projectOverwriteDescription}</DialogDescription>
         </DialogHeader>
+
+        {error ? (
+          <p className="text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
 
         <DialogFooter>
           <Button

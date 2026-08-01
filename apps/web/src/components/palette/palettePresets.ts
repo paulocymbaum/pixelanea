@@ -1,9 +1,22 @@
+import { copy } from "@/content/copy";
+
 export type PalettePresetId = "retro" | "gameboy" | "monochrome";
 
 export type PalettePreset = {
   id: PalettePresetId;
   colors: readonly string[];
 };
+
+const PALETTE_PRESET_LABELS: Record<PalettePresetId, string> = {
+  retro: copy.palettePresetRetro,
+  gameboy: copy.palettePresetGameboy,
+  monochrome: copy.palettePresetMonochrome,
+};
+
+/** User-facing label for a palette preset button (shared by grid + QA harness). */
+export function palettePresetLabel(id: PalettePresetId): string {
+  return PALETTE_PRESET_LABELS[id];
+}
 
 /** Curated presets per UX.md / DESIGN.md — applied via PUT /palette. */
 export const PALETTE_PRESETS: readonly PalettePreset[] = [

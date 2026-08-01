@@ -1,6 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { pixelateImage } from "@/api/import";
-import { createBlankProject } from "@/api/projects";
+import { closeProjectSession, createBlankProject } from "@/api/projects";
 import { errorDetail, logger } from "@/logging/logger";
 import {
   fetchPalette,
@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/Button";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
-import { loadProjectIntoEditor } from "@/hooks/useLoadProject";
+import { loadProjectIntoEditor } from "@/lib/loadProject";
 import { useSessionStore } from "@/state/sessionStore";
 import { getPalettePreset } from "@/components/palette/palettePresets";
 import { FileDropStep } from "./FileDropStep";
@@ -54,7 +54,7 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const [palettePreset, setPalettePreset] = useState(
     lastPalettePreset ?? "retro",
   );
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [previewProjectId, setPreviewProjectId] = useState<string | null>(null);
   const [previewPixels, setPreviewPixels] = useState<Uint8Array | null>(null);
   const [previewPalette, setPreviewPalette] = useState<readonly string[]>([]);
   const [previewWidth, setPreviewWidth] = useState<number>(resolution);
@@ -62,7 +62,19 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const fileReadGenerationRef = useRef(0);
+  const previewAdoptedRef = useRef(false);
+
   const stepIndex = IMPORT_WIZARD_STEPS.indexOf(step);
+
+  useEffect(() => {
+    return () => {
+      const orphanId = previewProjectId;
+      if (orphanId && !previewAdoptedRef.current) {
+        void closeProjectSession(orphanId);
+      }
+    };
+  }, [previewProjectId]);
 
   const handleFileSelected = async (selected: File) => {
     setError(null);
@@ -70,11 +82,20 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       setError(errors.importFileType);
       return;
     }
+
+    const generation = ++fileReadGenerationRef.current;
+
     try {
       const encoded = await fileToBase64(selected);
+      if (generation !== fileReadGenerationRef.current) {
+        return;
+      }
       setFile(selected);
       setImageData(encoded);
     } catch (error) {
+      if (generation !== fileReadGenerationRef.current) {
+        return;
+      }
       logger.error("PixelateWizard", "file_read_failed", { error: errorDetail(error) });
       setError(errors.importFileRead);
     }
@@ -88,21 +109,28 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
     setIsLoading(true);
     setError(null);
 
-    const created = await createBlankProject({
-      ...DEFAULT_PROJECT,
-      width: resolution,
-      height: resolution,
-    });
+    let activeProjectId = previewProjectId;
 
-    if (!created.ok) {
-      setError(created.message);
-      setIsLoading(false);
-      return;
+    if (!activeProjectId) {
+      const created = await createBlankProject({
+        ...DEFAULT_PROJECT,
+        width: resolution,
+        height: resolution,
+      });
+
+      if (!created.ok) {
+        setError(created.message);
+        setIsLoading(false);
+        return;
+      }
+
+      activeProjectId = created.project.id;
+      setPreviewProjectId(activeProjectId);
     }
 
     const preset = getPalettePreset(palettePreset);
     if (preset) {
-      const saved = await saveImportPalette(created.project.id, preset.colors);
+      const saved = await saveImportPalette(activeProjectId, preset.colors);
       if (!saved.ok) {
         setError(saved.message);
         setIsLoading(false);
@@ -110,7 +138,7 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       }
     }
 
-    const pixelate = await pixelateImage(created.project.id, {
+    const pixelate = await pixelateImage(activeProjectId, {
       imageData,
       targetWidth: resolution,
       targetHeight: resolution,
@@ -134,7 +162,7 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
     if (response.palette) {
       palette = paletteColorsFromApi(response.palette);
     } else {
-      const fetched = await fetchPalette(created.project.id);
+      const fetched = await fetchPalette(activeProjectId);
       if (fetched.ok) {
         palette = paletteColorsFromApi(fetched.palette);
       } else if (preset) {
@@ -142,13 +170,12 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       }
     }
 
-    setProjectId(created.project.id);
     setPreviewPixels(pixels);
     setPreviewPalette(palette);
     setPreviewWidth(response.width);
     setPreviewHeight(response.height);
     setIsLoading(false);
-  }, [imageData, resolution, palettePreset, removeBackground]);
+  }, [imageData, palettePreset, previewProjectId, removeBackground, resolution]);
 
   const goNext = async () => {
     if (step === "file") {
@@ -174,8 +201,9 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       return;
     }
 
-    if (step === "preview" && projectId) {
-      const loaded = await loadProjectIntoEditor(projectId);
+    if (step === "preview" && previewProjectId) {
+      previewAdoptedRef.current = true;
+      const loaded = await loadProjectIntoEditor(previewProjectId);
       if (!loaded.ok) {
         setError(loaded.message);
         return;

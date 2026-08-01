@@ -54,13 +54,14 @@ export function LeftToolRail() {
         <button
           type="button"
           onClick={() => setDuplicateDialogOpen(true)}
-          className={cn(toolButtonVariants({ active: false }))}
+          className={cn(
+            toolButtonVariants({ active: false }),
+            "mt-1 text-secondary/80 hover:text-secondary",
+          )}
           aria-label={copy.frameDuplicateTitle}
+          title={copy.frameDuplicateTitle}
         >
-          <Copy className="h-5 w-5" strokeWidth={1.5} />
-          <span className="text-center leading-tight">
-            {copy.frameDuplicateTitle}
-          </span>
+          <Copy className="h-5 w-5" strokeWidth={1.5} aria-hidden />
         </button>
       </aside>
 

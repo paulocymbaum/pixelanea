@@ -188,7 +188,7 @@ TEST_CASE("bundle unpack rejects missing manifest", "[bundle]") {
   REQUIRE(result.error().find(".pixelanea project") != std::string::npos);
 }
 
-TEST_CASE("ProjectRepository open rejects already-open project", "[bundle]") {
+TEST_CASE("ProjectRepository reopen returns attached project", "[bundle]") {
   NullLogger logger;
   ProjectRepository projects{logger};
   const auto project = create_sample_project(projects);
@@ -199,8 +199,8 @@ TEST_CASE("ProjectRepository open rejects already-open project", "[bundle]") {
   REQUIRE(projects.save_to_bundle(id, bundle_path).has_value());
 
   const auto second_open = projects.open_from_bundle(bundle_path);
-  REQUIRE_FALSE(second_open.has_value());
-  REQUIRE(second_open.error() == "project is already open");
+  REQUIRE(second_open.has_value());
+  REQUIRE(second_open.value().id.value == id.value);
 
   REQUIRE(projects.close(id).has_value());
 }

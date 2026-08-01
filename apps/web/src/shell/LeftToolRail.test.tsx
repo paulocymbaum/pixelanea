@@ -46,6 +46,16 @@ describe("LeftToolRail", () => {
     );
   });
 
+  it("renders duplicate as icon-only secondary chrome action", () => {
+    render(<LeftToolRail />);
+
+    const duplicateButton = screen.getByRole("button", {
+      name: copy.frameDuplicateTitle,
+    });
+    expect(duplicateButton.querySelector("span")).toBeNull();
+    expect(duplicateButton.className).toContain("text-secondary/80");
+  });
+
   it("opens duplicate dialog instead of changing active tool", () => {
     render(<LeftToolRail />);
 

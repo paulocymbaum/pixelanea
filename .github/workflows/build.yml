@@ -67,6 +67,9 @@ jobs:
       - name: Frontend typecheck
         run: pnpm --filter web exec tsc --noEmit
 
+      - name: QA matrix harness
+        run: pnpm --filter @pixelanea/web exec vitest run src/qa/
+
       - name: Frontend unit tests
         run: pnpm --filter @pixelanea/web test
 

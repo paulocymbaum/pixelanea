@@ -231,10 +231,10 @@ domain::Result<domain::Project> ProjectRepository::open_from_bundle(
     if (has(project.value().id)) {
       std::error_code ec;
       std::filesystem::remove_all(extract_dir, ec);
-      log_.warn("project.already_open",
+      log_.info("project.reopen_attached",
                 {{"project_id", project.value().id.value},
                  {"bundle_path", bundle_path.string()}});
-      return domain::Result<domain::Project>::fail("project is already open");
+      return get(project.value().id);
     }
 
     ProjectHandle handle;

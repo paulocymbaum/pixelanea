@@ -1,9 +1,7 @@
-import { ColorFiltersSection } from "@/components/filters/ColorFiltersSection";
 import { PaletteActions } from "@/components/palette/PaletteActions";
 import { PaletteLock } from "@/components/palette/PaletteLock";
+import { PaletteMoreToolsSection } from "@/components/palette/PaletteMoreToolsSection";
 import { PalettePresets } from "@/components/palette/PalettePresets";
-import { PaletteSaveButton } from "@/components/palette/PaletteSaveButton";
-import { PaletteShadingSection } from "@/components/palette/PaletteShadingSection";
 import { PaletteSwatchGrid } from "@/components/palette/PaletteSwatchGrid";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
@@ -62,11 +60,9 @@ export function RightPalettePanel() {
         {projectId ? (
           <>
             <PaletteSwatchGrid />
-            <PaletteShadingSection />
-            <ColorFiltersSection />
             <PalettePresets />
             <PaletteActions />
-            <PaletteSaveButton />
+            <PaletteMoreToolsSection />
           </>
         ) : (
           <div className="flex flex-1 items-center justify-center p-4 text-secondary">

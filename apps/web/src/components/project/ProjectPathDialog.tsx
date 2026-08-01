@@ -13,7 +13,7 @@ import { ASSET_TYPES, DEFAULT_ASSET_TYPE } from "@/content/assetTypes";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
 import { cn } from "@/lib/cn";
-import { isValidProjectPath, normalizeProjectPath } from "./pathUtils";
+import { isValidProjectPath, hasNonPixelaneaExtension, normalizeProjectPath } from "./pathUtils";
 
 type ProjectPathDialogProps = {
   open: boolean;
@@ -22,6 +22,7 @@ type ProjectPathDialogProps = {
   initialPath?: string;
   initialAssetType?: AssetType;
   animationAssetTypeEnabled?: boolean;
+  isFallback?: boolean;
   onSubmit: (result: { path: string; assetType?: AssetType }) => void;
   isSubmitting?: boolean;
   error?: string | null;
@@ -60,6 +61,7 @@ export function ProjectPathDialog({
   initialPath = "",
   initialAssetType = DEFAULT_ASSET_TYPE,
   animationAssetTypeEnabled = false,
+  isFallback = false,
   onSubmit,
   isSubmitting = false,
   error = null,
@@ -84,8 +86,9 @@ export function ProjectPathDialog({
 
   const title =
     mode === "open" ? copy.projectOpenTitle : copy.projectSaveAsTitle;
-  const description =
-    mode === "open"
+  const description = isFallback
+    ? copy.projectPathFallbackDescription
+    : mode === "open"
       ? copy.projectOpenDescription
       : copy.projectSaveAsDescription;
   const confirmLabel = isSubmitting
@@ -97,6 +100,11 @@ export function ProjectPathDialog({
       : copy.projectSaveConfirm;
 
   const handleSubmit = () => {
+    if (mode === "open" && hasNonPixelaneaExtension(path)) {
+      setValidationError(errors.invalidProjectPath);
+      return;
+    }
+
     const normalized = normalizeProjectPath(path);
     if (!isValidProjectPath(normalized)) {
       setValidationError(errors.invalidProjectPath);
@@ -119,44 +127,52 @@ export function ProjectPathDialog({
 
         <div className="flex flex-col gap-4">
           {mode === "saveAs" ? (
-            <fieldset className="flex flex-col gap-2 border-0 p-0">
-              <legend className="text-sm font-medium text-primary">
-                {copy.projectAssetTypeLabel}
-              </legend>
-              <div className="grid gap-2 sm:grid-cols-2">
-                {ASSET_TYPES.map((type) => {
-                  const disabled =
-                    type === "animation" && !animationAssetTypeEnabled;
-                  const selected = assetType === type;
-                  return (
-                    <Button
-                      key={type}
-                      type="button"
-                      variant={selected ? "primary" : "secondary"}
-                      className={cn(
-                        "flex h-auto min-h-16 flex-col items-start gap-1 px-4 py-3 text-left",
-                        disabled && "cursor-not-allowed opacity-60",
-                      )}
-                      onClick={() => {
-                        if (!disabled) {
-                          setAssetType(type);
-                        }
-                      }}
-                      disabled={isSubmitting || disabled}
-                      aria-pressed={selected}
-                      aria-disabled={disabled}
-                    >
-                      <span className="font-semibold">{assetTypeLabel(type)}</span>
-                      <span className="text-sm opacity-80">
-                        {disabled
-                          ? copy.projectAssetTypeAnimationDisabledHint
-                          : assetTypeHint(type)}
-                      </span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </fieldset>
+            <div className="flex flex-col gap-2">
+              <p className="text-sm text-secondary">
+                {copy.projectAssetTypeDefaultSummary}
+              </p>
+              <details className="rounded-md border border-border bg-surface px-3 py-2">
+                <summary className="cursor-pointer text-sm font-medium text-primary">
+                  {copy.projectAssetTypeAdvancedSummary}
+                </summary>
+                <fieldset className="mt-3 flex flex-col gap-2 border-0 p-0">
+                  <legend className="sr-only">{copy.projectAssetTypeLabel}</legend>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {ASSET_TYPES.map((type) => {
+                      const disabled =
+                        type === "animation" && !animationAssetTypeEnabled;
+                      const selected = assetType === type;
+                      return (
+                        <Button
+                          key={type}
+                          type="button"
+                          variant={selected ? "primary" : "secondary"}
+                          className={cn(
+                            "flex h-auto min-h-16 flex-col items-start gap-1 px-4 py-3 text-left",
+                            disabled && "cursor-not-allowed opacity-60",
+                          )}
+                          onClick={() => {
+                            if (!disabled) {
+                              setAssetType(type);
+                            }
+                          }}
+                          disabled={isSubmitting || disabled}
+                          aria-pressed={selected}
+                          aria-disabled={disabled}
+                        >
+                          <span className="font-semibold">{assetTypeLabel(type)}</span>
+                          <span className="text-sm opacity-80">
+                            {disabled
+                              ? copy.projectAssetTypeAnimationDisabledHint
+                              : assetTypeHint(type)}
+                          </span>
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              </details>
+            </div>
           ) : null}
 
           <div className="flex flex-col gap-2">

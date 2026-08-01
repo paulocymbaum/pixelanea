@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
-import { errors } from "@/content/errors";
 import {
   deriveProjectStatus,
   type ProjectStatusInput,
@@ -39,7 +38,7 @@ describe("deriveProjectStatus", () => {
     });
   });
 
-  it("returns disconnected regardless of dirty/sync when api disconnected", () => {
+  it("returns idle when disconnected so banner owns disconnect UX", () => {
     expect(
       deriveProjectStatus(
         input({
@@ -49,7 +48,13 @@ describe("deriveProjectStatus", () => {
           apiStatus: "disconnected",
         }),
       ),
-    ).toEqual({ kind: "disconnected", label: errors.apiDisconnected });
+    ).toEqual({ kind: "error", label: copy.statusSyncError });
+  });
+
+  it("returns idle without label when disconnected and no project", () => {
+    expect(
+      deriveProjectStatus(input({ hasProject: false, apiStatus: "disconnected" })),
+    ).toEqual({ kind: "idle" });
   });
 
   it("returns error when sync failed while connected", () => {
@@ -87,6 +92,7 @@ describe("deriveProjectStatus", () => {
   it("returns idle when no project and connected/clean", () => {
     expect(deriveProjectStatus(input({ hasProject: false }))).toEqual({
       kind: "idle",
+      label: copy.statusReady,
     });
   });
 

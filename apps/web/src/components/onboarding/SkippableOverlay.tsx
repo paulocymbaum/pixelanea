@@ -12,12 +12,17 @@ const STEPS = [
   {
     title: copy.onboardingStepPaintTitle,
     body: copy.onboardingStepPaintBody,
-    position: "left-1/2 top-1/2 max-w-sm -translate-x-1/2",
+    position: "bottom-24 left-1/2 max-w-sm -translate-x-1/2",
   },
   {
     title: copy.onboardingStepSaveTitle,
     body: copy.onboardingStepSaveBody,
     position: "left-4 top-16 max-w-xs",
+  },
+  {
+    title: copy.onboardingStepAnimateTitle,
+    body: copy.onboardingStepAnimateBody,
+    position: "bottom-24 left-1/2 max-w-sm -translate-x-1/2",
   },
 ] as const;
 

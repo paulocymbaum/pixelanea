@@ -387,23 +387,26 @@ New 16×16 → Import/define 16-color palette → Enable palette lock
 
 | Action | Behavior |
 |--------|----------|
-| Duplicate frames | Copy frame 0 → N frames (8, 16, 32) |
+| Duplicate frames | **Duplicate frames** on frame strip → 8, 16, or 32 frames; optional quick-start with 8 frames at create |
 | Switch frame | Click thumbnail; canvas updates instantly |
 | Play | Cycles frames at FPS; read-only canvas during play |
 | Pause | Returns to edit mode on current frame |
 | FPS | Slider 1–24; default 8 |
 | Loop | Toggle; on by default |
+| Onion skin | Behind `features.onionSkin` flag (off in Sprint 1 default) |
 
 ### Project I/O
 
 | Action | Behavior |
 |--------|----------|
-| New | Template picker (blank / image / animation) |
-| Open | Native file picker; `.pixelanea` filter |
-| Save | Write bundle; "Project saved." toast |
-| Save As | New path; no overwrite without confirm |
-| Export PNG | Current frame or spritesheet (v1.1) |
-| Import image | Pixelate wizard; non-destructive new layer on frame 0 |
+| New | Blank or import entry cards; returning users get quick-start |
+| Open | Native file picker (desktop) with `.pixelanea` filter; path dialog fallback |
+| Save | Write bundle; **Project saved.** toast; status bar shows sync state |
+| Save As | New path; asset type defaults to Character; overwrite confirm |
+| Export PNG | Current frame; success toast with filename |
+| Export spritesheet / GIF | Behind feature flags (off in Sprint 1 default) |
+| Import image | Pixelate wizard; File menu or home **From image** |
+| Unsaved guard | Confirm before New / Open / Import when dirty |
 
 ---
 

@@ -27,3 +27,7 @@ Thumbs.db
 
 # Generated skill run artifacts (reproducible locally)
 .cursor/skill-outputs/
+
+# Playwright
+test-results/
+playwright-report/

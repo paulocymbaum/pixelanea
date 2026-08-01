@@ -21,7 +21,6 @@ import { getPalettePreset } from "@/components/palette/palettePresets";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
-import { NewProjectPage } from "@/pages/NewProjectPage";
 import { useEditorStore } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
@@ -69,6 +68,7 @@ import {
 const {
   checkHealthMock,
   createBlankProjectMock,
+  closeProjectSessionMock,
   fetchPaletteMock,
   loadProjectIntoEditorMock,
   pixelateImageMock,
@@ -78,6 +78,7 @@ const {
 } = vi.hoisted(() => ({
   checkHealthMock: vi.fn(),
   createBlankProjectMock: vi.fn(),
+  closeProjectSessionMock: vi.fn(async () => ({ ok: true as const })),
   fetchPaletteMock: vi.fn(),
   loadProjectIntoEditorMock: vi.fn(),
   pixelateImageMock: vi.fn(),
@@ -95,6 +96,7 @@ vi.mock("@/api/projects", async (importOriginal) => {
   return {
     ...actual,
     createBlankProject: createBlankProjectMock,
+    closeProjectSession: closeProjectSessionMock,
     saveProjectToBundle: saveProjectToBundleMock,
   };
 });
@@ -113,12 +115,12 @@ vi.mock("@/api/frames", async (importOriginal) => {
   return { ...actual, saveFrame: saveFrameMock };
 });
 
-vi.mock("@/hooks/useLoadProject", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/hooks/useLoadProject")>();
+vi.mock("@/lib/loadProject", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/loadProject")>();
   return { ...actual, loadProjectIntoEditor: loadProjectIntoEditorMock };
 });
 
-import { applyLoadedProjectToEditor } from "@/hooks/useLoadProject";
+import { applyLoadedProjectToEditor } from "@/lib/loadProject";
 import { paletteColorsFromApi } from "@/api/palette";
 
 const RETRO_COLORS = getPalettePreset("retro")!.colors;
@@ -301,6 +303,9 @@ describe("QA-002 import matrix", () => {
         }),
       );
       expect(saveImportPaletteMock).toHaveBeenCalledWith("proj-1", RETRO_COLORS);
+      expect(createBlankProjectMock).toHaveBeenCalledWith(
+        expect.objectContaining({ frameCount: 1 }),
+      );
       expect(previewRgbAt(capture, 0, 0)).toEqual(hexToRgb(RETRO_COLORS[0]!));
 
       await clickAccept();
@@ -518,14 +523,15 @@ describe("QA-002 import matrix", () => {
       await waitForPreview(64);
 
       expect(pixelateImageMock).toHaveBeenLastCalledWith(
-        "proj-2",
+        "proj-1",
         expect.objectContaining({ targetWidth: 64, targetHeight: 64 }),
       );
+      expect(createBlankProjectMock).toHaveBeenCalledTimes(1);
       expect(previewCanvas().width).toBe(64);
       expect(previewCanvas().height).toBe(64);
 
       await clickAccept();
-      expect(loadProjectIntoEditorMock).toHaveBeenLastCalledWith("proj-2");
+      expect(loadProjectIntoEditorMock).toHaveBeenLastCalledWith("proj-1");
       expect(useEditorStore.getState().gridWidth).toBe(64);
       expect(useEditorStore.getState().pixels.length).toBe(64 * 64);
     });
@@ -660,7 +666,7 @@ describe("QA-002 import matrix", () => {
         expect.objectContaining({ imageData: base64ForFile(second) }),
       );
 
-      // Out-of-order completion must still pair the shown file with its payload.
+      // Last dropped file wins even when reads complete out of order.
       cleanup();
       const outOfOrder = installQueuedFileReader();
       pixelateImageMock.mockClear();
@@ -674,8 +680,7 @@ describe("QA-002 import matrix", () => {
         outOfOrder[0]!.resolve();
       });
 
-      // Whichever read completes last wins; the payload must match what is shown.
-      const shown = screen.queryByText("a.png") ? first : second;
+      expect(screen.getByText("b.png")).toBeInTheDocument();
       await clickNext();
       await selectResolution(16);
       await clickNext();
@@ -683,7 +688,7 @@ describe("QA-002 import matrix", () => {
       await waitForPreview(16);
       expect(pixelateImageMock).toHaveBeenLastCalledWith(
         expect.any(String),
-        expect.objectContaining({ imageData: base64ForFile(shown) }),
+        expect.objectContaining({ imageData: base64ForFile(second) }),
       );
     });
   });
@@ -743,69 +748,6 @@ describe("QA-002 import matrix", () => {
       expect(state.pixels[0]).toBe(0);
       expect(state.pixels[15]).toBe(0);
       expect(state.pixels[8 * 16 + 8]).toBe(2);
-    });
-
-    it("[EDGE-004] import creates a single frame; 8-frame path is blank quick-start only", async () => {
-      renderImportWizard();
-      await advanceToPaletteStep(imageFile("cat.png"), 16);
-      await clickNext();
-      await waitForPreview(16);
-      await clickAccept();
-
-      expect(createBlankProjectMock).toHaveBeenCalledWith(
-        expect.objectContaining({ frameCount: 1 }),
-      );
-      expect(useEditorStore.getState().frameCount).toBe(1);
-
-      cleanup();
-      useSessionStore.setState({
-        hasVisited: true,
-        lastEntryPath: "blank",
-        lastCanvasSize: { width: 32, height: 32 },
-      });
-      const onOpenEditor = vi.fn();
-      render(
-        <NewProjectPage onOpenEditor={onOpenEditor} onStartImport={vi.fn()} />,
-      );
-      fireEvent.click(screen.getByText(copy.newProjectQuickStart8(32, 32)));
-
-      await waitFor(() => {
-        expect(createBlankProjectMock).toHaveBeenLastCalledWith(
-          expect.objectContaining({ frameCount: 8 }),
-        );
-      });
-      await waitFor(() => {
-        expect(useEditorStore.getState().frameCount).toBe(8);
-      });
-      expect(onOpenEditor).toHaveBeenCalledWith("blank");
-    });
-
-    it("[EDGE-005] custom canvas size is accepted on the blank path", async () => {
-      render(<NewProjectPage onOpenEditor={vi.fn()} onStartImport={vi.fn()} />);
-      fireEvent.click(screen.getByText(copy.newProjectBlankTitle));
-      fireEvent.click(screen.getByText(copy.customCanvasSizeLabel));
-      fireEvent.change(screen.getByLabelText(copy.customCanvasSizeWidthLabel), {
-        target: { value: "48" },
-      });
-      fireEvent.change(screen.getByLabelText(copy.customCanvasSizeHeightLabel), {
-        target: { value: "64" },
-      });
-      fireEvent.click(screen.getByText(copy.customCanvasSizeConfirm));
-      fireEvent.click(screen.getByText(copy.newProjectCreateBlank));
-
-      await waitFor(() => {
-        expect(createBlankProjectMock).toHaveBeenCalledWith(
-          expect.objectContaining({ width: 48, height: 64, frameCount: 1 }),
-        );
-      });
-      await waitFor(() => {
-        expect(useEditorStore.getState().gridWidth).toBe(48);
-      });
-      expect(useEditorStore.getState().gridHeight).toBe(64);
-      expect(useSessionStore.getState().lastCanvasSize).toEqual({
-        width: 48,
-        height: 64,
-      });
     });
   });
 

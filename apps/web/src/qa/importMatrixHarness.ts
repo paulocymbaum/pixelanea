@@ -7,17 +7,12 @@ import type { ImportWizardStep } from "@/components/import/types";
 import { getResolutionOption } from "@/components/import/resolutionPresets";
 import type { ResolutionPreset } from "@/components/import/resolutionPresets";
 import type { PalettePresetId } from "@/components/palette/palettePresets";
+import { palettePresetLabel } from "@/components/palette/palettePresets";
 import { copy } from "@/content/copy";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
 
 export const IMPORT_PREVIEW_LABEL = "Import preview";
-
-const PALETTE_PRESET_LABELS: Record<PalettePresetId, string> = {
-  retro: copy.palettePresetRetro,
-  gameboy: copy.palettePresetGameboy,
-  monochrome: copy.palettePresetMonochrome,
-};
 
 const nativeFileReader = globalThis.FileReader;
 
@@ -338,7 +333,7 @@ export async function selectResolution(size: ResolutionPreset): Promise<void> {
 }
 
 export async function selectPalettePreset(id: PalettePresetId): Promise<void> {
-  await clickButton(PALETTE_PRESET_LABELS[id]);
+  await clickButton(palettePresetLabel(id));
 }
 
 export async function toggleRemoveBackground(): Promise<void> {

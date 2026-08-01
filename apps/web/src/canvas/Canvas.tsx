@@ -1,5 +1,6 @@
-import { useEditorStore } from "@/state/editorStore";
+import { copy } from "@/content/copy";
 import { hasActiveColorFilters } from "@/lib/colorFilters";
+import { useEditorStore } from "@/state/editorStore";
 import { useCallback, useEffect, useRef } from "react";
 import {
   isCellInBounds,
@@ -23,10 +24,8 @@ export function Canvas() {
   const gridHeight = useEditorStore((s) => s.gridHeight);
   const pixels = useEditorStore((s) => s.pixels);
   const paletteColors = useEditorStore((s) => s.paletteColors);
-  const activeFrameIndex = useEditorStore((s) => s.activeFrameIndex);
   const frameCount = useEditorStore((s) => s.frameCount);
   const framePixelsByIndex = useEditorStore((s) => s.framePixelsByIndex);
-  const onionSkinEnabled = useEditorStore((s) => s.onionSkinEnabled);
   const colorFilters = useEditorStore((s) => s.colorFilters);
   const placingLighting = useEditorStore((s) => s.placingLighting);
   const addColorFilterLightingPoint = useEditorStore(
@@ -56,16 +55,6 @@ export function Canvas() {
     const ctx = setupHiDpiCanvas(canvas, cssWidth, cssHeight);
     const tokens = readCanvasTokens(canvas);
 
-    const showOnionSkin =
-      onionSkinEnabled &&
-      !readOnly &&
-      !isPlaying &&
-      frameCount > 1 &&
-      activeFrameIndex > 0;
-    const onionSkinPixels = showOnionSkin
-      ? framePixelsByIndex[activeFrameIndex - 1]
-      : undefined;
-
     const showFilterPreview =
       !readOnly && hasActiveColorFilters(colorFilters);
 
@@ -79,7 +68,6 @@ export function Canvas() {
       paletteColors,
       viewport: { zoom, panX, panY },
       tokens,
-      onionSkinPixels,
       colorFilters: showFilterPreview ? colorFilters : undefined,
       showLightingMarkers: showFilterPreview && !isPlaying,
     });
@@ -91,10 +79,6 @@ export function Canvas() {
     zoom,
     panX,
     panY,
-    activeFrameIndex,
-    frameCount,
-    framePixelsByIndex,
-    onionSkinEnabled,
     colorFilters,
     readOnly,
     isPlaying,
@@ -209,6 +193,16 @@ export function Canvas() {
       ? "crosshair"
       : getToolCursor(activeTool);
 
+  const canvasIsBlank =
+    !pixels.some((value) => value !== 0) &&
+    Array.from({ length: frameCount }, (_, index) => index).every((index) => {
+      const frame = framePixelsByIndex[index] ?? pixels;
+      return !frame.some((value) => value !== 0);
+    });
+
+  const showEmptyCanvasHint =
+    !readOnly && !isPlaying && !placingLighting && canvasIsBlank;
+
   const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
     event.preventDefault();
     const canvas = canvasRef.current;
@@ -243,6 +237,11 @@ export function Canvas() {
         onPointerLeave={() => setHoverCell(null)}
         onWheel={handleWheel}
       />
+      {showEmptyCanvasHint ? (
+        <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-base text-secondary">
+          {copy.emptyCanvasHint}
+        </p>
+      ) : null}
       <div className="pointer-events-none absolute bottom-3 right-3">
         <ZoomControls />
       </div>

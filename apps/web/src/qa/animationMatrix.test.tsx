@@ -1,6 +1,5 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { ONION_SKIN_OPACITY } from "@/canvas/renderer";
 import { Canvas } from "@/canvas/Canvas";
 import { AnimationPlayer } from "@/components/animation/AnimationPlayer";
 import { FrameDuplicateDialog } from "@/components/frames/FrameDuplicateDialog";
@@ -28,6 +27,14 @@ import {
   resetAnimationProject,
   stubElementBox,
 } from "./animationMatrixHarness";
+
+vi.mock("@/content/features", () => ({
+  features: {
+    exportSpritesheet: false,
+    exportGif: false,
+    onionSkin: false,
+  },
+}));
 
 vi.mock("@/api/frames", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/frames")>();
@@ -260,30 +267,6 @@ describe("QA-003 animation matrix", () => {
       useEditorStore.setState({ animationLoop: true, isPlaying: true });
       expect(useEditorStore.getState().advancePlaybackFrame()).toBe(true);
       expect(useEditorStore.getState().activeFrameIndex).toBe(0);
-    });
-
-    it("[HP-008] onion skin ghosts the previous frame", () => {
-      const restoreBox = stubElementBox();
-      try {
-        resetAnimationProject({
-          frameCount: 8,
-          activeFrameIndex: 3,
-          onionSkinEnabled: true,
-        });
-        render(<Canvas />);
-
-        const options = lastRenderCall();
-        expect(options?.onionSkinPixels).toBeDefined();
-        expect(options?.onionSkinPixels?.[0]).toBe(3);
-        expect(ONION_SKIN_OPACITY).toBe(0.3);
-
-        act(() => {
-          useEditorStore.getState().setOnionSkinEnabled(false);
-        });
-        expect(lastRenderCall()?.onionSkinPixels).toBeUndefined();
-      } finally {
-        restoreBox();
-      }
     });
 
     it("[HP-009] copy frame to frame", async () => {
@@ -543,23 +526,6 @@ describe("QA-003 animation matrix", () => {
       expect(useEditorStore.getState().animationFps).toBe(24);
     });
 
-    it("[EDGE-005] onion skin on frame 0 draws no ghost", () => {
-      const restoreBox = stubElementBox();
-      try {
-        resetAnimationProject({
-          frameCount: 8,
-          activeFrameIndex: 0,
-          onionSkinEnabled: true,
-        });
-        expect(() => render(<Canvas />)).not.toThrow();
-        expect(lastRenderCall()?.onionSkinPixels).toBeUndefined();
-      } finally {
-        restoreBox();
-      }
-    });
-  });
-
-  describe("error handling", () => {
     it("[ERR-001] duplicate frames API failure keeps the frame count", async () => {
       resetAnimationProject({ frameCount: 1 });
       vi.mocked(duplicateFrames).mockResolvedValue({

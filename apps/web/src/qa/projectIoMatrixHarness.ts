@@ -1,4 +1,3 @@
-import { vi } from "vitest";
 import { ApiError } from "@pixelanea/api-client";
 import type {
   ApiClient,
@@ -15,9 +14,6 @@ import type {
 } from "@pixelanea/api-client";
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
 import { useEditorStore } from "@/state/editorStore";
-
-/** `ExportGifRequest` is not re-exported from the package index, so derive it. */
-type ExportGifBody = NonNullable<Parameters<ApiClient["exportGif"]>[1]>;
 
 export const MATRIX_PROJECT_ID = "project-io-project";
 export const MATRIX_GRID = 8;
@@ -40,8 +36,7 @@ type ProjectRecord = {
   frames: Map<number, number[]>;
 };
 
-/** What a `.pixelanea` file holds once packed: project row, palette, every frame. */
-export type StoredBundle = {
+type StoredBundle = {
   record: ProjectRecord;
   assetType: AssetType;
   savedAt: string;
@@ -63,13 +58,9 @@ export type SeedProjectParams = {
   frames?: Record<number, Uint8Array>;
 };
 
-function cloneProject(project: Project): Project {
-  return { ...project };
-}
-
 function cloneRecord(record: ProjectRecord): ProjectRecord {
   return {
-    project: cloneProject(record.project),
+    project: { ...record.project },
     palette: {
       ...record.palette,
       colors: record.palette.colors.map((color) => ({ ...color })),
@@ -99,12 +90,10 @@ export class FakeProjectBackend {
   /** Ordered log of API calls, used by race cases to assert sequencing. */
   readonly calls: string[] = [];
   readonly writeCounts = new Map<string, number>();
-  readonly gifRequests: Array<{ projectId: string; body?: ExportGifBody }> = [];
 
   bundleFaults = new Map<string, BundleFault>();
   readOnlyPrefixes: string[] = [];
   diskFull = false;
-  gifError: ApiError | null = null;
   /** Awaited inside `saveProject` before the write lands; used to gate races. */
   beforeSave: ((path: string) => Promise<void> | void) | null = null;
   /** Awaited inside `putFrame`; used to keep autosave in flight during a save. */
@@ -148,7 +137,7 @@ export class FakeProjectBackend {
       frames,
     });
 
-    return cloneProject(project);
+    return { ...project };
   }
 
   /**
@@ -170,10 +159,6 @@ export class FakeProjectBackend {
   /** Drop every open project handle, as restarting the local server would. */
   simulateSessionRestart(): void {
     this.projects.clear();
-  }
-
-  isOpen(projectId: string): boolean {
-    return this.projects.has(projectId);
   }
 
   bundleFrame(path: string, frameIndex: number): number[] {
@@ -213,7 +198,7 @@ export class FakeProjectBackend {
     const client = {
       getProject: async (projectId: string): Promise<Project> => {
         this.calls.push(`getProject:${projectId}`);
-        return cloneProject(this.requireRecord(projectId).project);
+        return { ...this.requireRecord(projectId).project };
       },
 
       updateProject: async (
@@ -222,8 +207,6 @@ export class FakeProjectBackend {
       ): Promise<Project> => {
         this.calls.push(`updateProject:${projectId}`);
         const record = this.requireRecord(projectId);
-        // Mirrors ProjectRepository::update: every provided field is written to
-        // the project row, and the row is what a later save packs.
         record.project = {
           ...record.project,
           ...(body.name === undefined ? {} : { name: body.name }),
@@ -233,7 +216,7 @@ export class FakeProjectBackend {
           ...(body.assetType === undefined ? {} : { assetType: body.assetType }),
           updatedAt: "2026-07-31T00:00:00Z",
         };
-        return cloneProject(record.project);
+        return { ...record.project };
       },
 
       getPalette: async (projectId: string): Promise<Palette> => {
@@ -319,7 +302,7 @@ export class FakeProjectBackend {
         // The server unpacks the bundle into a fresh DB, so the loaded state is
         // whatever the file holds — not the in-memory edits it was packed from.
         this.projects.set(record.project.id, record);
-        return cloneProject(record.project);
+        return { ...record.project };
       },
 
       saveProject: async (
@@ -350,19 +333,11 @@ export class FakeProjectBackend {
         return { path: body.path, savedAt };
       },
 
-      exportGif: async (
-        projectId: string,
-        body?: ExportGifBody,
-      ): Promise<Blob> => {
-        this.calls.push(`exportGif:${projectId}`);
-        this.gifRequests.push({ projectId, ...(body ? { body } : {}) });
-        if (this.gifError) {
-          throw this.gifError;
+      closeProject: async (projectId: string): Promise<void> => {
+        this.calls.push(`closeProject:${projectId}`);
+        if (!this.projects.delete(projectId)) {
+          throw new ApiError(404, "project not found", { message: "project not found" });
         }
-        this.requireRecord(projectId);
-        return new Blob([new Uint8Array([0x47, 0x49, 0x46, 0x38, 0x39, 0x61])], {
-          type: "image/gif",
-        });
       },
     };
 
@@ -397,6 +372,7 @@ export function resetProjectIoStore(
     redoStack: [],
     isDirty: false,
     isPaletteDirty: false,
+    bundleDirty: false,
     framePixelsByIndex: { 0: new Uint8Array(pixels) },
     frameSyncStatus: "idle",
     paletteSyncStatus: "idle",
@@ -427,6 +403,7 @@ export function paintDirtyPixel(x: number, y: number, colorIndex = 1): void {
       [state.activeFrameIndex]: new Uint8Array(pixels),
     },
     isDirty: true,
+    bundleDirty: true,
   });
 }
 
@@ -435,7 +412,7 @@ export function editDirtyPalette(slot: number, hex: string): void {
   const state = useEditorStore.getState();
   const paletteColors = [...state.paletteColors];
   paletteColors[slot] = hex;
-  useEditorStore.setState({ paletteColors, isPaletteDirty: true });
+  useEditorStore.setState({ paletteColors, isPaletteDirty: true, bundleDirty: true });
 }
 
 export function pixelAt(x: number, y: number): number {
@@ -445,121 +422,4 @@ export function pixelAt(x: number, y: number): number {
 
 export function framePixels(width: number, height: number, fill: number): Uint8Array {
   return new Uint8Array(width * height).fill(fill);
-}
-
-export type CapturedDownload = {
-  filename: string;
-  width: number;
-  height: number;
-  data: Uint8ClampedArray | null;
-  blobType: string;
-};
-
-export type ExportCapture = {
-  downloads: CapturedDownload[];
-  restore: () => void;
-};
-
-/**
- * jsdom has no real canvas encoder, so stub the 2D context, `toBlob`, object
- * URLs, and anchor clicks to capture what an export *would* have written.
- */
-export function installExportCapture(): ExportCapture {
-  const downloads: CapturedDownload[] = [];
-  const pending: Array<{ width: number; height: number; data: Uint8ClampedArray }> =
-    [];
-
-  const getContext = vi
-    .spyOn(HTMLCanvasElement.prototype, "getContext")
-    .mockImplementation(function (this: HTMLCanvasElement) {
-      const { width: canvasWidth, height: canvasHeight } = this;
-      return {
-        createImageData: (width: number, height: number) => ({
-          width,
-          height,
-          data: new Uint8ClampedArray(width * height * 4),
-          colorSpace: "srgb" as const,
-        }),
-        putImageData: (imageData: ImageData) => {
-          pending.push({
-            width: canvasWidth,
-            height: canvasHeight,
-            data: new Uint8ClampedArray(imageData.data),
-          });
-        },
-        setTransform: vi.fn(),
-        clearRect: vi.fn(),
-        fillRect: vi.fn(),
-        beginPath: vi.fn(),
-        moveTo: vi.fn(),
-        lineTo: vi.fn(),
-        stroke: vi.fn(),
-      } as unknown as CanvasRenderingContext2D;
-    });
-
-  const toBlob = vi
-    .spyOn(HTMLCanvasElement.prototype, "toBlob")
-    .mockImplementation((callback, type) => {
-      callback(new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], {
-        type: typeof type === "string" ? type : "image/png",
-      }));
-    });
-
-  const createObjectURL = vi
-    .spyOn(URL, "createObjectURL")
-    .mockImplementation((source: Blob | MediaSource) => {
-      const blob = source as Blob;
-      const frame = pending.shift();
-      downloads.push({
-        filename: "",
-        width: frame?.width ?? 0,
-        height: frame?.height ?? 0,
-        data: frame?.data ?? null,
-        blobType: blob.type,
-      });
-      return `blob:capture-${downloads.length}`;
-    });
-
-  const revokeObjectURL = vi
-    .spyOn(URL, "revokeObjectURL")
-    .mockImplementation(() => {});
-
-  const click = vi
-    .spyOn(HTMLAnchorElement.prototype, "click")
-    .mockImplementation(function (this: HTMLAnchorElement) {
-      const last = downloads[downloads.length - 1];
-      if (last && !last.filename) {
-        last.filename = this.download;
-      }
-    });
-
-  return {
-    downloads,
-    restore: () => {
-      getContext.mockRestore();
-      toBlob.mockRestore();
-      createObjectURL.mockRestore();
-      revokeObjectURL.mockRestore();
-      click.mockRestore();
-    },
-  };
-}
-
-/** Read one pixel's RGBA tuple out of a captured export buffer. */
-export function rgbaAt(
-  download: CapturedDownload,
-  x: number,
-  y: number,
-): [number, number, number, number] {
-  const data = download.data;
-  if (!data) {
-    throw new Error("captured download has no pixel data");
-  }
-  const offset = (y * download.width + x) * 4;
-  return [
-    data[offset] ?? 0,
-    data[offset + 1] ?? 0,
-    data[offset + 2] ?? 0,
-    data[offset + 3] ?? 0,
-  ];
 }

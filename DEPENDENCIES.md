@@ -36,6 +36,7 @@ Install these once per development machine. Versions listed are minimum tested t
 | **ccache** | C++ compile caching |
 | **OpenAPI Generator CLI** | Generate TS client from `contracts/openapi.yaml` |
 | **Docker** | Reproducible CI/dev environment |
+| **Playwright Chromium** | E2E tests (`pnpm test:e2e:install`) |
 
 ---
 
@@ -70,7 +71,13 @@ Managed with **pnpm** inside a workspace. Run all commands from the repo root un
 | `zustand` | Client state | Editor store: tool, color, frame, undo stack |
 | `@pixelanea/api-client` | Typed API | Workspace package; generated from OpenAPI |
 
-### Development dependencies
+### Root workspace dev dependencies
+
+| Package | Purpose | Notes |
+|---------|---------|-------|
+| `@playwright/test` | E2E browser tests | Root `package.json`; specs in `e2e/` |
+
+### Development dependencies (`apps/web`)
 
 | Package | Purpose | Notes |
 |---------|---------|-------|
@@ -533,4 +540,10 @@ pnpm --filter @pixelanea/web generate:api
 
 # Start development
 ./scripts/dev.sh
+
+# Run E2E (first time: pnpm test:e2e:install)
+pnpm test:e2e
+
+# Sprint 1 local gate
+./scripts/ci-sprint1.sh
 ```

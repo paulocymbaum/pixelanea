@@ -71,8 +71,11 @@ pixelanea/
 │   └── openapi.yaml              # Shared API contract (source of truth)
 ├── packages/                     # Optional shared TS packages (future)
 │   └── api-client/               # Generated from OpenAPI
+├── e2e/                          # Playwright E2E specs
 ├── scripts/
-│   └── dev.sh                    # Start C++ server + Vite dev server
+│   ├── dev.sh                    # Start C++ server + Vite dev server
+│   ├── ci-sprint1.sh             # Sprint quality gate
+│   └── e2e-webserver.sh          # Stack for Playwright
 ├── ARCHITECTURE.md
 └── README.md
 ```
@@ -596,6 +599,22 @@ The architecture supports growth without rewrites:
 | Layers | Add `layers` table; extend `Frame` with `layer_id` |
 | GIF/spritesheet export | New `server/export` encoder; no UI rewrite |
 | Cloud sync (if ever needed) | New `persistence` adapter behind repository interface |
+
+---
+
+## Testing
+
+Pixelanea uses three complementary test layers:
+
+| Layer | Location | Command | Purpose |
+|-------|----------|---------|---------|
+| Unit / integration | `apps/web/src/**/*.test.{ts,tsx}`, `server/` Catch2 | `pnpm test` | Tools, hooks, API wrappers, domain |
+| QA matrices | `apps/web/src/qa/*Matrix.test.tsx` | `vitest run src/qa/` | Route guards, import wizard, I/O, animation regressions |
+| E2E | `e2e/*.spec.ts` | `pnpm test:e2e` | Browser smoke (`@smoke`) and navigation (`@routing`) |
+
+Playwright starts the stack via `scripts/e2e-webserver.sh` (C++ API + Vite). The sprint gate script `scripts/ci-sprint1.sh` runs typecheck, QA matrices, unit tests, optional E2E, and backend tests locally.
+
+Post-MVP UI surfaces are gated in `apps/web/src/content/features.ts` so E2E and manual QA target the minimal shipping chrome by default.
 
 ---
 

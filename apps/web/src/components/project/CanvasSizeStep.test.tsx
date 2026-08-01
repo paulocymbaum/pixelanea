@@ -1,12 +1,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { copy } from "@/content/copy";
+import { RESOLUTION_PRESETS } from "@/components/import/resolutionPresets";
 import { CanvasSizeStep } from "./CanvasSizeStep";
 
 describe("CanvasSizeStep", () => {
   it("renders presets and custom option", () => {
     render(<CanvasSizeStep value={{ width: 32, height: 32 }} onChange={() => {}} />);
-    expect(screen.getByText("Sprite")).toBeInTheDocument();
+    for (const preset of RESOLUTION_PRESETS) {
+      expect(screen.getByText(preset.label)).toBeInTheDocument();
+      expect(screen.getByText(preset.description)).toBeInTheDocument();
+    }
     expect(screen.getByText(copy.customCanvasSizeLabel)).toBeInTheDocument();
   });
 

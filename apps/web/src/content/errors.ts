@@ -9,6 +9,13 @@ export const errors = {
     "Couldn't open this file. Is it a .pixelanea project?",
   saveProjectFailed: "Couldn't save the project. Check the path and try again.",
   invalidProjectPath: "Enter a path ending in .pixelanea",
+  bundleChecksumMismatch:
+    "This project file looks damaged. Try a backup or re-save from Pixelanea.",
+  bundleUnsafeEntry:
+    "This project file isn't safe to open. Try another copy or re-save.",
+  bundleWriteFailed:
+    "Couldn't write the project file. Check the folder permissions and try again.",
+  projectAlreadyOpen: "This project is already open.",
   filePickerUnavailable:
     "No file picker is available. Install zenity for native dialogs or enter a path manually.",
   invalidCanvasSize: "Enter whole numbers between 1 and 512 for width and height.",

@@ -1,10 +1,16 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { checkHealth } from "@/api/health";
+import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { UnsavedChangesDialog } from "@/components/project/UnsavedChangesDialog";
-import { needsNavigationGuard } from "@/lib/unsavedGuard";
+import { applyHealthCheckResult } from "@/lib/apiHealth";
+import {
+  getEditorNavigationGuardState,
+  needsNavigationGuard,
+} from "@/lib/unsavedGuard";
 import { EditorPage } from "@/pages/EditorPage";
 import { ImportWizardPage } from "@/pages/ImportWizardPage";
 import { NewProjectPage } from "@/pages/NewProjectPage";
+import { ConnectionBanner } from "@/shell/ConnectionBanner";
 import { useThemeBootstrap } from "@/shell/useThemeBootstrap";
 import { useEditorStore } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
@@ -22,16 +28,26 @@ export function App() {
   const setApiStatus = useUiStore((s) => s.setApiStatus);
   const resetImportWizard = useUiStore((s) => s.resetImportWizard);
 
+  const goToNewProject = useCallback(() => {
+    setRoute("new-project");
+  }, []);
+
+  const handleProjectOpened = useCallback(() => {
+    setShowOnboarding(false);
+    setRoute("editor");
+  }, []);
+
+  const projectFileActions = useProjectFileActions({
+    onNewProject: goToNewProject,
+    onProjectOpened: handleProjectOpened,
+  });
+
   useEffect(() => {
     let cancelled = false;
 
     checkHealth().then((result) => {
       if (cancelled) return;
-      if (result.ok) {
-        setApiStatus("connected", result.health.version);
-      } else {
-        setApiStatus("disconnected");
-      }
+      applyHealthCheckResult(result, setApiStatus);
     });
 
     return () => {
@@ -42,14 +58,7 @@ export function App() {
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       const state = useEditorStore.getState();
-      if (
-        state.projectId &&
-        needsNavigationGuard({
-          isDirty: state.isDirty,
-          isPaletteDirty: state.isPaletteDirty,
-          syncStatus: state.syncStatus,
-        })
-      ) {
+      if (state.projectId && needsNavigationGuard(getEditorNavigationGuardState())) {
         event.preventDefault();
         event.returnValue = "";
       }
@@ -61,14 +70,7 @@ export function App() {
 
   const requestEditorRouteChange = useCallback((nextRoute: AppRoute) => {
     const state = useEditorStore.getState();
-    if (
-      state.projectId &&
-      needsNavigationGuard({
-        isDirty: state.isDirty,
-        isPaletteDirty: state.isPaletteDirty,
-        syncStatus: state.syncStatus,
-      })
-    ) {
+    if (state.projectId && needsNavigationGuard(getEditorNavigationGuardState())) {
       pendingRouteRef.current = nextRoute;
       setRouteGuardOpen(true);
       return;
@@ -84,11 +86,6 @@ export function App() {
     setShowOnboarding(entryPath === "blank");
     setRoute("editor");
   };
-
-  // File → New is guarded in useProjectFileActions before this runs.
-  const goToNewProject = useCallback(() => {
-    setRoute("new-project");
-  }, []);
 
   const startImport = useCallback(() => {
     if (route === "editor" && projectId) {
@@ -125,34 +122,42 @@ export function App() {
     />
   );
 
-  if (route === "editor" && projectId) {
-    return (
-      <>
-        <EditorPage showOnboarding={showOnboarding} onNewProject={goToNewProject} />
-        {routeGuardDialog}
-      </>
-    );
-  }
+  let page: ReactNode;
 
-  if (route === "import-wizard") {
-    return (
-      <>
-        <ImportWizardPage
-          onComplete={() => {
-            setShowOnboarding(false);
-            setRoute("editor");
-          }}
-          onBack={() => setRoute("new-project")}
-        />
-        {routeGuardDialog}
-      </>
+  if (route === "editor" && projectId) {
+    page = (
+      <EditorPage
+        showOnboarding={showOnboarding}
+        onNewProject={goToNewProject}
+        onImportImage={startImport}
+      />
+    );
+  } else if (route === "import-wizard") {
+    page = (
+      <ImportWizardPage
+        onComplete={() => {
+          setShowOnboarding(false);
+          setRoute("editor");
+        }}
+        onBack={() => setRoute("new-project")}
+      />
+    );
+  } else {
+    page = (
+      <NewProjectPage
+        onOpenEditor={openEditor}
+        onStartImport={startImport}
+        onOpenExisting={projectFileActions.onOpenProject}
+      />
     );
   }
 
   return (
-    <>
-      <NewProjectPage onOpenEditor={openEditor} onStartImport={startImport} />
+    <div className="flex min-h-screen flex-col">
+      <ConnectionBanner />
+      {page}
+      {route === "new-project" ? projectFileActions.dialogs : null}
       {routeGuardDialog}
-    </>
+    </div>
   );
 }

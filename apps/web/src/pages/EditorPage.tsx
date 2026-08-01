@@ -3,7 +3,6 @@ import { ShortcutsOverlay } from "@/components/onboarding/ShortcutsOverlay";
 import { Toast } from "@/components/ui/Toast";
 import { TooltipProvider } from "@/components/ui";
 import { AppHeader } from "@/shell/AppHeader";
-import { useThemeBootstrap } from "@/shell/useThemeBootstrap";
 import { EditorLayout } from "@/shell/EditorLayout";
 import { useEditorShortcuts } from "@/state/shortcuts";
 import { useUiStore } from "@/state/uiStore";
@@ -12,13 +11,14 @@ import { useEffect } from "react";
 type EditorPageProps = {
   showOnboarding?: boolean;
   onNewProject: () => void;
+  onImportImage?: () => void;
 };
 
 export function EditorPage({
   showOnboarding = false,
   onNewProject,
+  onImportImage,
 }: EditorPageProps) {
-  useThemeBootstrap();
   useEditorShortcuts();
 
   const apiStatus = useUiStore((s) => s.apiStatus);
@@ -37,7 +37,10 @@ export function EditorPage({
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex h-screen flex-col">
-        <AppHeader onNewProject={onNewProject} />
+        <AppHeader
+          onNewProject={onNewProject}
+          onImportImage={onImportImage}
+        />
         <EditorLayout />
         {shouldShowOnboarding ? <SkippableOverlay /> : null}
         <ShortcutsOverlay />

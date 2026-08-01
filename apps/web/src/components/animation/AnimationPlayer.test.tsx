@@ -12,7 +12,6 @@ describe("AnimationPlayer", () => {
       readOnly: false,
       animationFps: 8,
       animationLoop: true,
-      onionSkinEnabled: true,
       projectId: "test-project",
       framePixelsByIndex: {
         0: new Uint8Array(4),
@@ -26,12 +25,11 @@ describe("AnimationPlayer", () => {
     });
   });
 
-  it("renders play, fps, loop, and onion skin controls", () => {
+  it("renders play, fps, and loop controls", () => {
     render(<AnimationPlayer />);
     expect(screen.getByLabelText(copy.animationPlay)).toBeInTheDocument();
     expect(screen.getByRole("slider", { name: copy.animationFps })).toBeInTheDocument();
     expect(screen.getByText(copy.animationLoop)).toBeInTheDocument();
-    expect(screen.getByText(copy.animationOnionSkin)).toBeInTheDocument();
     expect(screen.getByText(copy.animationFpsValue(8))).toBeInTheDocument();
   });
 
@@ -39,24 +37,6 @@ describe("AnimationPlayer", () => {
     render(<AnimationPlayer />);
     fireEvent.click(screen.getByLabelText(copy.animationLoopOn));
     expect(useEditorStore.getState().animationLoop).toBe(false);
-  });
-
-  it("hides onion skin toggle when frameCount is 1", () => {
-    useEditorStore.setState({ frameCount: 1 });
-    render(<AnimationPlayer />);
-    expect(screen.queryByText(copy.animationOnionSkin)).not.toBeInTheDocument();
-  });
-
-  it("toggles onion skin with aria-pressed", () => {
-    render(<AnimationPlayer />);
-    const toggle = screen.getByLabelText(copy.animationOnionSkinOn);
-    expect(toggle).toHaveAttribute("aria-pressed", "true");
-    fireEvent.click(toggle);
-    expect(useEditorStore.getState().onionSkinEnabled).toBe(false);
-    expect(screen.getByLabelText(copy.animationOnionSkinOff)).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
   });
 
   it("sets readOnly when play is toggled on", async () => {

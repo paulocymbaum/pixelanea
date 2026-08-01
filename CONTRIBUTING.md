@@ -70,10 +70,25 @@ See `.cursor/skills/pixelanea-frontend-standards/SKILL.md` for detailed frontend
 - All user-facing strings live in `apps/web/src/content/`.
 - Use plain language — no error codes in toasts.
 - Confirm dialogs only for destructive actions (delete, overwrite, remove in-use color).
+- Post-MVP surfaces (spritesheet/GIF export, onion skin) are gated in `content/features.ts` — do not add new primary chrome without checking flags.
+
+## Testing
+
+| Layer | Command | When |
+|-------|---------|------|
+| Typecheck | `pnpm --filter @pixelanea/web exec tsc --noEmit` | Always |
+| Unit / integration | `pnpm --filter @pixelanea/web test` | Touched `apps/web` |
+| QA matrices | `pnpm --filter @pixelanea/web exec vitest run src/qa/` | Route guards, I/O, import, animation |
+| Backend | `pnpm test:backend` or `ctest --test-dir server/build` | Touched `server/` |
+| E2E | `pnpm test:e2e` | User flows; install browsers with `pnpm test:e2e:install` first |
+| Sprint gate | `./scripts/ci-sprint1.sh` | Before sprint-close PRs |
+
+QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MVP Gherkin spec. Playwright specs in `e2e/` cover `@smoke` and `@routing` scenarios; `playwright.config.ts` starts the stack via `scripts/e2e-webserver.sh`.
 
 ## Pull request checklist
 
-- [ ] `pnpm test` passes locally
+- [ ] `pnpm test` passes locally (or scoped commands for your change)
+- [ ] `pnpm --filter @pixelanea/web exec vitest run src/qa/` green if you touched routes, guards, or I/O
 - [ ] OpenAPI updated if API shape changed; client regenerated
 - [ ] No layer boundary violations (UI → API only)
 - [ ] New copy in `content/`, not inline in components
@@ -94,6 +109,7 @@ Include:
 - Steps to reproduce
 - Expected vs actual behavior
 - Whether the API health endpoint responds (`/api/health`)
+- Status bar message and whether the connection banner is visible
 
 ## Questions
 

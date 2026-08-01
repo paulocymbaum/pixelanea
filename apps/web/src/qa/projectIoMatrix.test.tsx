@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { exportFilename, exportGifFilename, exportSpritesheetFilename } from "@/canvas/exportFrame";
+import { exportFilename } from "@/canvas/exportFrame";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
@@ -14,28 +14,36 @@ import {
 } from "@/state/persist";
 import { useUiStore } from "@/state/uiStore";
 import {
+  installExportCapture,
+  rgbaAt,
+  type ExportCapture,
+} from "@/test/exportCapture";
+import {
   FakeProjectBackend,
   MATRIX_BUNDLE_PATH,
   MATRIX_GRID,
   MATRIX_PROJECT_ID,
-  SERVER_ALREADY_OPEN_MESSAGE,
   SERVER_CHECKSUM_MESSAGE,
   SERVER_CORRUPT_BUNDLE_MESSAGE,
   SERVER_DISK_FULL_MESSAGE,
-  SERVER_READ_ONLY_MESSAGE,
   SERVER_TRAVERSAL_MESSAGE,
   editDirtyPalette,
   framePixels,
-  installExportCapture,
   paintDirtyPixel,
   pixelAt,
   resetProjectIoStore,
-  rgbaAt,
-  type ExportCapture,
 } from "./projectIoMatrixHarness";
 
 const { backendRef } = vi.hoisted(() => ({
   backendRef: { current: null as FakeProjectBackend | null },
+}));
+
+vi.mock("@/content/features", () => ({
+  features: {
+    exportSpritesheet: false,
+    exportGif: false,
+    onionSkin: false,
+  },
 }));
 
 vi.mock("@/api/client", () => ({
@@ -46,6 +54,25 @@ vi.mock("@/api/client", () => ({
     return backendRef.current.asApiClient();
   },
 }));
+
+vi.mock("@/lib/filePicker", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/filePicker")>();
+  return {
+    ...actual,
+    pickProjectPath: (
+      input: Parameters<typeof actual.pickProjectPath>[0],
+      options?: Parameters<typeof actual.pickProjectPath>[1],
+    ) =>
+      actual.pickProjectPath(input, {
+        ...options,
+        tiers: {
+          tryServerDialog: async () => null,
+          tryFileSystemAccess: async () => null,
+          ...options?.tiers,
+        },
+      }),
+  };
+});
 
 function backend(): FakeProjectBackend {
   if (!backendRef.current) {
@@ -109,10 +136,12 @@ async function clickSave(): Promise<void> {
 
 async function saveAs(path: string, assetTypeLabel?: string): Promise<void> {
   fireEvent.click(screen.getByText(MENU_SAVE_AS));
+  await settle();
   fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
     target: { value: path },
   });
   if (assetTypeLabel) {
+    fireEvent.click(screen.getByText(copy.projectAssetTypeAdvancedSummary));
     fireEvent.click(screen.getByText(assetTypeLabel));
   }
   fireEvent.click(screen.getByText(copy.projectSaveConfirm));
@@ -137,6 +166,7 @@ async function confirmDiscardNavigationIfNeeded(): Promise<void> {
 async function openBundle(path: string): Promise<void> {
   fireEvent.click(screen.getByText(MENU_OPEN));
   await confirmDiscardNavigationIfNeeded();
+  await settle();
   fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
     target: { value: path },
   });
@@ -355,66 +385,6 @@ describe("QA-004 save / open round-trip matrix", () => {
       expect(rgbaAt(png, 1, 2)).toEqual([255, 0, 0, 255]);
       expect(rgbaAt(png, 0, 0)).toEqual([0, 0, 0, 0]);
     });
-
-    it("[HP-008] Export spritesheet lays every frame into one image", async () => {
-      const frame0 = framePixels(MATRIX_GRID, MATRIX_GRID, 1);
-      const frame1 = framePixels(MATRIX_GRID, MATRIX_GRID, 2);
-      const frame2 = framePixels(MATRIX_GRID, MATRIX_GRID, 1);
-
-      backendRef.current = new FakeProjectBackend();
-      backend().seedProject({
-        frameCount: 3,
-        frames: { 0: frame0, 1: frame1, 2: frame2 },
-      });
-      resetProjectIoStore({
-        projectName: "Walk cycle",
-        frameCount: 3,
-        pixels: frame0,
-        paletteColors: ["#000000", "#FF0000", "#00FF00"],
-      });
-      capture = installExportCapture();
-
-      render(<AppHeader onNewProject={() => {}} />);
-      await selectFileMenuItem(copy.fileMenuExportSpritesheet);
-
-      expect(capture.downloads).toHaveLength(1);
-      const sheet = capture.downloads[0]!;
-      expect(sheet.filename).toBe(exportSpritesheetFilename("Walk cycle"));
-      expect(sheet.width).toBe(MATRIX_GRID * 3);
-      expect(sheet.height).toBe(MATRIX_GRID);
-      expect(rgbaAt(sheet, 0, 0)).toEqual([255, 0, 0, 255]);
-      expect(rgbaAt(sheet, MATRIX_GRID, 0)).toEqual([0, 255, 0, 255]);
-      expect(rgbaAt(sheet, MATRIX_GRID * 2, 0)).toEqual([255, 0, 0, 255]);
-    });
-
-    it("[HP-009] Export GIF sends the project fps and loop setting", async () => {
-      backendRef.current = new FakeProjectBackend();
-      backend().seedProject({ frameCount: 3 });
-      resetProjectIoStore({
-        projectName: "Walk cycle",
-        frameCount: 3,
-        animationFps: 12,
-        animationLoop: false,
-      });
-      capture = installExportCapture();
-
-      render(<AppHeader onNewProject={() => {}} />);
-      await selectFileMenuItem(copy.fileMenuExportGif);
-
-      expect(backend().gifRequests).toEqual([
-        { projectId: MATRIX_PROJECT_ID, body: { fps: 12, loop: false } },
-      ]);
-      expect(capture.downloads).toHaveLength(1);
-      expect(capture.downloads[0]!.filename).toBe(exportGifFilename("Walk cycle"));
-      expect(capture.downloads[0]!.blobType).toBe("image/gif");
-      expect(useEditorStore.getState().frameSyncStatus).toBe("idle");
-    });
-
-    it.skip("[HP-010] cross-machine round-trip", () => {
-      // Needs two machines (or a VM) plus a real filesystem copy — Playwright /
-      // manual gate. Bundle-level integrity is covered by
-      // server/tests/bundle_io_test.cpp and by [HP-005].
-    });
   });
 
   describe("race conditions", () => {
@@ -430,13 +400,15 @@ describe("QA-004 save / open round-trip matrix", () => {
       };
 
       paintDirtyPixel(1, 1, 2);
-      const inFlight = flushFrameSync();
       paintDirtyPixel(2, 2, 3);
+      const inFlight = flushFrameSync();
 
       render(<FileActionsHarness />);
       await act(async () => {
-        fireEvent.click(screen.getByText(MENU_SAVE));
         await inFlight;
+      });
+      await act(async () => {
+        fireEvent.click(screen.getByText(MENU_SAVE));
       });
       await settle(30);
 
@@ -498,6 +470,7 @@ describe("QA-004 save / open round-trip matrix", () => {
 
       render(<FileActionsHarness />);
       fireEvent.click(screen.getByText(MENU_SAVE_AS));
+      await settle();
       fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
         target: { value: PATH_A },
       });
@@ -526,7 +499,7 @@ describe("QA-004 save / open round-trip matrix", () => {
       expect(packed[1 * MATRIX_GRID + 1]).toBe(2);
     });
 
-    it("[RACE-004] opening the just-saved path without closing is blocked clearly", async () => {
+    it("[RACE-004] reopening the just-saved path closes the session and reloads", async () => {
       resetProjectIoStore({ bundlePath: PATH_A });
       paintDirtyPixel(2, 2, 3);
 
@@ -534,13 +507,16 @@ describe("QA-004 save / open round-trip matrix", () => {
       await clickSave();
       await openBundle(PATH_A);
 
-      // Server still holds the project, so the reload is refused, not half-done.
-      expect(screen.getByText(SERVER_ALREADY_OPEN_MESSAGE)).toBeInTheDocument();
+      expect(callsMatching("closeProject")).toEqual([
+        `closeProject:${MATRIX_PROJECT_ID}`,
+      ]);
+      expect(callsMatching("openProject")).toEqual([`openProject:${PATH_A}`]);
+      expect(screen.queryByText(errors.projectAlreadyOpen)).toBeNull();
+
       const state = useEditorStore.getState();
       expect(state.projectId).toBe(MATRIX_PROJECT_ID);
       expect(state.bundlePath).toBe(PATH_A);
       expect(pixelAt(2, 2)).toBe(3);
-      expect(state.frameCount).toBe(1);
     });
   });
 
@@ -634,6 +610,21 @@ describe("QA-004 save / open round-trip matrix", () => {
       expect(onNewProject).not.toHaveBeenCalled();
       expect(screen.queryAllByRole("dialog").length).toBeGreaterThan(0);
     });
+
+    it("[EDGE-005] autosync-flushed edits with no bundle save still prompt on New", async () => {
+      const onNewProject = vi.fn();
+      resetProjectIoStore({ bundlePath: null });
+      paintDirtyPixel(1, 1, 2);
+      useEditorStore.setState({ isDirty: false, isPaletteDirty: false });
+
+      render(<FileActionsHarness onNewProject={() => onNewProject()} />);
+      await act(async () => {
+        fireEvent.click(screen.getByText(MENU_NEW));
+      });
+
+      expect(onNewProject).not.toHaveBeenCalled();
+      expect(screen.queryAllByRole("dialog").length).toBeGreaterThan(0);
+    });
   });
 
   describe("error handling", () => {
@@ -663,7 +654,7 @@ describe("QA-004 save / open round-trip matrix", () => {
       render(<FileActionsHarness />);
       await openBundle(PATH_A);
 
-      expect(screen.getByText(SERVER_CHECKSUM_MESSAGE)).toBeInTheDocument();
+      expect(screen.getByText(errors.bundleChecksumMismatch)).toBeInTheDocument();
       expect(useEditorStore.getState().projectId).toBe(MATRIX_PROJECT_ID);
       expect(useEditorStore.getState().projectName).toBe("Matrix project");
       expect(callsMatching("getFrame")).toHaveLength(0);
@@ -677,7 +668,7 @@ describe("QA-004 save / open round-trip matrix", () => {
       render(<FileActionsHarness />);
       await openBundle(PATH_A);
 
-      expect(screen.getByText(SERVER_TRAVERSAL_MESSAGE)).toBeInTheDocument();
+      expect(screen.getByText(errors.bundleUnsafeEntry)).toBeInTheDocument();
       expect(useEditorStore.getState().projectId).toBe(MATRIX_PROJECT_ID);
       expect(callsMatching("getProject")).toHaveLength(0);
     });
@@ -690,41 +681,13 @@ describe("QA-004 save / open round-trip matrix", () => {
       render(<FileActionsHarness />);
       await saveAs("/readonly/blocked.pixelanea");
 
-      expect(screen.getByText(SERVER_READ_ONLY_MESSAGE)).toBeInTheDocument();
+      expect(screen.getByText(errors.bundleWriteFailed)).toBeInTheDocument();
       expect(backend().files.has("/readonly/blocked.pixelanea")).toBe(false);
       expect(useEditorStore.getState().bundlePath).toBeNull();
       expect(useEditorStore.getState().projectId).toBe(MATRIX_PROJECT_ID);
       expect(pixelAt(1, 1)).toBe(2);
       // Documents that the overwrite confirm stays on top of the error.
       expect(screen.getByText(copy.projectOverwriteTitle)).toBeInTheDocument();
-    });
-
-    it("[ERR-005] a non-.pixelanea selection cannot silently open", async () => {
-      resetProjectIoStore();
-
-      render(<FileActionsHarness />);
-      fireEvent.click(screen.getByText(MENU_OPEN));
-      fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
-        target: { value: "   " },
-      });
-      fireEvent.click(screen.getByText(copy.projectOpenConfirm));
-      expect(screen.getByText(errors.invalidProjectPath)).toBeInTheDocument();
-      expect(callsMatching("openProject")).toHaveLength(0);
-
-      fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
-        target: { value: "/tmp/pixelanea-qa/art.png" },
-      });
-      await act(async () => {
-        fireEvent.click(screen.getByText(copy.projectOpenConfirm));
-      });
-      await settle();
-
-      // The dialog appends the extension, so the server is the one that refuses.
-      expect(callsMatching("openProject")).toEqual([
-        "openProject:/tmp/pixelanea-qa/art.png.pixelanea",
-      ]);
-      expect(screen.getByText(SERVER_CORRUPT_BUNDLE_MESSAGE)).toBeInTheDocument();
-      expect(useEditorStore.getState().projectId).toBe(MATRIX_PROJECT_ID);
     });
 
     it("[ERR-006] a full disk surfaces the failure and keeps the project open", async () => {
@@ -737,11 +700,11 @@ describe("QA-004 save / open round-trip matrix", () => {
 
       const state = useEditorStore.getState();
       expect(state.frameSyncStatus).toBe("error");
-      expect(state.frameSyncError).toBe(SERVER_DISK_FULL_MESSAGE);
+      expect(state.frameSyncError).toBe(errors.bundleWriteFailed);
       expect(backend().files.has(PATH_A)).toBe(false);
       expect(state.projectId).toBe(MATRIX_PROJECT_ID);
       expect(pixelAt(2, 2)).toBe(4);
-      expect(useUiStore.getState().toastMessage).toBeNull();
+      expect(useUiStore.getState().toastMessage).toBe(errors.bundleWriteFailed);
     });
   });
 });

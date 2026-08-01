@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Skill Output Structure
 
-When a skill produces deliverables worth keeping (audits, plans, checklists, step summaries), write them under `.cursor/skill-outputs/` — never scatter skill artifacts in source trees.
+When a skill produces deliverables worth keeping (audits, plans, checklists, matrices, loop conditions, step summaries), write them under `.cursor/skill-outputs/` — never scatter skill artifacts in source trees, `.cursor/tools/`, or application code.
 
 ## Path layout
 
@@ -14,29 +14,81 @@ When a skill produces deliverables worth keeping (audits, plans, checklists, ste
   {feature}/
     {layer}/
       {timestamp}_{skill-name}/
-        {NN}_{step-slug}.md
+        {NN}_{step-slug}.md          # numbered step summaries (optional)
+        {canonical-artifact}         # fixed-name deliverables (see catalog)
+        {subfolder}/                 # grouped artifacts (e.g. loop/)
 ```
 
 | Segment | Format | Example |
 |---------|--------|---------|
-| `feature` | kebab-case product area | `editor`, `export`, `onboarding` |
-| `layer` | kebab-case layer from [pixelanea-agent-tools.mdc](./pixelanea-agent-tools.mdc) | `canvas`, `domain`, `api` |
+| `feature` | kebab-case product area | `editor`, `export`, `onboarding`, `qa` |
+| `layer` | kebab-case layer from [pixelanea-agent-tools.mdc](./pixelanea-agent-tools.mdc) | `canvas`, `domain`, `shell` |
 | `timestamp` | `YYYYMMDDTHHMMSS` (UTC, sortable) | `20260731T054200` |
-| `skill-name` | kebab-case; basename of the skill folder | `pixelanea-frontend-standards` |
+| `skill-name` | kebab-case; basename of the skill folder | `pixelanea-frontend-standards`, `loop-management` |
 | `step` | `{NN}_{step-slug}.md` — zero-padded, 2+ digits | `01_audit-tool-context.md` |
 
-## Example
+## Artifact catalog
+
+Use **fixed canonical names** for skill deliverables. Use **numbered step files** for multi-step investigation/plan/implement/review workflows.
+
+| Artifact | Path (under run folder) | Producer | Purpose |
+|----------|-------------------------|----------|---------|
+| Step summary | `{NN}_{step-slug}.md` | skill-implementer, standards skills | Goal / Outcome / Files per step |
+| Validation guide | `test.md` | test-writer agent | Executable post-delivery test guide |
+| Unit test matrix | `test_matrix_unit.md` | test-matrix-unit | ID'd cases with live Status cells |
+| Gherkin spec (optional) | `gherkin.md` | qa-e2e-gherkin | Matrix-derived E2E scenarios when not in changelog |
+| QA run report | `qa_run_report.md` | qa-gherkin-run | Flagged scenario results beside gherkin source |
+| Loop config | `loop/loop_config.json` | loop-management | Orchestrator paths, caps, next prompt |
+| Loop stop check | `loop/check_condition.sh` | loop-management | Bash script; exit 0 = stop loop |
+| Loop stop summary | `loop/stop_condition.md` | loop-management | One-sentence definition of exit 0 |
+| Previous agent response | `loop/last_agent_response.md` | loop orchestrator | Overwritten each iteration |
+| Loop iteration state | `loop/loop_iteration.json` | `loop_management.js` | Iteration counter; tool-managed |
+
+**Loop rule:** All loop conditions, configs, checks, and response snapshots live under `loop/` inside the run folder — never in `.cursor/tools/`, repo root, or source trees.
+
+**Changelog vs skill-outputs:** `gherkin.md` and `uxui_design_critique.md` may also live under `.cursor/changelog/` per their agents. Matrix and loop artifacts stay in `.cursor/skill-outputs/` only.
+
+## Example runs
+
+### Standards / implementer (numbered steps)
 
 ```text
 .cursor/skill-outputs/
   editor/
     canvas/
       20260731T054200_pixelanea-frontend-standards/
-        01_audit-tool-context.md
-        02_refactor-input-routing.md
-    domain/
-      20260731T061500_pixelanea-cpp-standards/
-        01_review-frame-model.md
+        01_investigation.md
+        02_plan.md
+        03_refactor-input-routing.md
+        04_code-review.md
+        test.md
+```
+
+### Test matrix
+
+```text
+.cursor/skill-outputs/
+  qa/
+    paint/
+      20260731T223100_test-matrix-unit/
+        test_matrix_unit.md
+        gherkin.md                    # optional sibling
+```
+
+### Loop management
+
+```text
+.cursor/skill-outputs/
+  orchestration/
+    test-matrix/
+      20260731T224800_loop-management/
+        loop/
+          loop_config.json
+          check_condition.sh
+          stop_condition.md
+          last_agent_response.md
+          loop_iteration.json
+        01_setup-loop.md              # optional step note
 ```
 
 ## Step file contents
@@ -49,9 +101,22 @@ Each `{NN}_{step-slug}.md` should be self-contained:
 
 Keep steps atomic: one concern per file; add `02_`, `03_`, … for later steps in the same run.
 
+## Subfolders
+
+Use a subfolder when a run mixes **numbered steps** with **tool-driven or fixed-name bundles**:
+
+| Subfolder | When |
+|-----------|------|
+| `loop/` | loop-management orchestration (required for loop skills) |
+| Other | Only when a skill defines a named bundle; prefer flat fixed names otherwise |
+
+All paths inside `loop_config.json` must be repo-relative and point under the same run folder's `loop/` directory.
+
 ## When to write
 
 - **Do** persist outputs when the skill spans multiple steps or the user may revisit the work.
-- **Do** create the full directory chain before writing the first step file.
+- **Do** create the full directory chain (including `loop/` when applicable) before the first file.
+- **Do** keep tool-readable artifacts (JSON, shell checks) beside human markdown in the same run folder.
 - **Don't** write here for trivial one-line answers or pure in-chat explanations.
-- **Don't** duplicate source code — link paths and summarize instead.
+- **Don't** duplicate application source code — link paths and summarize instead.
+- **Don't** put one-off loop logic in `.cursor/tools/` — put checks in `loop/check_condition.sh`.

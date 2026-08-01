@@ -1,6 +1,5 @@
 import { copy } from "@/content/copy";
-import { useProjectStatus } from "@/hooks/useProjectStatus";
-import type { ProjectStatus } from "@/lib/projectStatus";
+import { useDerivedProjectStatus, type ProjectStatus } from "@/lib/projectStatus";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
 import { useEditorStore, useHoverCell } from "@/state/editorStore";
 import { useApiStatus, useUiStore } from "@/state/uiStore";
@@ -13,7 +12,7 @@ function primaryStatusText(
   let message: string;
   switch (projectStatus.kind) {
     case "idle":
-      message = "";
+      message = projectStatus.label ?? "";
       break;
     case "checking":
       message = copy.statusChecking;
@@ -31,7 +30,7 @@ function primaryStatusText(
 }
 
 export function StatusBar() {
-  const projectStatus = useProjectStatus();
+  const projectStatus = useDerivedProjectStatus();
   const { version } = useApiStatus();
   const hoverCell = useHoverCell();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
@@ -45,8 +44,7 @@ export function StatusBar() {
     version,
   );
 
-  const emphasize =
-    projectStatus.kind === "disconnected" || projectStatus.kind === "error";
+  const emphasize = projectStatus.kind === "error";
 
   let cellLabel: string = copy.hoverCellNone;
   if (hoverCell) {

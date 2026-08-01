@@ -7,7 +7,7 @@ import { cn } from "@/lib/cn";
 import { useEditorStore } from "@/state/editorStore";
 import { writeFramePixels } from "@/state/frameCache";
 import { flushFrameSync } from "@/state/persist";
-import { Layers, Pause, Play, Repeat } from "lucide-react";
+import { Pause, Play, Repeat } from "lucide-react";
 
 type AnimationPlayerProps = {
   className?: string;
@@ -17,13 +17,11 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
   const isPlaying = useEditorStore((s) => s.isPlaying);
   const fps = useEditorStore((s) => s.animationFps);
   const loop = useEditorStore((s) => s.animationLoop);
-  const onionSkin = useEditorStore((s) => s.onionSkinEnabled);
   const frameCount = useEditorStore((s) => s.frameCount);
   const projectId = useEditorStore((s) => s.projectId);
   const setPlaying = useEditorStore((s) => s.setPlaying);
   const setAnimationFps = useEditorStore((s) => s.setAnimationFps);
   const setAnimationLoop = useEditorStore((s) => s.setAnimationLoop);
-  const setOnionSkinEnabled = useEditorStore((s) => s.setOnionSkinEnabled);
   const advancePlaybackFrame = useEditorStore((s) => s.advancePlaybackFrame);
 
   const rafRef = useRef<number | null>(null);
@@ -196,23 +194,6 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
         <Repeat className="h-4 w-4" strokeWidth={1.5} />
         {copy.animationLoop}
       </Button>
-
-      {frameCount > 1 && (
-        <Button
-          type="button"
-          variant={onionSkin ? "primary" : "secondary"}
-          size="default"
-          onClick={() => setOnionSkinEnabled(!onionSkin)}
-          aria-pressed={onionSkin}
-          aria-label={
-            onionSkin ? copy.animationOnionSkinOn : copy.animationOnionSkinOff
-          }
-          className="min-h-10"
-        >
-          <Layers className="h-4 w-4" strokeWidth={1.5} />
-          {copy.animationOnionSkin}
-        </Button>
-      )}
     </div>
   );
 }

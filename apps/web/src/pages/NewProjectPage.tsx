@@ -8,7 +8,7 @@ import type { CanvasSize } from "@/components/project/canvasSize";
 import { matchesResolutionPreset } from "@/components/project/canvasSize";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
-import { loadProjectIntoEditor } from "@/hooks/useLoadProject";
+import { loadProjectIntoEditor } from "@/lib/loadProject";
 import { cn } from "@/lib/cn";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
@@ -16,11 +16,20 @@ import { useUiStore } from "@/state/uiStore";
 type NewProjectPageProps = {
   onOpenEditor: (entryPath: "blank" | "import") => void;
   onStartImport: () => void;
+  onOpenExisting?: () => void;
 };
+
+function newProjectEntryCardClass(selected: boolean): string {
+  return cn(
+    "flex min-h-40 flex-col items-center justify-center gap-3 rounded-panel border-2 bg-elevated p-6 text-center transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus-ring",
+    selected ? "border-accent bg-accent-muted" : "border-border",
+  );
+}
 
 export function NewProjectPage({
   onOpenEditor,
   onStartImport,
+  onOpenExisting,
 }: NewProjectPageProps) {
   const hasVisited = useSessionStore((s) => s.hasVisited);
   const lastEntryPath = useSessionStore((s) => s.lastEntryPath);
@@ -113,6 +122,19 @@ export function NewProjectPage({
           <p className="mt-2 text-base text-secondary">
             {copy.newProjectSubtitle}
           </p>
+          {onOpenExisting ? (
+            <div className="mt-4">
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-12 px-6"
+                disabled={isCreating}
+                onClick={onOpenExisting}
+              >
+                {copy.newProjectOpenExisting}
+              </Button>
+            </div>
+          ) : null}
         </header>
 
         {hasVisited ? (
@@ -169,12 +191,7 @@ export function NewProjectPage({
           <button
             type="button"
             onClick={() => setSelectedPath("blank")}
-            className={cn(
-              "flex min-h-40 flex-col items-center justify-center gap-3 rounded-panel border-2 bg-elevated p-6 text-center transition-colors hover:border-accent",
-              selectedPath === "blank"
-                ? "border-accent bg-accent-muted"
-                : "border-border",
-            )}
+            className={newProjectEntryCardClass(false)}
           >
             <Pencil className="h-10 w-10 text-accent" strokeWidth={1.5} />
             <span className="text-lg font-semibold text-primary">
@@ -183,14 +200,15 @@ export function NewProjectPage({
             <span className="text-sm text-secondary">
               {copy.newProjectBlankDescription}
             </span>
+            <span className="text-sm text-secondary">
+              {copy.newProjectBlankAnimationHint}
+            </span>
           </button>
 
           <button
             type="button"
             onClick={() => onStartImport()}
-            className={cn(
-              "flex min-h-40 flex-col items-center justify-center gap-3 rounded-panel border-2 border-border bg-elevated p-6 text-center transition-colors hover:border-accent",
-            )}
+            className={newProjectEntryCardClass(false)}
           >
             <ImagePlus className="h-10 w-10 text-accent" strokeWidth={1.5} />
             <span className="text-lg font-semibold text-primary">

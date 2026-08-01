@@ -14,6 +14,8 @@
     "build:server": "./scripts/dev.sh --build-only",
     "lint": "pnpm --filter @pixelanea/web lint",
     "test:unit": "pnpm --filter @pixelanea/web test",
+    "test:e2e": "./scripts/e2e-playwright.sh",
+    "test:e2e:install": "playwright install chromium",
     "generate:api": "pnpm --filter @pixelanea/api-client generate",
     "deps:hash": "python3 scripts/deps-hash.py",
     "deps:install": "./scripts/deps-cache.sh install",
@@ -24,5 +26,8 @@
     "test:backend": "./scripts/test-backend.sh",
     "test:frontend": "./scripts/test-frontend.sh",
     "test": "pnpm test:backend && pnpm test:frontend"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.51.0"
   }
 }

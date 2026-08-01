@@ -1,23 +1,17 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import "@/test/fixtures/fileActionsMock";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
+import {
+  exportFrameToPngMock,
+  fileActionsMock,
+  notifyExportSuccessMock,
+  resetFileActionsMock,
+} from "@/test/fixtures/fileActionsMock";
 import { AppHeader } from "./AppHeader";
-
-const fileActionsMock = vi.hoisted(() => ({
-  onNewProject: vi.fn(),
-  onOpenProject: vi.fn(),
-  onSave: vi.fn(),
-  onSaveAs: vi.fn(),
-  canSave: true,
-  dialogs: null,
-}));
-
-vi.mock("@/components/project/useProjectFileActions", () => ({
-  useProjectFileActions: () => fileActionsMock,
-}));
 
 describe("AppHeader", () => {
   beforeEach(() => {
@@ -36,11 +30,7 @@ describe("AppHeader", () => {
     useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
     useSessionStore.setState({ theme: "light" });
     document.documentElement.classList.remove("dark");
-    fileActionsMock.onNewProject.mockReset();
-    fileActionsMock.onOpenProject.mockReset();
-    fileActionsMock.onSave.mockReset();
-    fileActionsMock.onSaveAs.mockReset();
-    fileActionsMock.canSave = true;
+    resetFileActionsMock();
   });
 
   it("renders banner with app name and project title", () => {
@@ -51,21 +41,76 @@ describe("AppHeader", () => {
     expect(screen.getByText("Untitled project")).toBeInTheDocument();
   });
 
-  it("exposes header menu triggers for File, Edit, and View", () => {
+  it("shows basename with full path in title tooltip", () => {
+    const fullPath = "/tmp/pixelanea-qa/walk.pixelanea";
+    useEditorStore.setState({
+      bundlePath: fullPath,
+    });
+
+    render(<AppHeader onNewProject={() => {}} />);
+
+    expect(screen.getByText("walk.pixelanea")).toBeInTheDocument();
+    expect(screen.queryByText(fullPath)).not.toBeInTheDocument();
+    expect(screen.getByTitle(fullPath)).toBeInTheDocument();
+  });
+
+  it("exposes header menu triggers for File and View", () => {
     render(<AppHeader onNewProject={() => {}} />);
 
     expect(screen.getByRole("button", { name: "File" })).toHaveAttribute(
       "aria-haspopup",
       "menu",
     );
-    expect(screen.getByRole("button", { name: "Edit" })).toHaveAttribute(
-      "aria-haspopup",
-      "menu",
-    );
+    expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "View" })).toHaveAttribute(
       "aria-haspopup",
       "menu",
     );
+  });
+
+  it("shows Export PNG only when advanced export flags are off", async () => {
+    render(<AppHeader onNewProject={() => {}} />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "File" }), {
+      key: "Enter",
+    });
+
+    expect(
+      await screen.findByRole("menuitem", { name: copy.fileMenuExportPng }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: copy.fileMenuExportSpritesheet }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("menuitem", { name: copy.fileMenuExportGif }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows Import image when onImportImage is provided", async () => {
+    const onImportImage = vi.fn();
+    render(<AppHeader onNewProject={() => {}} onImportImage={onImportImage} />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "File" }), {
+      key: "Enter",
+    });
+
+    const item = await screen.findByRole("menuitem", {
+      name: copy.fileMenuImport,
+    });
+    fireEvent.click(item);
+    expect(onImportImage).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides Import image when onImportImage is omitted", async () => {
+    render(<AppHeader onNewProject={() => {}} />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "File" }), {
+      key: "Enter",
+    });
+
+    expect(
+      screen.queryByRole("menuitem", { name: copy.fileMenuImport }),
+    ).not.toBeInTheDocument();
   });
 
   it("passes onNewProject to file actions hook", () => {
@@ -79,18 +124,30 @@ describe("AppHeader", () => {
   it("toggles theme via header control", () => {
     render(<AppHeader onNewProject={() => {}} />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Toggle theme" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.themeToggleAriaLabel }),
+    );
 
     expect(document.documentElement.classList.contains("dark")).toBe(true);
     expect(useSessionStore.getState().theme).toBe("dark");
   });
 
-  it("shows unsaved indicator next to project name when dirty", () => {
+  it("shows Theme label text for large breakpoints", () => {
+    render(<AppHeader onNewProject={() => {}} />);
+
+    const label = screen.getByText(copy.themeToggleLabel);
+    expect(label).toHaveClass("hidden", "lg:inline");
+    expect(
+      screen.getByRole("button", { name: copy.themeToggleAriaLabel }),
+    ).toContainElement(label);
+  });
+
+  it("shows unsaved dot indicator next to project name when dirty", () => {
     useEditorStore.setState({ isDirty: true });
     render(<AppHeader onNewProject={() => {}} />);
 
     expect(
-      screen.getByText(`· ${copy.statusUnsavedIndicator}`),
+      screen.getByLabelText(copy.statusUnsaved),
     ).toBeInTheDocument();
   });
 
@@ -98,7 +155,76 @@ describe("AppHeader", () => {
     render(<AppHeader onNewProject={() => {}} />);
 
     expect(
-      screen.queryByText(`· ${copy.statusUnsavedIndicator}`),
+      screen.queryByLabelText(copy.statusUnsaved),
     ).not.toBeInTheDocument();
+  });
+
+  it("shows primary Save button in header chrome", () => {
+    render(<AppHeader onNewProject={() => {}} />);
+
+    const saveButtons = screen.getAllByRole("button", {
+      name: copy.fileMenuSave,
+    });
+    expect(saveButtons.length).toBeGreaterThanOrEqual(1);
+    expect(saveButtons[0]).toBeInTheDocument();
+  });
+
+  it("calls onSave when header Save is clicked", () => {
+    render(<AppHeader onNewProject={() => {}} />);
+
+    const saveButton = screen.getAllByRole("button", {
+      name: copy.fileMenuSave,
+    })[0];
+    fireEvent.click(saveButton);
+
+    expect(fileActionsMock.onSave).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables header Save when canSave is false", () => {
+    fileActionsMock.canSave = false;
+    render(<AppHeader onNewProject={() => {}} />);
+
+    const saveButton = screen.getAllByRole("button", {
+      name: copy.fileMenuSave,
+    })[0];
+    expect(saveButton).toBeDisabled();
+  });
+
+  it("disables header Save while save is in flight", () => {
+    fileActionsMock.isSaving = true;
+    render(<AppHeader onNewProject={() => {}} />);
+
+    const saveButton = screen.getAllByRole("button", {
+      name: copy.fileMenuSave,
+    })[0];
+    expect(saveButton).toBeDisabled();
+  });
+
+  it("notifies export success after Export PNG", async () => {
+    useEditorStore.setState({
+      projectName: "My Art",
+      activeFrameIndex: 0,
+      gridWidth: 8,
+      gridHeight: 8,
+      pixels: new Uint8Array(64),
+      paletteColors: ["#000000", "#ffffff"],
+    });
+
+    render(<AppHeader onNewProject={() => {}} />);
+
+    fireEvent.keyDown(screen.getByRole("button", { name: "File" }), {
+      key: "Enter",
+    });
+
+    const exportItem = await screen.findByRole("menuitem", {
+      name: copy.fileMenuExportPng,
+    });
+    fireEvent.click(exportItem);
+
+    await waitFor(() => {
+      expect(exportFrameToPngMock).toHaveBeenCalledTimes(1);
+    });
+    expect(notifyExportSuccessMock).toHaveBeenCalledTimes(1);
+    expect(notifyExportSuccessMock).toHaveBeenCalledWith("My-Art-frame-1.png");
   });
 });

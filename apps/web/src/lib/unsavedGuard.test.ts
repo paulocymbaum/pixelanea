@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { useEditorStore } from "@/state/editorStore";
 import {
+  getEditorNavigationGuardState,
   isNavigationBlocked,
   needsNavigationGuard,
   type UnsavedGuardState,
@@ -11,10 +13,29 @@ function guardState(
   return {
     isDirty: false,
     isPaletteDirty: false,
+    bundleDirty: false,
     syncStatus: "idle",
     ...overrides,
   };
 }
+
+describe("getEditorNavigationGuardState", () => {
+  it("reads current editor store fields", () => {
+    useEditorStore.setState({
+      isDirty: true,
+      isPaletteDirty: false,
+      bundleDirty: true,
+      syncStatus: "error",
+    });
+
+    expect(getEditorNavigationGuardState()).toEqual({
+      isDirty: true,
+      isPaletteDirty: false,
+      bundleDirty: true,
+      syncStatus: "error",
+    });
+  });
+});
 
 describe("needsNavigationGuard", () => {
   it("returns false when frame and palette are clean", () => {
@@ -29,6 +50,10 @@ describe("needsNavigationGuard", () => {
     expect(
       needsNavigationGuard(guardState({ isPaletteDirty: true })),
     ).toBe(true);
+  });
+
+  it("returns true when bundle is dirty", () => {
+    expect(needsNavigationGuard(guardState({ bundleDirty: true }))).toBe(true);
   });
 
   it("returns false while sync is in flight", () => {

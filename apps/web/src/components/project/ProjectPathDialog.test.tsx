@@ -5,6 +5,38 @@ import { errors } from "@/content/errors";
 import { ProjectPathDialog } from "./ProjectPathDialog";
 
 describe("ProjectPathDialog", () => {
+  it("shows action-led placeholder and hint copy", () => {
+    render(
+      <ProjectPathDialog
+        open
+        onOpenChange={() => {}}
+        mode="saveAs"
+        onSubmit={() => {}}
+      />,
+    );
+
+    expect(screen.getByPlaceholderText(copy.projectPathPlaceholder)).toBeInTheDocument();
+    expect(screen.getByText(copy.projectPathHint)).toBeInTheDocument();
+    expect(
+      screen.queryByPlaceholderText("/home/you/projects/my-art.pixelanea"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows fallback description when native picker is unavailable", () => {
+    render(
+      <ProjectPathDialog
+        open
+        onOpenChange={() => {}}
+        mode="open"
+        isFallback
+        onSubmit={() => {}}
+      />,
+    );
+
+    expect(screen.getByText(copy.projectPathFallbackDescription)).toBeInTheDocument();
+    expect(screen.queryByText(copy.projectOpenDescription)).not.toBeInTheDocument();
+  });
+
   it("validates .pixelanea extension before submit", () => {
     const onSubmit = vi.fn();
     render(
@@ -18,6 +50,26 @@ describe("ProjectPathDialog", () => {
 
     fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
       target: { value: "   " },
+    });
+    fireEvent.click(screen.getByText(copy.projectOpenConfirm));
+
+    expect(screen.getByText(errors.invalidProjectPath)).toBeInTheDocument();
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("rejects non-.pixelanea extensions in open mode", () => {
+    const onSubmit = vi.fn();
+    render(
+      <ProjectPathDialog
+        open
+        onOpenChange={() => {}}
+        mode="open"
+        onSubmit={onSubmit}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
+      target: { value: "/tmp/art.png" },
     });
     fireEvent.click(screen.getByText(copy.projectOpenConfirm));
 
@@ -59,6 +111,7 @@ describe("ProjectPathDialog", () => {
       />,
     );
 
+    fireEvent.click(screen.getByText(copy.projectAssetTypeAdvancedSummary));
     fireEvent.click(screen.getByText(copy.projectAssetTypeBackground));
     fireEvent.change(screen.getByLabelText(copy.projectPathLabel), {
       target: { value: "/tmp/bg.pixelanea" },

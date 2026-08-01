@@ -20,8 +20,8 @@ A 45–60 minute introduction to pixel art for classrooms, coding clubs, and jam
 
 Create a blank **32×32** project before class:
 
-1. **Start blank** → 32×32 → single frame → **Create project**.
-2. **File → Save As** → `workshop-starter.pixelanea`.
+1. **Start blank** → 32×32 → **Create project** (or use the **8 frames** shortcut for animation).
+2. **File → Save As** — the native file picker opens; choose `workshop-starter.pixelanea`.
 3. Copy the file to student machines or a shared folder.
 
 Students can open this file instead of creating from scratch to save time.
@@ -35,8 +35,8 @@ Students can open this file instead of creating from scratch to save time.
 | 15 min | Guided draw: face or fruit on 16×16 or 32×32 |
 | 10 min | Palette: pick colors, try a preset, lock palette |
 | 10 min | Eraser + undo practice ("Fix mistakes") |
-| 10 min | Optional: duplicate to 8 frames, draw a blink or bounce, press Play |
-| 5 min | Save As, copy file to USB / email |
+| 10 min | Optional: **Duplicate frames** to 8, draw a blink or bounce, press Play |
+| 5 min | Save As via file picker, confirm **All changes saved**, copy file to USB / email |
 
 ## Teaching tips
 
@@ -54,6 +54,7 @@ Students can open this file instead of creating from scratch to save time.
 | Eyedropper | "Pick a color from your art" |
 | Lock palette | "Stay inside your color set" |
 | Save As | "Name your file so you can find it" |
+| Status bar | "When it says **All changes saved**, you're good" |
 
 ### Common student questions
 
@@ -62,7 +63,29 @@ Students can open this file instead of creating from scratch to save time.
 | How do I fix a mistake? | Eraser tool or `Ctrl+Z` |
 | How do I get my color back? | Eyedropper (`I`), then paint |
 | Why can't I paint this color? | Palette is locked — unlock or pick from swatches |
-| Where is my file? | Show the Save As path; remind them to copy the `.pixelanea` file |
+| Where is my file? | Use the path shown in the save toast; remind them to copy the `.pixelanea` file |
+| Red banner at top | Click **Retry** or restart the app (`./scripts/dev.sh`) |
+| File picker didn't open | A manual path dialog appears instead. Students type the full path ending in `.pixelanea` — provide a template path on the board (e.g. `/home/student/Desktop/my-art.pixelanea`) or help them paste from the teacher's example |
+
+## If the file picker doesn't open
+
+On some browser-only setups the native file picker may not appear. Pixelanea then shows a manual path field. Tell students to type the **full path** ending in `.pixelanea` — write a template on the board (for example `/home/student/Desktop/my-art.pixelanea`) or paste from your example file. The dialog explains that the picker didn't open; the hint under the field reminds them to ask you if they're unsure.
+
+On Linux desktop builds, install `zenity` (`sudo apt install zenity`) and restart Pixelanea so **File → Open** and **Save As** use the native dialog.
+
+## Native file picker QA checklist (desktop labs)
+
+Run once per lab image before a workshop (manual — not automated):
+
+| Step | Action | Expected |
+|------|--------|----------|
+| 1 | `command -v zenity` on lab machines | Installed, or install before class |
+| 2 | Start via `./pixelanea` without zenity | Stderr hint to install zenity |
+| 3 | **File → Open** → pick a `.pixelanea` | Project loads; no manual path typing |
+| 4 | **File → Open** → Cancel | No toast; editor unchanged |
+| 5 | **File → Save As** → new path | Toast **Project saved.**; status **All changes saved** |
+| 6 | **Save** on existing project | Saves in place; no path dialog |
+| 7 | Zenity missing (fallback) | Manual path dialog with recovery copy; students can still save with teacher path template |
 
 ## Mini challenges
 

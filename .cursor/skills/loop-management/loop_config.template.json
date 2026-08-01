@@ -1,0 +1,10 @@
+{
+  "name": "{LOOP_NAME}",
+  "max_iterations": 5,
+  "check_script": ".cursor/skill-outputs/{feature}/{layer}/{timestamp}_loop-management/loop/check_condition.sh",
+  "response_file": ".cursor/skill-outputs/{feature}/{layer}/{timestamp}_loop-management/loop/last_agent_response.md",
+  "iteration_file": ".cursor/skill-outputs/{feature}/{layer}/{timestamp}_loop-management/loop/loop_iteration.json",
+  "stop_reason": "Loop goal achieved — check script exited 0.",
+  "continue_reason": "Loop goal not yet achieved — check script exited non-zero.",
+  "next_prompt": "Continue the loop. Read the previous response at {response_file} and complete the next step toward the loop goal."
+}
