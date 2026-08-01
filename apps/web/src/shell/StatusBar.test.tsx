@@ -8,8 +8,23 @@ import { StatusBar } from "./StatusBar";
 
 describe("StatusBar", () => {
   beforeEach(() => {
-    useUiStore.setState({ apiStatus: "checking", apiVersion: null });
-    useEditorStore.setState({ hoverCell: null });
+    useUiStore.setState({
+      apiStatus: "checking",
+      apiVersion: null,
+      showTechnicalInfo: false,
+    });
+    useEditorStore.setState({
+      hoverCell: null,
+      projectId: "p1",
+      isDirty: false,
+      isPaletteDirty: false,
+      syncStatus: "idle",
+      syncError: null,
+      frameSyncStatus: "idle",
+      paletteSyncStatus: "idle",
+      frameSyncError: null,
+      paletteSyncError: null,
+    });
   });
 
   it("exposes role=status", () => {
@@ -17,17 +32,43 @@ describe("StatusBar", () => {
     expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
-  it("shows checking message", () => {
+  it("shows checking message without API jargon", () => {
     render(<StatusBar />);
-    expect(screen.getByText("Checking API…")).toBeInTheDocument();
+    expect(screen.getByText(copy.statusChecking)).toBeInTheDocument();
+    expect(screen.queryByText(copy.apiConnected)).not.toBeInTheDocument();
   });
 
-  it("shows connected message with version", () => {
+  it("shows saved status when connected and clean", () => {
     useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
     render(<StatusBar />);
+    expect(screen.getByText(copy.statusSaved)).toBeInTheDocument();
+    expect(screen.queryByText(copy.apiConnected)).not.toBeInTheDocument();
+  });
+
+  it("appends server version only when technical info is on", () => {
+    useUiStore.setState({
+      apiStatus: "connected",
+      apiVersion: "1.0.0",
+      showTechnicalInfo: true,
+    });
+    render(<StatusBar />);
     expect(
-      screen.getByText(`${copy.apiConnected} · ${copy.apiVersion("1.0.0")}`),
+      screen.getByText(`${copy.statusSaved} · ${copy.apiVersion("1.0.0")}`),
     ).toBeInTheDocument();
+  });
+
+  it("shows unsaved when dirty", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
+    useEditorStore.setState({ isDirty: true });
+    render(<StatusBar />);
+    expect(screen.getByText(copy.statusUnsaved)).toBeInTheDocument();
+  });
+
+  it("shows saving while syncing", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
+    useEditorStore.setState({ syncStatus: "syncing" });
+    render(<StatusBar />);
+    expect(screen.getByText(copy.statusSaving)).toBeInTheDocument();
   });
 
   it("shows disconnected message", () => {
@@ -48,7 +89,11 @@ describe("StatusBar", () => {
   });
 
   it("shows hex and palette index when technical info enabled", () => {
-    useUiStore.setState({ showTechnicalInfo: true });
+    useUiStore.setState({
+      apiStatus: "connected",
+      apiVersion: "1.0.0",
+      showTechnicalInfo: true,
+    });
     const pixels = new Uint8Array(32 * 32);
     pixels[4 * 32 + 2] = 2;
     useEditorStore.setState({
