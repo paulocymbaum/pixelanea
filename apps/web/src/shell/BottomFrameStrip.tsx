@@ -11,7 +11,7 @@ import {
   useIsPlaying,
   usePaletteColors,
 } from "@/state/editorStore";
-import { activeIndexAfterReorder } from "@/state/frameReorder";
+import { flushFrameSync } from "@/state/persist";
 
 export function BottomFrameStrip() {
   const frameCount = useFrameCount();
@@ -23,6 +23,7 @@ export function BottomFrameStrip() {
   const gridWidth = useEditorStore((s) => s.gridWidth);
   const gridHeight = useEditorStore((s) => s.gridHeight);
   const switchFrame = useEditorStore((s) => s.switchFrame);
+  const applyFrameReorder = useEditorStore((s) => s.applyFrameReorder);
   const reloadAllFrames = useEditorStore((s) => s.reloadAllFrames);
   const setFrameSyncStatus = useEditorStore((s) => s.setFrameSyncStatus);
 
@@ -35,6 +36,12 @@ export function BottomFrameStrip() {
       return;
     }
 
+    // Must flush while indices are still pre-reorder, or the pending PUT lands
+    // on whichever frame takes the active slot.
+    if (useEditorStore.getState().isDirty) {
+      await flushFrameSync();
+    }
+
     const result = await reorderFrames(projectId, {
       fromIndex,
       toIndex,
@@ -45,11 +52,7 @@ export function BottomFrameStrip() {
       return;
     }
 
-    const nextActive = activeIndexAfterReorder(
-      activeFrameIndex,
-      fromIndex,
-      toIndex,
-    );
+    const nextActive = applyFrameReorder(fromIndex, toIndex);
     await reloadAllFrames(frameCount, nextActive);
   };
 

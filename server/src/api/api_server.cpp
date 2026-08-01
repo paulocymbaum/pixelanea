@@ -1,6 +1,7 @@
 #include "api/api_server.hpp"
 
 #include "api/base64.hpp"
+#include "api/file_dialog_handlers.hpp"
 #include "api/http_response.hpp"
 #include "domain/time.hpp"
 #include "export/gif_encoder.hpp"
@@ -25,6 +26,7 @@ nlohmann::json project_to_json(const domain::Project& project) {
                         {"fps", project.fps},
                         {"cellSize", project.cell_size},
                         {"assetType", domain::asset_type_to_string(project.asset_type)},
+                        {"loop", project.loop},
                         {"createdAt", project.created_at},
                         {"updatedAt", project.updated_at}};
 }
@@ -102,6 +104,9 @@ domain::CreateProjectParams parse_create_request(const nlohmann::json& body) {
   if (const auto asset_type = parse_asset_type_field(body, "assetType")) {
     params.asset_type = *asset_type;
   }
+  if (body.contains("loop")) {
+    params.loop = body.at("loop").get<bool>();
+  }
   return params;
 }
 
@@ -118,6 +123,9 @@ domain::UpdateProjectParams parse_update_request(const nlohmann::json& body) {
   }
   if (const auto asset_type = parse_asset_type_field(body, "assetType")) {
     params.asset_type = *asset_type;
+  }
+  if (body.contains("loop")) {
+    params.loop = body.at("loop").get<bool>();
   }
   return params;
 }
@@ -169,10 +177,12 @@ httplib::Response respond_error(const logging::ScopedLogger& log, int status,
 }  // namespace
 
 ApiServer::ApiServer(db::ProjectRepository& projects, db::FrameRepository& frames,
-                     db::PaletteRepository& palettes, logging::Logger& logger)
+                     db::PaletteRepository& palettes, logging::Logger& logger,
+                     std::unique_ptr<FileDialogProvider> file_dialog)
     : projects_(projects),
       frames_(frames),
       palettes_(palettes),
+      file_dialog_(std::move(file_dialog)),
       log_(logger, "api", "ApiServer"),
       http_request_log_(logger) {}
 
@@ -181,6 +191,25 @@ void ApiServer::register_routes(httplib::Server& server) const {
   server.Get("/api/health", [](const httplib::Request&, httplib::Response& res) {
     res = json_response(200, nlohmann::json{{"status", "ok"}, {"version", kServerVersion}});
   });
+
+  server.Post("/api/dialog/pick-project-path",
+              [this](const httplib::Request& req, httplib::Response& res) {
+                if (!file_dialog_) {
+                  res = respond_error(log_, 503, "dialog.unavailable",
+                                      "native file dialog is not configured");
+                  return;
+                }
+
+                nlohmann::json body;
+                try {
+                  body = nlohmann::json::parse(req.body);
+                } catch (const nlohmann::json::exception&) {
+                  res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
+                  return;
+                }
+
+                res = handle_pick_project_path(body, *file_dialog_, log_);
+              });
 
   server.Post("/api/projects", [this](const httplib::Request& req, httplib::Response& res) {
     nlohmann::json body;
@@ -713,7 +742,7 @@ void ApiServer::register_routes(httplib::Server& server) const {
                   return;
                 }
 
-                bool loop = true;
+                bool loop = project.value().loop;
                 if (body.contains("loop")) {
                   loop = body.at("loop").get<bool>();
                 }

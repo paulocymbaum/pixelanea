@@ -22,6 +22,8 @@ export type ExportGifRequest = components["schemas"]["ExportGifRequest"];
 export type OpenProjectRequest = components["schemas"]["OpenProjectRequest"];
 export type SaveProjectRequest = components["schemas"]["SaveProjectRequest"];
 export type SaveProjectResponse = components["schemas"]["SaveProjectResponse"];
+export type PickProjectPathRequest = components["schemas"]["PickProjectPathRequest"];
+export type PickProjectPathResponse = components["schemas"]["PickProjectPathResponse"];
 export type Color = components["schemas"]["Color"];
 export type ErrorResponse = components["schemas"]["ErrorResponse"];
 
@@ -109,6 +111,13 @@ export function createApiClient(config: ApiClientConfig = {}) {
       request<paths["/api/health"]["get"]["responses"]["200"]["content"]["application/json"]>(
         "/api/health",
         {},
+        config,
+      ),
+
+    pickProjectPath: (body: PickProjectPathRequest) =>
+      request<PickProjectPathResponse>(
+        "/api/dialog/pick-project-path",
+        { method: "POST", body: JSON.stringify(body) },
         config,
       ),
 

@@ -183,6 +183,12 @@ export const copy = {
   projectOverwriteDescription:
     "A file at this path may already exist. Saving will replace it.",
   projectOverwriteConfirm: "Replace file",
+  discardChangesTitle: "Discard unsaved changes?",
+  discardChangesBody:
+    "You have changes that aren't saved to a file yet.",
+  discardChangesConfirm: "Discard",
+  discardChangesCancel: "Keep editing",
+  discardChangesSave: "Save, then continue",
   newProjectQuickStart: (width: number, height: number) =>
     `Continue with blank ${width}×${height}`,
   newProjectChooseAgain: "Choose a different path",

@@ -1,4 +1,3 @@
-import { checkHealth } from "@/api/health";
 import { SkippableOverlay } from "@/components/onboarding/SkippableOverlay";
 import { ShortcutsOverlay } from "@/components/onboarding/ShortcutsOverlay";
 import { Toast } from "@/components/ui/Toast";
@@ -23,26 +22,8 @@ export function EditorPage({
   useEditorShortcuts();
 
   const apiStatus = useUiStore((s) => s.apiStatus);
-  const setApiStatus = useUiStore((s) => s.setApiStatus);
   const onboardingDismissed = useUiStore((s) => s.onboardingDismissed);
   const setOnboardingStep = useUiStore((s) => s.setOnboardingStep);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    checkHealth().then((result) => {
-      if (cancelled) return;
-      if (result.ok) {
-        setApiStatus("connected", result.health.version);
-      } else {
-        setApiStatus("disconnected");
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [setApiStatus]);
 
   useEffect(() => {
     if (showOnboarding && !onboardingDismissed) {

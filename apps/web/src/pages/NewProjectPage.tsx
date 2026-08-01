@@ -57,6 +57,7 @@ export function NewProjectPage({
       frameCount: frames,
       fps: 8,
       cellSize: 16,
+      loop: true,
     });
 
     if (!created.ok) {

@@ -15,6 +15,7 @@ import {
 import { duplicateFrames } from "@/api/frames";
 import { copy } from "@/content/copy";
 import { useActiveFrameIndex, useEditorStore } from "@/state/editorStore";
+import { flushFrameSync } from "@/state/persist";
 
 type FillMode = "copy" | "blank";
 
@@ -44,6 +45,11 @@ export function FrameDuplicateDialog({
 
     setIsSubmitting(true);
     setError(null);
+
+    // The server copies the stored source frame, so unsaved pixels must land first.
+    if (useEditorStore.getState().isDirty) {
+      await flushFrameSync();
+    }
 
     const result = await duplicateFrames(projectId, {
       frameCount,

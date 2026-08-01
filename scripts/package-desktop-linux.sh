@@ -57,6 +57,11 @@ if port_in_use; then
   fi
 fi
 
+if ! command -v zenity >/dev/null 2>&1; then
+  echo "Note: install zenity for native Open/Save dialogs (e.g. sudo apt install zenity)." >&2
+  echo "Without zenity, use the path dialog in the app to open or save .pixelanea files." >&2
+fi
+
 "${BINARY}" --host "${HOST}" --port "${PORT}" --web-root "${WEB_ROOT}" &
 SERVER_PID=$!
 
@@ -130,6 +135,11 @@ if port_in_use; then
   fi
 fi
 
+if ! command -v zenity >/dev/null 2>&1; then
+  echo "Note: install zenity for native Open/Save dialogs (e.g. sudo apt install zenity)." >&2
+  echo "Without zenity, use the path dialog in the app to open or save .pixelanea files." >&2
+fi
+
 "${BINARY}" --host "${HOST}" --port "${PORT}" --web-root "${WEB_ROOT}" &
 SERVER_PID=$!
 trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT INT TERM
@@ -193,6 +203,7 @@ Install for current user (~/.local):
   ./install.sh
 
 Requires: Debian/Ubuntu-style Linux with glibc, curl, and a web browser.
+Optional: zenity (sudo apt install zenity) for native file Open/Save dialogs.
 EOF
 
 mkdir -p "${ROOT_DIR}/dist"

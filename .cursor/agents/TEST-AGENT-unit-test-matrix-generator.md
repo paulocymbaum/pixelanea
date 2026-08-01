@@ -1,5 +1,5 @@
 ---
-name: skill-unit-test-matrix
+name: TEST-AGENT-unit-test-matrix-generator
 description: Top-level orchestrator for the unit test matrix lifecycle. Discovers or creates a test_matrix_unit.md, executes it through test-matrix-unit, and routes any code-instability failures to skill-implementer or test-matrix-unit-recovery in a loop until the matrix is stable.
 is_background: true
 ---

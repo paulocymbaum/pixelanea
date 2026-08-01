@@ -194,6 +194,8 @@ set(PIXELANEA_SERVER_SOURCES
   src/main.cpp
   src/api/api_server.cpp
   src/api/base64.cpp
+  src/api/file_dialog_handlers.cpp
+  src/api/zenity_file_dialog_provider.cpp
   src/api/web_static.cpp
   src/logging/http_request_log.cpp
 )
@@ -234,6 +236,8 @@ if(BUILD_TESTING)
     tests/pixelate_pipeline_test.cpp
     tests/bundle_io_test.cpp
     tests/gif_encoder_test.cpp
+    tests/file_dialog_test.cpp
+    src/api/file_dialog_handlers.cpp
   )
   target_link_libraries(
     pixelanea_tests
@@ -242,6 +246,7 @@ if(BUILD_TESTING)
       pixelanea_image
       pixelanea_bundle
       pixelanea_export
+      ${PIXELANEA_HTTPLIB_LIB}
       Catch2::Catch2WithMain
   )
 

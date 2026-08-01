@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import { SyncCoordinator } from "./syncCoordinator";
-import type { FrameSnapshot, PaletteSnapshot } from "./types";
+import type {
+  FrameSnapshot,
+  PaletteSnapshot,
+  ProjectSettingsSnapshot,
+} from "./types";
 
 function frameSnapshot(
   projectId: string,
@@ -23,6 +27,14 @@ function paletteSnapshot(projectId: string, colors: string[]): PaletteSnapshot {
   };
 }
 
+function projectSettingsSnapshot(
+  projectId: string,
+  fps: number,
+  loop: boolean,
+): ProjectSettingsSnapshot {
+  return { lane: "projectSettings", projectId, fps, loop };
+}
+
 function createCoordinator(
   overrides: Partial<ConstructorParameters<typeof SyncCoordinator>[0]> = {},
   debounceMs = 0,
@@ -31,14 +43,21 @@ function createCoordinator(
     {
       saveFrame: vi.fn().mockResolvedValue({ ok: true }),
       savePalette: vi.fn().mockResolvedValue({ ok: true }),
+      saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
       getFrameSnapshot: () => null,
       getPaletteSnapshot: () => null,
+      getProjectSettingsSnapshot: () => null,
       frameCallbacks: {
         onSyncing: vi.fn(),
         onSuccess: vi.fn(),
         onError: vi.fn(),
       },
       paletteCallbacks: {
+        onSyncing: vi.fn(),
+        onSuccess: vi.fn(),
+        onError: vi.fn(),
+      },
+      projectSettingsCallbacks: {
         onSyncing: vi.fn(),
         onSuccess: vi.fn(),
         onError: vi.fn(),
@@ -165,20 +184,56 @@ describe("SyncCoordinator", () => {
     expect(onSuccess).not.toHaveBeenCalled();
   });
 
-  it("flushAll runs frame and palette lanes in parallel", async () => {
+  it("flushAll runs frame, palette, and project settings lanes in parallel", async () => {
     const saveFrame = vi.fn().mockResolvedValue({ ok: true });
     const savePalette = vi.fn().mockResolvedValue({ ok: true });
+    const saveProjectSettings = vi.fn().mockResolvedValue({ ok: true });
 
     const coordinator = createCoordinator({
       saveFrame,
       savePalette,
+      saveProjectSettings,
       getFrameSnapshot: () => frameSnapshot("p1", 0, 1),
       getPaletteSnapshot: () => paletteSnapshot("p1", ["#112233"]),
+      getProjectSettingsSnapshot: () => projectSettingsSnapshot("p1", 12, false),
     });
 
     await coordinator.flushAll();
 
     expect(saveFrame).toHaveBeenCalledTimes(1);
     expect(savePalette).toHaveBeenCalledTimes(1);
+    expect(saveProjectSettings).toHaveBeenCalledWith("p1", {
+      fps: 12,
+      loop: false,
+    });
+  });
+
+  it("flushProjectSettings waits for the write to land", async () => {
+    let resolveSave: ((value: { ok: true }) => void) | undefined;
+    const saveProjectSettings = vi.fn().mockImplementation(
+      () =>
+        new Promise<{ ok: true }>((resolve) => {
+          resolveSave = resolve;
+        }),
+    );
+    const onSuccess = vi.fn();
+
+    const coordinator = createCoordinator({
+      saveProjectSettings,
+      getProjectSettingsSnapshot: () => projectSettingsSnapshot("p1", 24, true),
+      projectSettingsCallbacks: {
+        onSyncing: vi.fn(),
+        onSuccess,
+        onError: vi.fn(),
+      },
+    });
+
+    const flushPromise = coordinator.flushProjectSettings();
+    expect(onSuccess).not.toHaveBeenCalled();
+
+    resolveSave?.({ ok: true });
+    await flushPromise;
+
+    expect(onSuccess).toHaveBeenCalledTimes(1);
   });
 });

@@ -38,8 +38,14 @@ domain::Project read_project_row(sqlite3_stmt* stmt) {
       project.asset_type = *parsed;
     }
   }
+  project.loop = sqlite3_column_int(stmt, 10) != 0;
   return project;
 }
+
+/** Column order every project SELECT must use; see `read_project_row`. */
+constexpr const char* kProjectColumns =
+    "id, name, width, height, frame_count, fps, cell_size, created_at, updated_at, "
+    "asset_type, loop";
 
 }  // namespace
 
@@ -100,13 +106,11 @@ domain::Result<domain::Project> ProjectRepository::get(const domain::ProjectId& 
   }
 
   const auto& connection = connection_for(id);
-  const char* sql =
-      "SELECT id, name, width, height, frame_count, fps, cell_size, created_at, updated_at, "
-      "asset_type "
-      "FROM projects WHERE id = ?";
+  const std::string sql =
+      std::string("SELECT ") + kProjectColumns + " FROM projects WHERE id = ?";
 
   sqlite3_stmt* stmt = nullptr;
-  if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
+  if (sqlite3_prepare_v2(connection.handle(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
     const std::string message = sqlite3_errmsg(connection.handle());
     log_.error("project.get_failed", {{"project_id", id.value}, {"error", message}});
     return domain::Result<domain::Project>::fail(message);
@@ -148,12 +152,15 @@ domain::Result<domain::Project> ProjectRepository::update(
   if (params.asset_type) {
     project.asset_type = *params.asset_type;
   }
+  if (params.loop) {
+    project.loop = *params.loop;
+  }
   project.updated_at = domain::utc_now_iso8601();
 
   auto& connection = connection_for(id);
   const char* sql =
-      "UPDATE projects SET name = ?, fps = ?, cell_size = ?, asset_type = ?, updated_at = ? "
-      "WHERE id = ?";
+      "UPDATE projects SET name = ?, fps = ?, cell_size = ?, asset_type = ?, loop = ?, "
+      "updated_at = ? WHERE id = ?";
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
     const std::string message = sqlite3_errmsg(connection.handle());
@@ -166,8 +173,9 @@ domain::Result<domain::Project> ProjectRepository::update(
   sqlite3_bind_double(stmt, 2, project.fps);
   sqlite3_bind_int(stmt, 3, project.cell_size);
   sqlite3_bind_text(stmt, 4, asset_type.c_str(), -1, SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 5, project.updated_at.c_str(), -1, SQLITE_TRANSIENT);
-  sqlite3_bind_text(stmt, 6, id.value.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 5, project.loop ? 1 : 0);
+  sqlite3_bind_text(stmt, 6, project.updated_at.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_text(stmt, 7, id.value.c_str(), -1, SQLITE_TRANSIENT);
 
   if (sqlite3_step(stmt) != SQLITE_DONE) {
     const std::string message = sqlite3_errmsg(connection.handle());
@@ -313,13 +321,11 @@ void ProjectRepository::remove_project_files(const ProjectHandle& handle) const 
 
 domain::Result<domain::Project> ProjectRepository::read_project(
     Connection& connection, const domain::ProjectId& id) const {
-  const char* sql =
-      "SELECT id, name, width, height, frame_count, fps, cell_size, created_at, updated_at, "
-      "asset_type "
-      "FROM projects WHERE id = ?";
+  const std::string sql =
+      std::string("SELECT ") + kProjectColumns + " FROM projects WHERE id = ?";
 
   sqlite3_stmt* stmt = nullptr;
-  if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
+  if (sqlite3_prepare_v2(connection.handle(), sql.c_str(), -1, &stmt, nullptr) != SQLITE_OK) {
     return domain::Result<domain::Project>::fail(sqlite3_errmsg(connection.handle()));
   }
 
@@ -340,7 +346,7 @@ domain::Result<domain::Project> ProjectRepository::insert_project(
     const domain::ProjectId& id, const std::string& now) const {
   const char* sql =
       "INSERT INTO projects (id, name, width, height, frame_count, fps, cell_size, created_at, "
-      "updated_at, asset_type) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+      "updated_at, asset_type, loop) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
   sqlite3_stmt* stmt = nullptr;
   if (sqlite3_prepare_v2(connection.handle(), sql, -1, &stmt, nullptr) != SQLITE_OK) {
@@ -358,6 +364,7 @@ domain::Result<domain::Project> ProjectRepository::insert_project(
   sqlite3_bind_text(stmt, 8, now.c_str(), -1, SQLITE_TRANSIENT);
   sqlite3_bind_text(stmt, 9, now.c_str(), -1, SQLITE_TRANSIENT);
   sqlite3_bind_text(stmt, 10, asset_type.c_str(), -1, SQLITE_TRANSIENT);
+  sqlite3_bind_int(stmt, 11, params.loop ? 1 : 0);
 
   if (sqlite3_step(stmt) != SQLITE_DONE) {
     const std::string message = sqlite3_errmsg(connection.handle());
@@ -375,6 +382,7 @@ domain::Result<domain::Project> ProjectRepository::insert_project(
   project.fps = params.fps;
   project.cell_size = params.cell_size;
   project.asset_type = params.asset_type;
+  project.loop = params.loop;
   project.created_at = now;
   project.updated_at = now;
   return domain::Result<domain::Project>::ok(std::move(project));

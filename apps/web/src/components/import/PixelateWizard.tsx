@@ -34,6 +34,7 @@ const DEFAULT_PROJECT = {
   frameCount: 1,
   fps: 8,
   cellSize: 16,
+  loop: true,
 } as const;
 
 export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {

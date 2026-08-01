@@ -78,6 +78,7 @@ struct Project {
   double fps = 8.0;
   int cell_size = 16;
   AssetType asset_type = kDefaultAssetType;
+  bool loop = true;
   std::string created_at;
   std::string updated_at;
 };
@@ -111,6 +112,7 @@ struct CreateProjectParams {
   double fps = 8.0;
   int cell_size = 16;
   AssetType asset_type = kDefaultAssetType;
+  bool loop = true;
 };
 
 struct UpdateProjectParams {
@@ -118,6 +120,7 @@ struct UpdateProjectParams {
   std::optional<double> fps;
   std::optional<int> cell_size;
   std::optional<AssetType> asset_type;
+  std::optional<bool> loop;
 };
 
 enum class DuplicateFillMode {

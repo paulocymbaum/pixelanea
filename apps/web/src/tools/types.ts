@@ -1,5 +1,5 @@
 import type { CellCoord } from "@/canvas/coordinates";
-import type { ToolId } from "@/content/tools";
+import type { ToolId } from "@/tools/registry";
 import type { Command } from "@/state/commands/types";
 
 export type ToolContext = {

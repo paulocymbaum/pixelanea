@@ -48,14 +48,23 @@ TEST_CASE("ProjectRepository create get update close", "[repository]") {
   const auto fetched = projects.get(id);
   REQUIRE(fetched.has_value());
   REQUIRE(fetched.value().id.value == id.value);
+  REQUIRE(fetched.value().loop);
 
   UpdateProjectParams update;
   update.name = "Renamed";
   update.fps = 12.0;
+  update.loop = false;
   const auto updated = projects.update(id, update);
   REQUIRE(updated.has_value());
   REQUIRE(updated.value().name == "Renamed");
   REQUIRE(updated.value().fps == 12.0);
+  REQUIRE_FALSE(updated.value().loop);
+
+  // Animation settings are project state: they must survive a re-read.
+  const auto reread = projects.get(id);
+  REQUIRE(reread.has_value());
+  REQUIRE(reread.value().fps == 12.0);
+  REQUIRE_FALSE(reread.value().loop);
 
   const auto closed = projects.close(id);
   REQUIRE(closed.has_value());

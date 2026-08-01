@@ -7,7 +7,7 @@ import {
   clampZoom,
 } from "@/canvas/coordinates";
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
-import type { ToolId } from "@/content/tools";
+import type { ToolId } from "@/tools/registry";
 import type { AssetType } from "@pixelanea/api-client";
 import { DEFAULT_ASSET_TYPE } from "@/content/assetTypes";
 import type { Command } from "@/state/commands/types";
@@ -28,6 +28,10 @@ import { fetchFrame, pixelsFromFrame } from "@/api/frames";
 import { logger } from "@/logging/logger";
 import { resolveAllFramePixels, writeFramePixels } from "@/state/frameCache";
 import {
+  activeIndexAfterReorder,
+  reorderFramePixels,
+} from "@/state/frameReorder";
+import {
   computeFilterCellChanges,
   DEFAULT_COLOR_FILTER_SETTINGS,
   type ColorFilterSettings,
@@ -42,6 +46,13 @@ const MAX_ANIMATION_FPS = 24;
 
 function createEmptyPixels(width: number, height: number): Uint8Array {
   return new Uint8Array(width * height);
+}
+
+function clampAnimationFps(fps: number): number {
+  return Math.max(
+    MIN_ANIMATION_FPS,
+    Math.min(MAX_ANIMATION_FPS, Math.round(fps)),
+  );
 }
 
 export type SyncStatus = "idle" | "syncing" | "error";
@@ -109,6 +120,8 @@ type EditorState = {
     paletteColors: readonly string[];
     bundlePath?: string | null;
     assetType?: AssetType;
+    fps?: number;
+    loop?: boolean;
   }) => void;
   setActiveTool: (tool: ToolId) => void;
   setActiveColorIndex: (index: number) => void;
@@ -158,8 +171,20 @@ type EditorState = {
     frameCount: number,
     activeIndex?: number,
   ) => Promise<{ ok: true } | { ok: false }>;
+  applyFrameReorder: (fromIndex: number, toIndex: number) => number;
   applyFramePixelsAtIndex: (index: number, pixels: Uint8Array) => void;
 };
+
+/** Fold the live active buffer into the per-index cache. */
+function cacheActivePixels(
+  state: Pick<EditorState, "framePixelsByIndex" | "activeFrameIndex" | "pixels">,
+): Record<number, Uint8Array> {
+  return writeFramePixels(
+    state.framePixelsByIndex,
+    state.activeFrameIndex,
+    state.pixels,
+  );
+}
 
 function applyCommands(
   pixels: Uint8Array,
@@ -224,6 +249,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     paletteColors,
     bundlePath = null,
     assetType = DEFAULT_ASSET_TYPE,
+    fps = DEFAULT_ANIMATION_FPS,
+    loop = true,
   }) =>
     set({
       projectId,
@@ -235,6 +262,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       paletteColors,
       bundlePath,
       assetType,
+      animationFps: clampAnimationFps(fps),
+      animationLoop: loop,
       framePixelsByIndex: writeFramePixels({}, 0, pixels),
       activeFrameIndex: 0,
       undoStack: [],
@@ -310,24 +339,23 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       return;
     }
 
-    const cachedCurrent = writeFramePixels(
-      state.framePixelsByIndex,
-      state.activeFrameIndex,
-      state.pixels,
-    );
-
-    set({ framePixelsByIndex: cachedCurrent });
+    set({ framePixelsByIndex: cacheActivePixels(state) });
 
     if (state.isDirty) {
       await flushFrameSync();
     }
 
+    // Paints landing during an await update the outgoing frame, so every
+    // resume point re-reads the store instead of reusing a stale snapshot.
+    const flushed = get();
+    let cachedCurrent = cacheActivePixels(flushed);
+
     let nextPixels = cachedCurrent[index];
-    if (!nextPixels && state.projectId) {
-      const result = await fetchFrame(state.projectId, index);
+    if (!nextPixels && flushed.projectId) {
+      const result = await fetchFrame(flushed.projectId, index);
       if (!result.ok) {
         logger.error("editorStore", "switch_frame_fetch_failed", {
-          projectId: state.projectId,
+          projectId: flushed.projectId,
           frameIndex: index,
           message: result.message,
         });
@@ -335,10 +363,11 @@ export const useEditorStore = create<EditorState>((set, get) => ({
         return;
       }
       nextPixels = pixelsFromFrame(result.frame);
+      cachedCurrent = cacheActivePixels(get());
     }
 
     if (!nextPixels) {
-      nextPixels = createEmptyPixels(state.gridWidth, state.gridHeight);
+      nextPixels = createEmptyPixels(flushed.gridWidth, flushed.gridHeight);
     }
 
     set({
@@ -360,13 +389,7 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set({ isPlaying, readOnly: isPlaying, placingLighting: false });
   },
 
-  setAnimationFps: (fps) =>
-    set({
-      animationFps: Math.max(
-        MIN_ANIMATION_FPS,
-        Math.min(MAX_ANIMATION_FPS, Math.round(fps)),
-      ),
-    }),
+  setAnimationFps: (fps) => set({ animationFps: clampAnimationFps(fps) }),
 
   setAnimationLoop: (animationLoop) => set({ animationLoop }),
 
@@ -843,6 +866,27 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     });
 
     return { ok: true };
+  },
+
+  applyFrameReorder: (fromIndex, toIndex) => {
+    const state = get();
+    const activeFrameIndex = activeIndexAfterReorder(
+      state.activeFrameIndex,
+      fromIndex,
+      toIndex,
+    );
+
+    // The active buffer travels with its frame, so only the keys change.
+    set({
+      activeFrameIndex,
+      framePixelsByIndex: reorderFramePixels(
+        cacheActivePixels(state),
+        fromIndex,
+        toIndex,
+      ),
+    });
+
+    return activeFrameIndex;
   },
 
   applyFramePixelsAtIndex: (index, pixels) => {

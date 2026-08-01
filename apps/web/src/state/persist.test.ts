@@ -4,6 +4,8 @@ import {
   flushFrameSync,
   flushPaletteSync,
   flushAllSync,
+  markProjectSettingsSynced,
+  resetPersistState,
   schedulePaletteSync,
   setSyncCoordinatorForTests,
   SyncCoordinator,
@@ -17,15 +19,23 @@ vi.mock("@/api/palette", () => ({
   savePalette: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+vi.mock("@/api/projects", () => ({
+  updateProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
+}));
+
 import { saveFrame } from "@/api/frames";
 import { savePalette } from "@/api/palette";
+import { updateProjectSettings } from "@/api/projects";
 
 describe("persist", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setSyncCoordinatorForTests(null);
+    resetPersistState();
     useEditorStore.setState({
       projectId: "test-project",
+      animationFps: 8,
+      animationLoop: true,
       gridWidth: 2,
       gridHeight: 2,
       pixels: new Uint8Array([0, 1, 2, 3]),
@@ -69,12 +79,40 @@ describe("persist", () => {
     expect(useEditorStore.getState().isPaletteDirty).toBe(false);
   });
 
-  it("flushAll syncs frame and palette lanes", async () => {
-    useEditorStore.setState({ isPaletteDirty: true });
+  it("flushAll syncs frame, palette, and animation settings", async () => {
+    useEditorStore.setState({
+      isPaletteDirty: true,
+      animationFps: 12,
+      animationLoop: false,
+    });
     await flushAllSync();
 
     expect(saveFrame).toHaveBeenCalledTimes(1);
     expect(savePalette).toHaveBeenCalledTimes(1);
+    expect(updateProjectSettings).toHaveBeenCalledWith("test-project", {
+      fps: 12,
+      loop: false,
+    });
+  });
+
+  it("flushAll skips settings the server already holds", async () => {
+    markProjectSettingsSynced("test-project", { fps: 8, loop: true });
+    await flushAllSync();
+
+    expect(updateProjectSettings).not.toHaveBeenCalled();
+  });
+
+  it("flushAll writes settings again once they change", async () => {
+    markProjectSettingsSynced("test-project", { fps: 8, loop: true });
+    // Animation settings can be written straight into the store, so the lane
+    // has to notice the change without a dirty flag.
+    useEditorStore.setState({ animationLoop: false });
+    await flushAllSync();
+
+    expect(updateProjectSettings).toHaveBeenCalledWith("test-project", {
+      fps: 8,
+      loop: false,
+    });
   });
 
   it("serializes overlapping frame PUTs through coordinator", async () => {
@@ -111,18 +149,25 @@ describe("persist", () => {
       {
         saveFrame: vi.fn(),
         savePalette: savePaletteMock,
+        saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
         getFrameSnapshot: () => null,
         getPaletteSnapshot: () => ({
           lane: "palette",
           projectId: "test-project",
           colors: ["#000000", "#FF0000"],
         }),
+        getProjectSettingsSnapshot: () => null,
         frameCallbacks: {
           onSyncing: vi.fn(),
           onSuccess: vi.fn(),
           onError: vi.fn(),
         },
         paletteCallbacks: {
+          onSyncing: vi.fn(),
+          onSuccess: vi.fn(),
+          onError: vi.fn(),
+        },
+        projectSettingsCallbacks: {
           onSyncing: vi.fn(),
           onSuccess: vi.fn(),
           onError: vi.fn(),

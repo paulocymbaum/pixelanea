@@ -258,8 +258,16 @@ export function AppHeader({ onNewProject, onProjectOpened }: AppHeaderProps) {
   };
 
   const fileItems = [
-    { label: copy.fileMenuNew, action: fileActions.onNewProject },
-    { label: copy.fileMenuOpen, action: fileActions.onOpenProject },
+    {
+      label: copy.fileMenuNew,
+      action: fileActions.onNewProject,
+      disabled: fileActions.isFileNavigationDisabled,
+    },
+    {
+      label: copy.fileMenuOpen,
+      action: fileActions.onOpenProject,
+      disabled: fileActions.isFileNavigationDisabled,
+    },
     {
       label: copy.fileMenuSave,
       action: fileActions.onSave,

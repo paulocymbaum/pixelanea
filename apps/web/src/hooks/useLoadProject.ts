@@ -1,7 +1,7 @@
 import type { LoadedProject } from "@/api/projects";
 import { loadProject } from "@/api/projects";
 import { useEditorStore } from "@/state/editorStore";
-import { resetPersistState } from "@/state/persist";
+import { markProjectSettingsSynced, resetPersistState } from "@/state/persist";
 
 export function applyLoadedProjectToEditor(data: LoadedProject): void {
   resetPersistState();
@@ -15,6 +15,12 @@ export function applyLoadedProjectToEditor(data: LoadedProject): void {
     paletteColors: data.paletteColors,
     bundlePath: data.bundlePath ?? null,
     assetType: data.assetType,
+    fps: data.fps,
+    loop: data.loop,
+  });
+  markProjectSettingsSynced(data.projectId, {
+    fps: data.fps,
+    loop: data.loop,
   });
 }
 

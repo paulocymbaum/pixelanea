@@ -1,6 +1,7 @@
 import type {
   FrameSnapshot,
   PaletteSnapshot,
+  ProjectSettingsSnapshot,
   SaveResult,
   SyncSnapshot,
 } from "./types";
@@ -30,10 +31,16 @@ export type SyncCoordinatorDeps = {
     projectId: string,
     colors: readonly string[],
   ) => Promise<SaveResult>;
+  saveProjectSettings: (
+    projectId: string,
+    settings: { fps: number; loop: boolean },
+  ) => Promise<SaveResult>;
   frameCallbacks: LaneCallbacks;
   paletteCallbacks: LaneCallbacks;
+  projectSettingsCallbacks: LaneCallbacks;
   getFrameSnapshot: () => FrameSnapshot | null;
   getPaletteSnapshot: () => PaletteSnapshot | null;
+  getProjectSettingsSnapshot: () => ProjectSettingsSnapshot | null;
 };
 
 type DebounceKind = "frame" | "palette";
@@ -97,12 +104,21 @@ export class SyncCoordinator {
     await this.waitForLaneIdle(snapshot);
   }
 
+  async flushProjectSettings(): Promise<void> {
+    const snapshot = this.deps.getProjectSettingsSnapshot();
+    if (snapshot) {
+      this.enqueue(snapshot, this.deps.projectSettingsCallbacks);
+    }
+    await this.waitForLaneIdle(snapshot);
+  }
+
   async flushAll(): Promise<void> {
     this.cancelDebounce("frame");
     this.cancelDebounce("palette");
 
     const frameSnapshot = this.deps.getFrameSnapshot();
     const paletteSnapshot = this.deps.getPaletteSnapshot();
+    const settingsSnapshot = this.deps.getProjectSettingsSnapshot();
 
     if (frameSnapshot) {
       this.enqueue(frameSnapshot, this.deps.frameCallbacks);
@@ -110,10 +126,14 @@ export class SyncCoordinator {
     if (paletteSnapshot) {
       this.enqueue(paletteSnapshot, this.deps.paletteCallbacks);
     }
+    if (settingsSnapshot) {
+      this.enqueue(settingsSnapshot, this.deps.projectSettingsCallbacks);
+    }
 
     await Promise.all([
       this.waitForLaneIdle(frameSnapshot),
       this.waitForLaneIdle(paletteSnapshot),
+      this.waitForLaneIdle(settingsSnapshot),
     ]);
   }
 
@@ -233,7 +253,14 @@ export class SyncCoordinator {
       );
     }
 
-    return this.deps.savePalette(snapshot.projectId, snapshot.colors);
+    if (snapshot.lane === "palette") {
+      return this.deps.savePalette(snapshot.projectId, snapshot.colors);
+    }
+
+    return this.deps.saveProjectSettings(snapshot.projectId, {
+      fps: snapshot.fps,
+      loop: snapshot.loop,
+    });
   }
 
   private async waitForLaneIdle(snapshot: SyncSnapshot | null): Promise<void> {

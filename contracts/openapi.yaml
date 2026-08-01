@@ -22,6 +22,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
 
+  /api/dialog/pick-project-path:
+    post:
+      operationId: pickProjectPath
+      summary: Show native file picker for a .pixelanea bundle path
+      tags: [Dialog]
+      description: |
+        Opens a native file dialog on the host (zenity on Linux desktop builds).
+
+        **Cancel semantics:** HTTP 200 with `{ "cancelled": true }` — not 204.
+
+        **Blocking:** Zenity runs synchronously on the server thread until the user
+        selects a file or dismisses the dialog. The server waits up to 300 seconds,
+        then returns 504 Gateway Timeout.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PickProjectPathRequest"
+      responses:
+        "200":
+          description: Selected path or user cancelled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PickProjectPathResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "503":
+          description: Native file dialog unavailable on this host
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "504":
+          description: File dialog timed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /api/projects:
     post:
       operationId: createProject
@@ -411,6 +452,34 @@ components:
           type: string
           example: "1.0.0"
 
+    PickProjectPathRequest:
+      type: object
+      required: [mode]
+      properties:
+        mode:
+          type: string
+          enum: [open, saveAs]
+          description: Whether to pick an existing bundle or a save destination
+        defaultPath:
+          type: string
+          description: Optional directory or file path to pre-select in the dialog
+        defaultName:
+          type: string
+          description: Suggested filename (without extension) for save dialogs
+
+    PickProjectPathResponse:
+      type: object
+      description: |
+        Exactly one of `path` or `cancelled` is set on success responses.
+        Cancel uses `{ "cancelled": true }` with HTTP 200.
+      properties:
+        path:
+          type: string
+          description: Absolute filesystem path to a .pixelanea bundle
+        cancelled:
+          type: boolean
+          description: True when the user dismissed the dialog without choosing
+
     ErrorResponse:
       type: object
       required: [message]
@@ -449,6 +518,10 @@ components:
           default: 16
         assetType:
           $ref: "#/components/schemas/AssetType"
+        loop:
+          type: boolean
+          default: true
+          description: Whether animation playback and GIF export repeat indefinitely
 
     UpdateProjectRequest:
       type: object
@@ -466,6 +539,9 @@ components:
           maximum: 64
         assetType:
           $ref: "#/components/schemas/AssetType"
+        loop:
+          type: boolean
+          description: Whether animation playback and GIF export repeat indefinitely
 
     OpenProjectRequest:
       type: object
@@ -501,7 +577,7 @@ components:
 
     Project:
       type: object
-      required: [id, name, width, height, frameCount, fps, cellSize, assetType, createdAt, updatedAt]
+      required: [id, name, width, height, frameCount, fps, cellSize, assetType, loop, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -520,6 +596,9 @@ components:
           type: integer
         assetType:
           $ref: "#/components/schemas/AssetType"
+        loop:
+          type: boolean
+          description: Whether animation playback and GIF export repeat indefinitely
         createdAt:
           type: string
           format: date-time
@@ -688,8 +767,7 @@ components:
           description: Animation speed; defaults to project fps
         loop:
           type: boolean
-          default: true
-          description: Whether the GIF should loop indefinitely
+          description: Whether the GIF should loop indefinitely; defaults to the project loop setting
 
     PixelateImportRequest:
       type: object

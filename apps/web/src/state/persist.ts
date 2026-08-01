@@ -1,17 +1,38 @@
 import { saveFrame } from "@/api/frames";
 import { savePalette } from "@/api/palette";
+import { updateProjectSettings } from "@/api/projects";
+import type { SaveResult } from "./sync/types";
 import { useEditorStore } from "./editorStore";
-import { captureFrameSnapshot, capturePaletteSnapshot } from "./sync/snapshots";
+import {
+  captureFrameSnapshot,
+  capturePaletteSnapshot,
+  captureProjectSettingsSnapshot,
+  forgetProjectSettingsSynced,
+  markProjectSettingsSynced,
+} from "./sync/snapshots";
 import { SyncCoordinator } from "./sync/syncCoordinator";
 
 let coordinator = createCoordinator();
+
+async function saveProjectSettings(
+  projectId: string,
+  settings: { fps: number; loop: boolean },
+): Promise<SaveResult> {
+  const result = await updateProjectSettings(projectId, settings);
+  if (result.ok) {
+    markProjectSettingsSynced(projectId, settings);
+  }
+  return result;
+}
 
 function createCoordinator(): SyncCoordinator {
   return new SyncCoordinator({
     saveFrame,
     savePalette,
+    saveProjectSettings,
     getFrameSnapshot: captureFrameSnapshot,
     getPaletteSnapshot: capturePaletteSnapshot,
+    getProjectSettingsSnapshot: captureProjectSettingsSnapshot,
     frameCallbacks: {
       onSyncing: () => useEditorStore.getState().setFrameSyncStatus("syncing"),
       onSuccess: () => useEditorStore.getState().markFrameSynced(),
@@ -23,6 +44,13 @@ function createCoordinator(): SyncCoordinator {
       onSuccess: () => useEditorStore.getState().markPaletteSynced(),
       onError: (message) =>
         useEditorStore.getState().setPaletteSyncStatus("error", message),
+    },
+    // Animation settings have no status indicator of their own: the coordinator
+    // logs failures and the next flush retries from live store state.
+    projectSettingsCallbacks: {
+      onSyncing: () => {},
+      onSuccess: () => {},
+      onError: () => {},
     },
   });
 }
@@ -51,13 +79,20 @@ export async function flushPaletteSync(): Promise<void> {
   await coordinator.flushPalette();
 }
 
+export async function flushProjectSettingsSync(): Promise<void> {
+  await coordinator.flushProjectSettings();
+}
+
 export async function flushAllSync(): Promise<void> {
   await coordinator.flushAll();
 }
 
 export function resetPersistState(): void {
   coordinator.reset();
+  forgetProjectSettingsSynced();
 }
+
+export { markProjectSettingsSynced };
 
 /** @internal Test hook */
 export function setSyncCoordinatorForTests(next: SyncCoordinator | null): void {

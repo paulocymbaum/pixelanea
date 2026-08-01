@@ -1,5 +1,5 @@
 ---
-name: qa-e2e-gherkin
+name: TEST-AGENT-qa-e2e-gherkin
 model: inherit
 description: >-
   QA specialist that reads test_matrix_unit.md, maps cases to real user flows, and

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useEditorStore } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
-import type { ToolId } from "@/content/tools";
+import type { ToolId } from "@/tools/registry";
 
 const TOOL_SHORTCUTS: Record<string, ToolId> = {
   b: "paint",

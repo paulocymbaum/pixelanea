@@ -18,6 +18,14 @@ export type LoadedProject = {
   paletteColors: readonly string[];
   bundlePath?: string | null;
   assetType: AssetType;
+  fps: number;
+  loop: boolean;
+};
+
+/** Animation settings stored on the project row, not on any single frame. */
+export type ProjectSettings = {
+  fps: number;
+  loop: boolean;
 };
 
 export type SaveProjectResult =
@@ -31,6 +39,7 @@ const DEFAULT_CREATE_PROJECT: CreateProjectRequest = {
   frameCount: 1,
   fps: 8,
   cellSize: 16,
+  loop: true,
 };
 
 export async function createBlankProject(
@@ -73,10 +82,30 @@ export async function loadProject(
         pixels: pixelsFromFrame(frameResult.frame),
         paletteColors: paletteColorsFromApi(paletteResult.palette),
         assetType: project.assetType,
+        fps: project.fps,
+        loop: project.loop,
       },
     };
   } catch (error) {
     return { ok: false, message: logAndMapApiError("loadProject", error, { projectId }) };
+  }
+}
+
+export async function updateProjectSettings(
+  projectId: string,
+  settings: ProjectSettings,
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await getApiClient().updateProject(projectId, {
+      fps: settings.fps,
+      loop: settings.loop,
+    });
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message: logAndMapApiError("updateProjectSettings", error, { projectId }),
+    };
   }
 }
 

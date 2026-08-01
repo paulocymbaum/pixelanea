@@ -1,5 +1,6 @@
 import { fireEvent, render, renderHook, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { screenToCell } from "@/canvas/coordinates";
 import { floodFill } from "@/canvas/floodFill";
 import { bresenhamLine } from "@/canvas/bresenham";
@@ -349,6 +350,7 @@ describe("QA-001 paint matrix", () => {
           {
             saveFrame: saveFrameMock,
             savePalette: vi.fn().mockResolvedValue({ ok: true }),
+            saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
             getFrameSnapshot: () => ({
               lane: "frame",
               projectId: "matrix-project",
@@ -356,6 +358,7 @@ describe("QA-001 paint matrix", () => {
               pixels: useEditorStore.getState().pixels,
             }),
             getPaletteSnapshot: () => null,
+            getProjectSettingsSnapshot: () => null,
             frameCallbacks: {
               onSyncing: () =>
                 useEditorStore.getState().setFrameSyncStatus("syncing"),
@@ -364,6 +367,11 @@ describe("QA-001 paint matrix", () => {
                 useEditorStore.getState().setFrameSyncStatus("error", message),
             },
             paletteCallbacks: {
+              onSyncing: vi.fn(),
+              onSuccess: vi.fn(),
+              onError: vi.fn(),
+            },
+            projectSettingsCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: vi.fn(),
               onError: vi.fn(),
@@ -393,8 +401,35 @@ describe("QA-001 paint matrix", () => {
       expect(useEditorStore.getState().undoStack.length).toBe(3);
     });
 
-    it.skip("[RACE-004] navigate away mid-stroke", () => {
-      // Requires Playwright E2E — router + unsaved confirm dialog.
+    it("[RACE-004] navigate away mid-stroke", () => {
+      paintCell(1, 1, 1);
+      expect(useEditorStore.getState().isDirty).toBe(true);
+
+      const onNewProject = vi.fn();
+
+      function NavHarness() {
+        const actions = useProjectFileActions({ onNewProject });
+        return (
+          <>
+            <button type="button" onClick={actions.onNewProject}>
+              matrix:new
+            </button>
+            {actions.dialogs}
+          </>
+        );
+      }
+
+      const view = render(<NavHarness />);
+      fireEvent.click(screen.getByText("matrix:new"));
+
+      expect(onNewProject).not.toHaveBeenCalled();
+      expect(screen.getByText(copy.discardChangesTitle)).toBeInTheDocument();
+
+      fireEvent.click(screen.getByText(copy.discardChangesCancel));
+      expect(onNewProject).not.toHaveBeenCalled();
+      expect(pixelAt(1, 1)).toBe(1);
+
+      view.unmount();
     });
 
     it("[RACE-005] rapid undo/redo spam", () => {
@@ -448,6 +483,7 @@ describe("QA-001 paint matrix", () => {
           {
             saveFrame: saveFrameMock,
             savePalette: vi.fn().mockResolvedValue({ ok: true }),
+            saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
             getFrameSnapshot: () => ({
               lane: "frame",
               projectId: "matrix-project",
@@ -455,6 +491,7 @@ describe("QA-001 paint matrix", () => {
               pixels: new Uint8Array(useEditorStore.getState().pixels),
             }),
             getPaletteSnapshot: () => null,
+            getProjectSettingsSnapshot: () => null,
             frameCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: () => useEditorStore.getState().markFrameSynced(),
@@ -462,6 +499,11 @@ describe("QA-001 paint matrix", () => {
                 useEditorStore.getState().setFrameSyncStatus("error", message),
             },
             paletteCallbacks: {
+              onSyncing: vi.fn(),
+              onSuccess: vi.fn(),
+              onError: vi.fn(),
+            },
+            projectSettingsCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: vi.fn(),
               onError: vi.fn(),
@@ -562,14 +604,21 @@ describe("QA-001 paint matrix", () => {
           {
             saveFrame: saveFrameMock,
             savePalette: vi.fn().mockResolvedValue({ ok: true }),
+            saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
             getFrameSnapshot: captureFrameSnapshot,
             getPaletteSnapshot: () => null,
+            getProjectSettingsSnapshot: () => null,
             frameCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: () => useEditorStore.getState().markFrameSynced(),
               onError: vi.fn(),
             },
             paletteCallbacks: {
+              onSyncing: vi.fn(),
+              onSuccess: vi.fn(),
+              onError: vi.fn(),
+            },
+            projectSettingsCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: vi.fn(),
               onError: vi.fn(),
@@ -866,6 +915,7 @@ describe("QA-001 paint matrix", () => {
           {
             saveFrame: vi.fn().mockResolvedValue({ ok: false, message }),
             savePalette: vi.fn().mockResolvedValue({ ok: true }),
+            saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
             getFrameSnapshot: () => ({
               lane: "frame",
               projectId: "matrix-project",
@@ -873,6 +923,7 @@ describe("QA-001 paint matrix", () => {
               pixels: new Uint8Array(useEditorStore.getState().pixels),
             }),
             getPaletteSnapshot: () => null,
+            getProjectSettingsSnapshot: () => null,
             frameCallbacks: {
               onSyncing: () =>
                 useEditorStore.getState().setFrameSyncStatus("syncing"),
@@ -881,6 +932,11 @@ describe("QA-001 paint matrix", () => {
                 useEditorStore.getState().setFrameSyncStatus("error", msg),
             },
             paletteCallbacks: {
+              onSyncing: vi.fn(),
+              onSuccess: vi.fn(),
+              onError: vi.fn(),
+            },
+            projectSettingsCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: vi.fn(),
               onError: vi.fn(),
@@ -946,6 +1002,7 @@ describe("QA-001 paint matrix", () => {
           {
             saveFrame: saveFrameMock,
             savePalette: vi.fn().mockResolvedValue({ ok: true }),
+            saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
             getFrameSnapshot: () => ({
               lane: "frame",
               projectId: "matrix-project",
@@ -953,6 +1010,7 @@ describe("QA-001 paint matrix", () => {
               pixels: new Uint8Array(useEditorStore.getState().pixels),
             }),
             getPaletteSnapshot: () => null,
+            getProjectSettingsSnapshot: () => null,
             frameCallbacks: {
               onSyncing: () =>
                 useEditorStore.getState().setFrameSyncStatus("syncing"),
@@ -961,6 +1019,11 @@ describe("QA-001 paint matrix", () => {
                 useEditorStore.getState().setFrameSyncStatus("error", msg),
             },
             paletteCallbacks: {
+              onSyncing: vi.fn(),
+              onSuccess: vi.fn(),
+              onError: vi.fn(),
+            },
+            projectSettingsCallbacks: {
               onSyncing: vi.fn(),
               onSuccess: vi.fn(),
               onError: vi.fn(),

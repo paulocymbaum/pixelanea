@@ -64,6 +64,9 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Frontend typecheck
+        run: pnpm --filter web exec tsc --noEmit
+
       - name: Frontend unit tests
         run: pnpm --filter @pixelanea/web test
 

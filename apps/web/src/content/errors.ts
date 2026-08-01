@@ -9,5 +9,7 @@ export const errors = {
     "Couldn't open this file. Is it a .pixelanea project?",
   saveProjectFailed: "Couldn't save the project. Check the path and try again.",
   invalidProjectPath: "Enter a path ending in .pixelanea",
+  filePickerUnavailable:
+    "No file picker is available. Install zenity for native dialogs or enter a path manually.",
   invalidCanvasSize: "Enter whole numbers between 1 and 512 for width and height.",
 } as const;
