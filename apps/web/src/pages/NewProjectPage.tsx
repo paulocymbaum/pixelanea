@@ -3,7 +3,6 @@ import { ImagePlus, Pencil } from "lucide-react";
 import { createBlankProject } from "@/api/projects";
 import { Button } from "@/components/ui/Button";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
-import { AnimationFrameCountStep } from "@/components/project/AnimationFrameCountStep";
 import { CanvasSizeStep } from "@/components/project/CanvasSizeStep";
 import type { CanvasSize } from "@/components/project/canvasSize";
 import { matchesResolutionPreset } from "@/components/project/canvasSize";
@@ -26,7 +25,6 @@ export function NewProjectPage({
   const hasVisited = useSessionStore((s) => s.hasVisited);
   const lastEntryPath = useSessionStore((s) => s.lastEntryPath);
   const lastCanvasSize = useSessionStore((s) => s.lastCanvasSize);
-  const lastFrameCount = useSessionStore((s) => s.lastFrameCount);
   const setHasVisited = useSessionStore((s) => s.setHasVisited);
   const setLastEntryPath = useSessionStore((s) => s.setLastEntryPath);
   const setLastResolution = useSessionStore((s) => s.setLastResolution);
@@ -38,8 +36,6 @@ export function NewProjectPage({
     null,
   );
   const [canvasSize, setCanvasSize] = useState<CanvasSize>(lastCanvasSize);
-  const [frameCount, setFrameCount] =
-    useState<AnimationFramePreset>(lastFrameCount);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -89,12 +85,12 @@ export function NewProjectPage({
     onOpenEditor("blank");
   };
 
-  const quickStart = async () => {
-    if (lastEntryPath === "import") {
-      onStartImport();
-      return;
-    }
-    await createBlank(lastCanvasSize, lastFrameCount);
+  const quickStartImport = () => {
+    onStartImport();
+  };
+
+  const quickStartBlank = (size: CanvasSize, frames: AnimationFramePreset) => {
+    void createBlank(size, frames);
   };
 
   return (
@@ -121,20 +117,44 @@ export function NewProjectPage({
 
         {hasVisited ? (
           <div className="mb-8 flex flex-col items-center gap-3">
-            <Button
-              type="button"
-              variant="primary"
-              className="min-h-12 px-6"
-              disabled={isCreating}
-              onClick={() => void quickStart()}
-            >
-              {lastEntryPath === "import"
-                ? copy.newProjectImportTitle
-                : copy.newProjectQuickStart(
+            {lastEntryPath === "import" ? (
+              <Button
+                type="button"
+                variant="primary"
+                className="min-h-12 px-6"
+                disabled={isCreating}
+                onClick={quickStartImport}
+              >
+                {copy.newProjectImportTitle}
+              </Button>
+            ) : (
+              <div className="flex flex-wrap items-center justify-center gap-3">
+                <Button
+                  type="button"
+                  variant="primary"
+                  className="min-h-12 px-6"
+                  disabled={isCreating}
+                  onClick={() => quickStartBlank(lastCanvasSize, 1)}
+                >
+                  {copy.newProjectQuickStart(
                     lastCanvasSize.width,
                     lastCanvasSize.height,
                   )}
-            </Button>
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-h-12 px-6"
+                  disabled={isCreating}
+                  onClick={() => quickStartBlank(lastCanvasSize, 8)}
+                >
+                  {copy.newProjectQuickStart8(
+                    lastCanvasSize.width,
+                    lastCanvasSize.height,
+                  )}
+                </Button>
+              </div>
+            )}
             <button
               type="button"
               className="text-sm text-secondary underline-offset-2 hover:underline"
@@ -188,15 +208,22 @@ export function NewProjectPage({
               {copy.newProjectResolutionLabel}
             </h2>
             <CanvasSizeStep value={canvasSize} onChange={setCanvasSize} />
-            <div className="mt-6">
-              <AnimationFrameCountStep value={frameCount} onChange={setFrameCount} />
-            </div>
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <Button
+                type="button"
+                variant="secondary"
+                className="min-h-12"
+                disabled={isCreating}
+                onClick={() => quickStartBlank(canvasSize, 8)}
+              >
+                {copy.newProjectQuickStart8(canvasSize.width, canvasSize.height)}
+              </Button>
               <Button
                 type="button"
                 variant="primary"
+                className="min-h-12"
                 disabled={isCreating}
-                onClick={() => void createBlank(canvasSize, frameCount)}
+                onClick={() => quickStartBlank(canvasSize, 1)}
               >
                 {copy.newProjectCreateBlank}
               </Button>

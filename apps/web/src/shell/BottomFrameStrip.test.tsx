@@ -18,9 +18,20 @@ describe("BottomFrameStrip", () => {
     });
   });
 
-  it("is hidden when frameCount is 1", () => {
-    const { container } = render(<BottomFrameStrip />);
-    expect(container).toBeEmptyDOMElement();
+  it("shows empty affordance when frameCount is 1", () => {
+    render(<BottomFrameStrip />);
+    expect(screen.getByLabelText(copy.frameStripLabel)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: copy.frameStripAddFramesCta }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens duplicate dialog from empty affordance CTA", () => {
+    render(<BottomFrameStrip />);
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.frameStripAddFramesCta }),
+    );
+    expect(screen.getByText(copy.frameDuplicateDescription)).toBeInTheDocument();
   });
 
   it("renders thumbnails and animation controls when frameCount > 1", () => {

@@ -1,0 +1,8 @@
+# Pixelanea agent config: keep rules, skills, agents, tools, and skill-outputs in AI context.
+# Only exclude ephemeral changelog runs (QA gherkin, design critiques, etc.).
+
+.cursor/changelog/
+
+# .gitignore hides skill-outputs from git — re-include for Cursor agents.
+!.cursor/skill-outputs/
+!.cursor/skill-outputs/**

@@ -474,10 +474,13 @@ describe("QA-003 animation matrix", () => {
   });
 
   describe("edge cases", () => {
-    it("[EDGE-001] single frame hides the strip", () => {
+    it("[EDGE-001] single frame shows empty affordance", () => {
       resetAnimationProject({ frameCount: 1 });
-      const { container } = render(<BottomFrameStrip />);
-      expect(container).toBeEmptyDOMElement();
+      render(<BottomFrameStrip />);
+      expect(screen.getByLabelText(copy.frameStripLabel)).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: copy.frameStripAddFramesCta }),
+      ).toBeInTheDocument();
     });
 
     it("[EDGE-002] duplicate blank leaves other frames empty", async () => {

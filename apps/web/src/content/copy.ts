@@ -89,6 +89,7 @@ export const copy = {
   animationOnionSkinOff: "Onion skin off",
   frameThumbnail: (index: number) => `Frame ${index + 1}`,
   frameStripLabel: "Frame strip",
+  frameStripAddFramesCta: "Add frames for animation",
   frameDuplicateTitle: "Duplicate frames",
   frameDuplicateDescription:
     "Expand this project to 8, 16, or 32 frames for animation. Choose whether to copy the current art into every frame or keep other frames blank.",
@@ -108,11 +109,6 @@ export const copy = {
   newProjectImportTitle: "From image",
   newProjectImportDescription: "Turn a photo or sketch into pixel art.",
   newProjectResolutionLabel: "Canvas size",
-  newProjectAnimationLabel: "Animation",
-  newProjectAnimationOff: "Single frame",
-  newProjectAnimationOffDescription: "Static image — no frame strip.",
-  newProjectAnimationOn: "Animated",
-  newProjectAnimationOnDescription: "Choose how many frames to start with.",
   newProjectAnimationFrames: (count: number) => `${count} frames`,
   newProjectCreateBlank: "Create project",
   fileMenuNew: "New",
@@ -196,7 +192,9 @@ export const copy = {
   discardChangesCancel: "Keep editing",
   discardChangesSave: "Save, then continue",
   newProjectQuickStart: (width: number, height: number) =>
-    `Continue with blank ${width}×${height}`,
+    `Continue blank ${width}×${height}`,
+  newProjectQuickStart8: (width: number, height: number) =>
+    `Start ${width}×${height} · 8 frames`,
   newProjectChooseAgain: "Choose a different path",
   newProjectCanvasSizeHint: "Pick a preset or set a custom width and height.",
   customCanvasSizeLabel: "Custom",

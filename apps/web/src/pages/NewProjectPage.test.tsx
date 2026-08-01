@@ -47,22 +47,39 @@ describe("NewProjectPage", () => {
     expect(screen.getByText(copy.newProjectResolutionLabel)).toBeInTheDocument();
     expect(screen.getByText("Sprite")).toBeInTheDocument();
     expect(screen.getByText(copy.customCanvasSizeLabel)).toBeInTheDocument();
+    expect(screen.queryByText(copy.newProjectAnimationFrames(8))).not.toBeInTheDocument();
   });
 
-  it("creates a blank project with selected resolution and frame count", async () => {
+  it("creates a blank project with frameCount 1 from the panel CTA", async () => {
     const onOpenEditor = vi.fn();
     render(
       <NewProjectPage onOpenEditor={onOpenEditor} onStartImport={() => {}} />,
     );
     fireEvent.click(screen.getByText(copy.newProjectBlankTitle));
-    fireEvent.click(screen.getByText(copy.newProjectAnimationOn));
-    fireEvent.click(screen.getByText(copy.newProjectAnimationFrames(8)));
     fireEvent.click(screen.getByText("Icon"));
     fireEvent.click(screen.getByText(copy.newProjectCreateBlank));
 
     await vi.waitFor(() => {
       expect(createBlankProjectMock).toHaveBeenCalledWith(
-        expect.objectContaining({ width: 16, height: 16, frameCount: 8 }),
+        expect.objectContaining({ width: 16, height: 16, frameCount: 1 }),
+      );
+    });
+    await vi.waitFor(() => {
+      expect(onOpenEditor).toHaveBeenCalledWith("blank");
+    });
+  });
+
+  it("creates an 8-frame project from the blank panel quick-start chip", async () => {
+    const onOpenEditor = vi.fn();
+    render(
+      <NewProjectPage onOpenEditor={onOpenEditor} onStartImport={() => {}} />,
+    );
+    fireEvent.click(screen.getByText(copy.newProjectBlankTitle));
+    fireEvent.click(screen.getByText(copy.newProjectQuickStart8(32, 32)));
+
+    await vi.waitFor(() => {
+      expect(createBlankProjectMock).toHaveBeenCalledWith(
+        expect.objectContaining({ width: 32, height: 32, frameCount: 8 }),
       );
     });
     await vi.waitFor(() => {
@@ -93,7 +110,7 @@ describe("NewProjectPage", () => {
     });
   });
 
-  it("shows quick start when user has visited before", () => {
+  it("shows quick start chips when user has visited before", () => {
     useSessionStore.setState({
       hasVisited: true,
       lastCanvasSize: { width: 32, height: 32 },
@@ -102,5 +119,23 @@ describe("NewProjectPage", () => {
     expect(
       screen.getByText(copy.newProjectQuickStart(32, 32)),
     ).toBeInTheDocument();
+    expect(
+      screen.getByText(copy.newProjectQuickStart8(32, 32)),
+    ).toBeInTheDocument();
+  });
+
+  it("8-frame quick-start chip calls API with frameCount 8", async () => {
+    useSessionStore.setState({
+      hasVisited: true,
+      lastCanvasSize: { width: 32, height: 32 },
+    });
+    render(<NewProjectPage onOpenEditor={() => {}} onStartImport={() => {}} />);
+    fireEvent.click(screen.getByText(copy.newProjectQuickStart8(32, 32)));
+
+    await vi.waitFor(() => {
+      expect(createBlankProjectMock).toHaveBeenCalledWith(
+        expect.objectContaining({ width: 32, height: 32, frameCount: 8 }),
+      );
+    });
   });
 });

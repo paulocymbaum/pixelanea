@@ -1,4 +1,5 @@
 import { AnimationPlayer } from "@/components/animation/AnimationPlayer";
+import { FrameStripPlaceholder } from "@/components/frames/FrameStripPlaceholder";
 import { FrameThumbnail } from "@/components/frames/FrameThumbnail";
 import { reorderFrames } from "@/api/frames";
 import { copy } from "@/content/copy";
@@ -28,7 +29,7 @@ export function BottomFrameStrip() {
   const setFrameSyncStatus = useEditorStore((s) => s.setFrameSyncStatus);
 
   if (frameCount <= 1) {
-    return null;
+    return <FrameStripPlaceholder />;
   }
 
   const handleReorder = async (fromIndex: number, toIndex: number) => {

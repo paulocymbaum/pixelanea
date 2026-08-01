@@ -745,7 +745,7 @@ describe("QA-002 import matrix", () => {
       expect(state.pixels[8 * 16 + 8]).toBe(2);
     });
 
-    it("[EDGE-004] import creates a single frame; animation presets live on the blank path", async () => {
+    it("[EDGE-004] import creates a single frame; 8-frame path is blank quick-start only", async () => {
       renderImportWizard();
       await advanceToPaletteStep(imageFile("cat.png"), 16);
       await clickNext();
@@ -758,14 +758,16 @@ describe("QA-002 import matrix", () => {
       expect(useEditorStore.getState().frameCount).toBe(1);
 
       cleanup();
+      useSessionStore.setState({
+        hasVisited: true,
+        lastEntryPath: "blank",
+        lastCanvasSize: { width: 32, height: 32 },
+      });
       const onOpenEditor = vi.fn();
       render(
         <NewProjectPage onOpenEditor={onOpenEditor} onStartImport={vi.fn()} />,
       );
-      fireEvent.click(screen.getByText(copy.newProjectBlankTitle));
-      fireEvent.click(screen.getByText(copy.newProjectAnimationOn));
-      fireEvent.click(screen.getByText(copy.newProjectAnimationFrames(8)));
-      fireEvent.click(screen.getByText(copy.newProjectCreateBlank));
+      fireEvent.click(screen.getByText(copy.newProjectQuickStart8(32, 32)));
 
       await waitFor(() => {
         expect(createBlankProjectMock).toHaveBeenLastCalledWith(

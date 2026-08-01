@@ -1,0 +1,4 @@
+# Exclude changelog runs from codebase indexing (large, stale quickly).
+# Everything else under .cursor/ stays indexed, including skill-outputs via .cursorignore overrides.
+
+.cursor/changelog/

@@ -258,7 +258,7 @@ All **38 + 12 = 50** tickets roll up into **15 numbered batches** (`B01`–`B15`
 | **B01** | CI unblock | S1-106, S1-910 | — | — | G6, G8, G12 | ½ day |
 | **B02** | Navigation guards | S1-205 | B01 | B03, B06 | G8, G9 (partial) | 1 day |
 | **B03** | Tool rail & hygiene cuts | S1-101, S1-102, S1-804 | B01 | B02, B06 | G4 | 1 day |
-| **B04** | Animation path simplify | S1-103, S1-401 | B01, B03 | B06 | G3 (partial) | 1 day |
+| **B04** | Animation path simplify | S1-103, S1-401 | B01, B03 | B06 | G3 (partial) | 1 day | ✅ **Done** (2026-08-01) |
 | **B05** | Header menu scope | S1-104, S1-105 | B01 | B06 | G5 | ½ day |
 | **B06** | Trust / status chrome | S1-201, S1-202, S1-204 | B01 | B02–B05 | G2, G10 (#2, #7, #8) | 1½ days |
 | **B07** | File picker — contract & lib | S1-301, S1-302 | B01 | B02–B06 | G1 (partial) | 2 days |
@@ -482,6 +482,14 @@ Parallelize only when [file conflict matrix](#file-conflict-matrix) allows.
 | **Priority** | P0 |
 | **Critique** | C3, C9 |
 | **Effort** | M |
+| **Status** | ✅ **Done** (2026-08-01) — see [03_s1-103-animation-path.md](.cursor/skill-outputs/mvp/sprint1/frontend/20260801T010900_pixelanea-frontend-standards/03_s1-103-animation-path.md) |
+
+**Implementation**
+
+- Removed `AnimationFrameCountStep` from `NewProjectPage`; deleted component file.
+- Blank panel CTA always `frameCount: 1`; 8-frame chip on returning-user row and blank panel (`newProjectQuickStart8`).
+- `sessionStore.lastFrameCount` kept — persisted on create for session memory.
+- Orphan animation-toggle copy keys removed; `newProjectAnimationFrames` retained for duplicate dialog.
 
 **Steps**
 
@@ -794,8 +802,14 @@ Default `character`; `<details>` optional grid. Path field remains in fallback d
 | **Batch** | **B04** |
 | **Priority** | P0 |
 | **Critique** | C3 |
+| **Status** | ✅ **Done** (2026-08-01) — see [04_s1-401-frame-strip-placeholder.md](.cursor/skill-outputs/mvp/sprint1/frontend/20260801T010900_pixelanea-frontend-standards/04_s1-401-frame-strip-placeholder.md) |
 
 `FrameStripPlaceholder` — `h-16`, CTA opens `FrameDuplicateDialog`. Visible when `frameCount <= 1`.
+
+**Implementation**
+
+- New `components/frames/FrameStripPlaceholder.tsx`; `BottomFrameStrip` renders it instead of `null` when single frame.
+- Copy: `frameStripAddFramesCta`; region `aria-label` via `frameStripLabel`.
 
 **a11y:** `aria-label` on strip region; button is primary action.
 
@@ -1270,9 +1284,9 @@ Path: `.cursor/skill-outputs/mvp/sprint1/test_matrix_sprint1.md`
 | **Batch** | **B14** |
 | SM1-01 | Rail: no Import; all tools registered | B03 |
 | SM1-02 | Single health check | B03 |
-| SM1-03 | Blank → 1 frame; duplicate → 8 | B04 |
-| SM1-04 | Quick-start 8-frame chip | B04 |
-| SM1-05 | Frame strip CTA → dialog | B04 |
+| SM1-03 | Blank → 1 frame; duplicate → 8 | B04 | ✅ |
+| SM1-04 | Quick-start 8-frame chip | B04 | ✅ |
+| SM1-05 | Frame strip CTA → dialog | B04 | ✅ |
 | SM1-06 | Status transitions | B06 |
 | SM1-07 | No "API connected" primary text | B06 |
 | SM1-08 | Picker mocked open/save | B08 |
@@ -1333,7 +1347,7 @@ Re-run and paste results into `.cursor/skill-outputs/mvp/sprint1/close_audit.md`
 | `paintMatrix.test.ts` | S1-106 | ✅ absent |
 | `qa/*Matrix.test.tsx` | S1-919 | in CI gate |
 | `import` ToolId | S1-101, S1-804 | `tsc` exhaustive |
-| `AnimationFrameCountStep.*` | S1-103 | grep zero refs |
+| `AnimationFrameCountStep.*` | S1-103 | ✅ deleted — grep zero refs |
 | `PaletteSaveButton.*` | S1-502 | grep zero refs |
 | `EditMenu` | S1-105 | grep zero refs |
 | Duplicate `PRESET_COPY` | S1-802 | one source |
@@ -1373,8 +1387,8 @@ Re-run and paste results into `.cursor/skill-outputs/mvp/sprint1/close_audit.md`
 | B03 | S1-101 | Remove broken Import tool + registry pattern | P0 | S | ✅ Done |
 | B03 | S1-102 | Dedupe health check | P1 | S | ✅ Done |
 | B03 | S1-804 | ToolId cleanup | P1 | S | ✅ Done |
-| B04 | S1-103 | Single animation path + chips | P0 | M |
-| B04 | S1-401 | Frame strip CTA | P0 | S |
+| B04 | S1-103 | Single animation path + chips | P0 | M | ✅ Done |
+| B04 | S1-401 | Frame strip CTA | P0 | S | ✅ Done |
 | B05 | S1-104 | Feature-flag exports/onion | P1 | S |
 | B05 | S1-105 | Remove Edit menu | P1 | S |
 | B06 | S1-201 | Project status model | P0 | M | ✅ Done |
@@ -1424,7 +1438,7 @@ Re-run and paste results into `.cursor/skill-outputs/mvp/sprint1/close_audit.md`
 | B01 | 2 | 1 | Day 1 |
 | B02 | 1 | 1 | W1 D2 |
 | B03 | 3 | 1 | W1 D2–3 |
-| B04 | 2 | 2 | W1 D4 |
+| B04 | 2 | 2 | W1 D4 | ✅ Done |
 | B05 | 2 | 0 | W1 D3 |
 | B06 | 3 | 2 | W1 D3–5 |
 | B07 | 2 | 2 | W2 D1–3 |

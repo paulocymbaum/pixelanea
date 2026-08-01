@@ -1,0 +1,9 @@
+{
+  // .cursor agent config stays visible and searchable; changelog runs are ephemeral.
+  "search.exclude": {
+    "**/.cursor/changelog": true
+  },
+  "files.watcherExclude": {
+    "**/.cursor/changelog/**": true
+  }
+}
