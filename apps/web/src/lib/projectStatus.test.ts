@@ -76,12 +76,12 @@ describe("deriveProjectStatus", () => {
     ).toEqual({ kind: "unsaved", label: copy.statusUnsaved });
   });
 
-  it("returns unsaved when bundle is dirty but pixels are synced", () => {
+  it("returns saved when bundle is dirty but pixels are synced", () => {
     expect(
       deriveProjectStatus(
         input({ isDirty: false, isPaletteDirty: false, bundleDirty: true }),
       ),
-    ).toEqual({ kind: "unsaved", label: copy.statusUnsaved });
+    ).toEqual({ kind: "saved", label: copy.statusSaved });
   });
 
   it("prefers saving over unsaved while syncing", () => {

@@ -44,6 +44,8 @@ const PALETTE_ROWS: ShortcutRow[] = [
   { keys: "Alt+2", label: copy.shortcutPaletteSectionPresets },
   { keys: "Alt+3", label: copy.shortcutPaletteSectionShading },
   { keys: "Alt+4", label: copy.shortcutPaletteSectionFilters },
+  { keys: "[", label: copy.shortcutPaletteSectionPrev },
+  { keys: "]", label: copy.shortcutPaletteSectionNext },
 ];
 
 function ShortcutSection({

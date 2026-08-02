@@ -22,10 +22,29 @@ export const PALETTE_SECTION_ALT_KEYS: Record<number, PalettePanelSection> = {
   4: "filters",
 };
 
+export const PALETTE_SECTION_ORDER: PalettePanelSection[] = [
+  "swatches",
+  "presets",
+  "shading",
+  "filters",
+];
+
 export function getPaletteSectionFromAltDigit(
   digit: number,
 ): PalettePanelSection | undefined {
   return PALETTE_SECTION_ALT_KEYS[digit];
+}
+
+export function cyclePalettePanelSection(
+  current: PalettePanelSection,
+  direction: "next" | "prev",
+): PalettePanelSection {
+  const index = PALETTE_SECTION_ORDER.indexOf(current);
+  const offset = direction === "next" ? 1 : -1;
+  const nextIndex =
+    (index + offset + PALETTE_SECTION_ORDER.length) %
+    PALETTE_SECTION_ORDER.length;
+  return PALETTE_SECTION_ORDER[nextIndex]!;
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -99,6 +118,23 @@ export function useEditorShortcuts() {
         if (section) {
           event.preventDefault();
           setPalettePanelSection(section);
+          setPaletteCollapsed(false);
+          return;
+        }
+      }
+
+      if (!mod && !event.altKey && !event.shiftKey) {
+        if (event.key === "]") {
+          event.preventDefault();
+          const current = useSessionStore.getState().palettePanelSection;
+          setPalettePanelSection(cyclePalettePanelSection(current, "next"));
+          setPaletteCollapsed(false);
+          return;
+        }
+        if (event.key === "[") {
+          event.preventDefault();
+          const current = useSessionStore.getState().palettePanelSection;
+          setPalettePanelSection(cyclePalettePanelSection(current, "prev"));
           setPaletteCollapsed(false);
           return;
         }

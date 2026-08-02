@@ -40,7 +40,9 @@ export async function createBlankProject(
   );
 
   if (frames === 8) {
-    await page.getByRole("button", { name: /8 frames/ }).click();
+    await page
+      .getByRole("button", { name: /^Start \d+×\d+ · 8 frames$/ })
+      .click();
   } else {
     await page.getByRole("button", { name: "Create project" }).click();
   }
@@ -147,6 +149,32 @@ export async function collapsePalettePanel(page: Page): Promise<void> {
 export async function expandPalettePanel(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Expand palette panel" }).click();
   await expect(palettePanel(page)).toBeVisible();
+}
+
+export async function clickCanvas(
+  page: Page,
+  { xRatio, yRatio }: { xRatio: number; yRatio: number },
+): Promise<void> {
+  const canvas = page.getByLabel("Pixel canvas");
+  const box = await canvas.boundingBox();
+  if (!box) {
+    throw new Error("Pixel canvas bounding box not found");
+  }
+  await page.mouse.click(
+    box.x + box.width * xRatio,
+    box.y + box.height * yRatio,
+  );
+}
+
+export async function lockPalette(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Lock palette" }).click();
+  await expect(page.getByRole("button", { name: "Unlock palette" })).toBeVisible();
+}
+
+export async function placeLightingPointOnCanvas(page: Page): Promise<void> {
+  await selectPaletteSection(page, "filters");
+  await page.getByRole("button", { name: "Place lighting" }).click();
+  await clickCanvas(page, { xRatio: 0.5, yRatio: 0.5 });
 }
 
 export async function selectPaletteColor(page: Page, colorNumber: number): Promise<void> {

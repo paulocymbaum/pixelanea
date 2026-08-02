@@ -161,6 +161,8 @@ export const copy = {
   shortcutPaletteSectionPresets: "Presets tab",
   shortcutPaletteSectionShading: "Shading tab",
   shortcutPaletteSectionFilters: "Filters tab",
+  shortcutPaletteSectionNext: "Next palette section",
+  shortcutPaletteSectionPrev: "Previous palette section",
   shortcutZoomIn: "Zoom in",
   shortcutZoomOut: "Zoom out",
   shortcutZoomFit: "Fit canvas to view",

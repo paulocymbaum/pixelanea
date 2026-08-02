@@ -65,4 +65,17 @@ describe("RightPalettePanel", () => {
     expect(useSessionStore.getState().palettePanelSection).toBe("filters");
     expect(screen.getByText(copy.colorFiltersSectionLabel)).toBeInTheDocument();
   });
+
+  it("shows placeholder without section rail when no project is loaded", () => {
+    useEditorStore.setState({ projectId: null });
+    renderPanel();
+
+    expect(screen.getByText(copy.palettePlaceholder)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("navigation", { name: "Palette sections" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("listbox", { name: "Palette colors" }),
+    ).not.toBeInTheDocument();
+  });
 });

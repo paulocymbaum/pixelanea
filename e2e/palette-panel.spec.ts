@@ -6,10 +6,12 @@ import {
   dismissOnboarding,
   expandPalettePanel,
   getFramePixels,
+  lockPalette,
   paintStroke,
   palettePanel,
   paletteSectionContent,
   paletteSectionNav,
+  placeLightingPointOnCanvas,
   selectPaletteColor,
   selectPaletteSection,
   waitForFramePut,
@@ -194,5 +196,172 @@ test.describe("@smoke palette section rail", () => {
     await expect(
       paletteSectionContent(page).locator('section[aria-label="Color filters"]'),
     ).toBeVisible();
+  });
+});
+
+test.describe("@edge palette section rail", () => {
+  test("PR-EDGE-001: palette lock toggle stays in header across sections", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+
+    for (const section of ["swatches", "presets", "shading", "filters"] as const) {
+      await selectPaletteSection(page, section);
+      await expect(
+        palettePanel(page).getByRole("button", { name: "Lock palette" }),
+      ).toBeVisible();
+    }
+  });
+
+  test("PR-EDGE-002: filters Apply and Reset stay visible after scrolling", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+    await placeLightingPointOnCanvas(page);
+
+    const content = paletteSectionContent(page);
+    await content.evaluate((element) => {
+      element.scrollTop = element.scrollHeight;
+    });
+
+    await expect(page.getByRole("button", { name: "Apply to frame" })).toBeInViewport();
+    await expect(page.getByRole("button", { name: "Reset filters" })).toBeInViewport();
+  });
+
+  test("PR-EDGE-003: edit and remove icon actions on Swatches tab", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+    const listbox = page.getByRole("listbox", { name: "Palette colors" });
+    const initialCount = await listbox.getByRole("option").count();
+
+    await page.getByRole("button", { name: "Edit color" }).click();
+    await expect(page.getByRole("dialog", { name: "Edit color" })).toBeVisible();
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await selectPaletteColor(page, 6);
+    await page.getByRole("button", { name: "Remove color" }).click();
+    await expect(listbox.getByRole("option")).toHaveCount(initialCount - 1);
+  });
+
+  test("PR-EDGE-005: only active section button has aria-current", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+    const nav = paletteSectionNav(page);
+
+    await selectPaletteSection(page, "presets");
+    await expect(nav.getByRole("button", { name: "Presets" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await expect(nav.getByRole("button", { name: "Swatches" })).not.toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+  });
+});
+
+test.describe("@race palette section rail", () => {
+  test("PR-RACE-001: final tab content wins after rapid section clicks", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+
+    for (const section of ["swatches", "presets", "shading", "filters"] as const) {
+      await selectPaletteSection(page, section);
+    }
+
+    const content = paletteSectionContent(page);
+    await expect(content.locator('section[aria-label="Color filters"]')).toBeVisible();
+    await expect(content.getByRole("listbox", { name: "Palette colors" })).not.toBeVisible();
+  });
+
+  test("PR-RACE-002: collapse on Filters tab then expand stays on Filters", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+
+    await selectPaletteSection(page, "filters");
+    await collapsePalettePanel(page);
+    await expandPalettePanel(page);
+
+    await expect(
+      paletteSectionNav(page).getByRole("button", { name: "Color filters" }),
+    ).toHaveAttribute("aria-current", "true");
+    await expect(
+      paletteSectionContent(page).locator('section[aria-label="Color filters"]'),
+    ).toBeVisible();
+  });
+
+  test("PR-RACE-003: selected swatch unchanged after Presets round-trip", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+
+    await selectPaletteColor(page, 2);
+    await selectPaletteSection(page, "presets");
+    await selectPaletteSection(page, "swatches");
+
+    await expect(page.getByRole("option", { name: "Color 2", selected: true })).toBeVisible();
+  });
+});
+
+test.describe("@error palette section rail", () => {
+  test("PR-ERR-001: Apply to frame disabled during animation playback", async ({
+    page,
+  }) => {
+    await createBlankProject(page, { frames: 8 });
+
+    await page.getByRole("button", { name: "Play animation" }).click();
+    await selectPaletteSection(page, "filters");
+
+    await expect(page.getByRole("button", { name: "Apply to frame" })).toBeDisabled();
+  });
+
+  test("PR-ERR-002: swatch icon actions disabled when palette is locked", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+    await lockPalette(page);
+
+    await expect(page.getByRole("button", { name: "Add color" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Edit color" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Remove color" })).toBeDisabled();
+  });
+});
+
+test.describe("@regression palette section rail", () => {
+  test("PR-REG-001: paint stroke from Swatches tab shows saved status", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+
+    const putFrame = waitForFramePut(page);
+    await paintStroke(page);
+    await putFrame;
+
+    await expect(page.getByRole("status")).toContainText("All changes saved", {
+      timeout: 15_000,
+    });
+  });
+
+  test("PR-REG-002: palette lock blocks preset apply from Presets tab", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+    await lockPalette(page);
+
+    await selectPaletteSection(page, "presets");
+    await expect(page.getByRole("button", { name: "Retro" })).toBeDisabled();
+  });
+
+  test("PR-REG-003: selectPaletteColor helper selects on Swatches tab", async ({
+    page,
+  }) => {
+    await createBlankProject(page);
+
+    await selectPaletteColor(page, 1);
+    await expect(page.getByRole("option", { name: "Color 1", selected: true })).toBeVisible();
   });
 });

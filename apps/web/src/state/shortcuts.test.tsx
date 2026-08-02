@@ -38,6 +38,32 @@ describe("useEditorShortcuts", () => {
     expect(useUiStore.getState().paletteCollapsed).toBe(false);
   });
 
+  it("] and [ cycle palette panel sections", () => {
+    render(<ShortcutHarness />);
+
+    fireEvent.keyDown(window, { key: "]" });
+    expect(useSessionStore.getState().palettePanelSection).toBe("presets");
+
+    fireEvent.keyDown(window, { key: "]" });
+    expect(useSessionStore.getState().palettePanelSection).toBe("shading");
+
+    fireEvent.keyDown(window, { key: "[" });
+    expect(useSessionStore.getState().palettePanelSection).toBe("presets");
+
+    fireEvent.keyDown(window, { key: "[" });
+    expect(useSessionStore.getState().palettePanelSection).toBe("swatches");
+  });
+
+  it("expands collapsed palette panel when bracket keys cycle sections", () => {
+    useUiStore.setState({ paletteCollapsed: true });
+    render(<ShortcutHarness />);
+
+    fireEvent.keyDown(window, { key: "]" });
+
+    expect(useUiStore.getState().paletteCollapsed).toBe(false);
+    expect(useSessionStore.getState().palettePanelSection).toBe("presets");
+  });
+
   it("does not change palette section when Alt+digit is pressed in an input", () => {
     render(
       <>
