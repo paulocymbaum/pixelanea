@@ -94,3 +94,41 @@ export const PALETTE_PRESETS: readonly PalettePreset[] = [
 export function getPalettePreset(id: PalettePresetId): PalettePreset | undefined {
   return PALETTE_PRESETS.find((preset) => preset.id === id);
 }
+
+/** Curated quick-access presets for the Swatches tab chip row (Casey shortcut). */
+export const QUICK_PALETTE_PRESET_IDS: readonly PalettePresetId[] = [
+  "retro",
+  "gameboy",
+  "monochrome",
+  "nes",
+] as const;
+
+const QUICK_PRESET_LIMIT = 4;
+
+/**
+ * Presets shown on the Swatches tab: last-used first (when set), then curated ids.
+ */
+export function getQuickPalettePresets(
+  lastPreset: PalettePresetId | null,
+): readonly PalettePreset[] {
+  const seen = new Set<PalettePresetId>();
+  const result: PalettePreset[] = [];
+
+  const add = (id: PalettePresetId) => {
+    if (seen.has(id)) return;
+    const preset = getPalettePreset(id);
+    if (!preset) return;
+    seen.add(id);
+    result.push(preset);
+  };
+
+  if (lastPreset) {
+    add(lastPreset);
+  }
+  for (const id of QUICK_PALETTE_PRESET_IDS) {
+    if (result.length >= QUICK_PRESET_LIMIT) break;
+    add(id);
+  }
+
+  return result;
+}

@@ -39,6 +39,13 @@ const VIEW_ROWS: ShortcutRow[] = [
   { keys: "?", label: copy.shortcutShortcutsOverlay },
 ];
 
+const PALETTE_ROWS: ShortcutRow[] = [
+  { keys: "Alt+1", label: copy.shortcutPaletteSectionSwatches },
+  { keys: "Alt+2", label: copy.shortcutPaletteSectionPresets },
+  { keys: "Alt+3", label: copy.shortcutPaletteSectionShading },
+  { keys: "Alt+4", label: copy.shortcutPaletteSectionFilters },
+];
+
 function ShortcutSection({
   title,
   rows,
@@ -86,6 +93,7 @@ export function ShortcutsOverlay() {
           <ShortcutSection title={copy.shortcutsOverlayTools} rows={TOOL_ROWS} />
           <ShortcutSection title={copy.shortcutsOverlayColors} rows={COLOR_ROWS} />
           <ShortcutSection title={copy.shortcutsOverlayEdit} rows={EDIT_ROWS} />
+          <ShortcutSection title={copy.shortcutsOverlayPalette} rows={PALETTE_ROWS} />
           <ShortcutSection title={copy.shortcutsOverlayView} rows={VIEW_ROWS} />
         </div>
 

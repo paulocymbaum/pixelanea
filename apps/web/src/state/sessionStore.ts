@@ -1,18 +1,27 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+import type {
+  ImportColorCount,
+  ImportPaletteMode,
+} from "@/components/import/paletteImportOptions";
 import type { PalettePresetId } from "@/components/palette/palettePresets";
-import type { ImportColorCount, ImportPaletteMode } from "@/components/import/paletteImportOptions";
 import type { ResolutionPreset } from "@/components/import/resolutionPresets";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
 import type { CanvasSize } from "@/components/project/canvasSize";
 
 export type ThemeMode = "light" | "dark";
 export type EntryPath = "blank" | "import";
+export type PalettePanelSection =
+  | "swatches"
+  | "presets"
+  | "shading"
+  | "filters";
 
 type SessionState = {
   theme: ThemeMode | "system";
   palettePanelWidth: number;
+  palettePanelSection: PalettePanelSection;
   lastPalettePreset: PalettePresetId | null;
   lastImportPaletteMode: ImportPaletteMode;
   lastImportColorCount: ImportColorCount;
@@ -24,6 +33,7 @@ type SessionState = {
   removeBackground: boolean;
   setTheme: (theme: SessionState["theme"]) => void;
   setPalettePanelWidth: (width: number) => void;
+  setPalettePanelSection: (section: PalettePanelSection) => void;
   setLastPalettePreset: (preset: PalettePresetId | null) => void;
   setLastImportPaletteMode: (mode: ImportPaletteMode) => void;
   setLastImportColorCount: (count: ImportColorCount) => void;
@@ -42,6 +52,7 @@ export const useSessionStore = create<SessionState>()(
     (set) => ({
       theme: "system",
       palettePanelWidth: 240,
+      palettePanelSection: "swatches",
       lastPalettePreset: null,
       lastImportPaletteMode: "image",
       lastImportColorCount: 8,
@@ -53,9 +64,13 @@ export const useSessionStore = create<SessionState>()(
       removeBackground: true,
       setTheme: (theme) => set({ theme }),
       setPalettePanelWidth: (width) => set({ palettePanelWidth: width }),
+      setPalettePanelSection: (palettePanelSection) =>
+        set({ palettePanelSection }),
       setLastPalettePreset: (lastPalettePreset) => set({ lastPalettePreset }),
-      setLastImportPaletteMode: (lastImportPaletteMode) => set({ lastImportPaletteMode }),
-      setLastImportColorCount: (lastImportColorCount) => set({ lastImportColorCount }),
+      setLastImportPaletteMode: (lastImportPaletteMode) =>
+        set({ lastImportPaletteMode }),
+      setLastImportColorCount: (lastImportColorCount) =>
+        set({ lastImportColorCount }),
       setHasVisited: (hasVisited) => set({ hasVisited }),
       setLastEntryPath: (lastEntryPath) => set({ lastEntryPath }),
       setLastResolution: (lastResolution) => set({ lastResolution }),
@@ -66,6 +81,9 @@ export const useSessionStore = create<SessionState>()(
     { name: STORAGE_KEY },
   ),
 );
+
+export const usePalettePanelSection = () =>
+  useSessionStore((s) => s.palettePanelSection);
 
 export function resolveTheme(theme: SessionState["theme"]): ThemeMode {
   if (theme === "system") {

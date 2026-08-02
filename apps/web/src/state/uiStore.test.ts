@@ -5,7 +5,6 @@ describe("uiStore", () => {
   beforeEach(() => {
     useUiStore.setState({
       paletteCollapsed: false,
-      palettePanelSection: "swatches",
       showTechnicalInfo: false,
       apiStatus: "checking",
       apiVersion: null,
@@ -24,14 +23,5 @@ describe("uiStore", () => {
   it("setPaletteCollapsed toggles palette panel", () => {
     useUiStore.getState().setPaletteCollapsed(true);
     expect(useUiStore.getState().paletteCollapsed).toBe(true);
-  });
-
-  it("defaults palettePanelSection to swatches", () => {
-    expect(useUiStore.getState().palettePanelSection).toBe("swatches");
-  });
-
-  it("setPalettePanelSection updates active section", () => {
-    useUiStore.getState().setPalettePanelSection("filters");
-    expect(useUiStore.getState().palettePanelSection).toBe("filters");
   });
 });

@@ -17,6 +17,8 @@ describe("ShortcutsOverlay", () => {
     expect(screen.getByText(copy.shortcutsOverlayTitle)).toBeInTheDocument();
     expect(screen.getByText(copy.shortcutPaint)).toBeInTheDocument();
     expect(screen.getByText(copy.shortcutUndo)).toBeInTheDocument();
+    expect(screen.getByText(copy.shortcutPaletteSectionSwatches)).toBeInTheDocument();
+    expect(screen.getByText("Alt+1")).toBeInTheDocument();
   });
 
   it("closes via close button", () => {

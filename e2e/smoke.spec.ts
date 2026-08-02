@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   clickFileMenuItem,
   closeProjectSession,
-  confirmOverwriteIfShown,
+  completeFallbackProjectPathIfShown,
   createBlankProject,
   dismissOnboarding,
   E2E_SAVE_BASENAME,
@@ -13,6 +13,7 @@ import {
   paintFrame2Mark,
   paintStroke,
   runImportWizard,
+  saveProjectToPath,
   selectFrame,
   waitForFramePut,
 } from "./helpers";
@@ -50,16 +51,7 @@ test.describe("@smoke", () => {
     await paintFrame2Mark(page);
     await frame2Put;
 
-    const saveResponse = page.waitForResponse(
-      (response) =>
-        response.request().method() === "POST" &&
-        /\/api\/projects\/[^/]+\/save$/.test(response.url()) &&
-        response.ok(),
-      { timeout: 30_000 },
-    );
-    await page.getByRole("button", { name: "Save", exact: true }).click();
-    await confirmOverwriteIfShown(page);
-    const saved = await saveResponse;
+    const saved = await saveProjectToPath(page, E2E_SAVE_PATH);
     const projectId = saved.url().match(/\/api\/projects\/([^/]+)\/save/)?.[1];
     expect(projectId).toBeTruthy();
 
@@ -78,6 +70,10 @@ test.describe("@smoke", () => {
       { timeout: 30_000 },
     );
     await clickFileMenuItem(page, "Open");
+    await completeFallbackProjectPathIfShown(page, {
+      path: E2E_SAVE_PATH,
+      mode: "open",
+    });
     const loadedProject = await (await projectLoad).json();
     expect(loadedProject.frameCount).toBe(8);
     expect(loadedProject.assetType).toBe("character");

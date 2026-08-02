@@ -109,8 +109,52 @@ export async function paintFrame2Mark(page: Page): Promise<void> {
   );
 }
 
+const PALETTE_SECTION_LABELS = {
+  swatches: "Swatches",
+  presets: "Presets",
+  shading: "Shading palettes",
+  filters: "Color filters",
+} as const;
+
+export type PaletteSectionId = keyof typeof PALETTE_SECTION_LABELS;
+
+export function palettePanel(page: Page) {
+  return page.getByRole("complementary", { name: "Palette" });
+}
+
+export function paletteSectionNav(page: Page) {
+  return page.getByRole("navigation", { name: "Palette sections" });
+}
+
+export function paletteSectionContent(page: Page) {
+  return palettePanel(page).locator("> div.flex.min-h-0").last();
+}
+
+export async function selectPaletteSection(
+  page: Page,
+  section: PaletteSectionId,
+): Promise<void> {
+  await paletteSectionNav(page)
+    .getByRole("button", { name: PALETTE_SECTION_LABELS[section] })
+    .click();
+}
+
+export async function collapsePalettePanel(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Collapse palette panel" }).click();
+  await expect(page.getByRole("button", { name: "Expand palette panel" })).toBeVisible();
+}
+
+export async function expandPalettePanel(page: Page): Promise<void> {
+  await page.getByRole("button", { name: "Expand palette panel" }).click();
+  await expect(palettePanel(page)).toBeVisible();
+}
+
 export async function selectPaletteColor(page: Page, colorNumber: number): Promise<void> {
-  await page.getByRole("option", { name: `Color ${colorNumber}` }).click();
+  const swatch = page.getByRole("option", { name: `Color ${colorNumber}` });
+  if (!(await swatch.isVisible().catch(() => false))) {
+    await selectPaletteSection(page, "swatches");
+  }
+  await swatch.click();
 }
 
 export async function selectFrame(page: Page, frameNumber: number): Promise<void> {
@@ -259,6 +303,37 @@ export async function confirmOverwriteIfShown(page: Page): Promise<void> {
   }
 }
 
+/** Fill fallback path dialog when server/native pickers are unavailable (E2E / browser). */
+export async function completeFallbackProjectPathIfShown(
+  page: Page,
+  options: { path: string; mode: "open" | "saveAs" },
+): Promise<void> {
+  const title = options.mode === "open" ? "Open project" : "Save project as";
+  const submitLabel = options.mode === "open" ? "Open" : "Save";
+  const dialog = page.getByRole("dialog", { name: title });
+  try {
+    await dialog.waitFor({ state: "visible", timeout: 5_000 });
+  } catch {
+    return;
+  }
+  await dialog.getByLabel("File path").fill(options.path);
+  await dialog.getByRole("button", { name: submitLabel, exact: true }).click();
+}
+
+export async function saveProjectToPath(page: Page, path: string): Promise<void> {
+  const saveResponse = page.waitForResponse(
+    (response) =>
+      response.request().method() === "POST" &&
+      /\/api\/projects\/[^/]+\/save$/.test(response.url()) &&
+      response.ok(),
+    { timeout: 30_000 },
+  );
+  await page.getByRole("button", { name: "Save", exact: true }).click();
+  await completeFallbackProjectPathIfShown(page, { path, mode: "saveAs" });
+  await confirmOverwriteIfShown(page);
+  return saveResponse;
+}
+
 export async function openImportWizard(page: Page): Promise<void> {
   await page.goto("/");
   await page.getByRole("button", { name: "From image" }).click();
@@ -280,6 +355,15 @@ export async function advanceImportToPreview(
 
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("tab", { name: "Resolution" })).toBeVisible();
+
+  const removeBackground = page.getByRole("button", { name: /Remove background/i });
+  const isAlphaFixture = imagePath.includes("alpha");
+  if (
+    !isAlphaFixture &&
+    (await removeBackground.getAttribute("aria-pressed")) === "true"
+  ) {
+    await removeBackground.click();
+  }
 
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page.getByRole("tab", { name: "Palette" })).toBeVisible();

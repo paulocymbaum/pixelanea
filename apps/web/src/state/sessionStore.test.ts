@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveTheme } from "./sessionStore";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { resolveTheme, useSessionStore } from "./sessionStore";
 
 describe("resolveTheme", () => {
   afterEach(() => {
@@ -35,5 +35,26 @@ describe("resolveTheme", () => {
       })),
     );
     expect(resolveTheme("system")).toBe("light");
+  });
+});
+
+describe("sessionStore palette panel section", () => {
+  beforeEach(() => {
+    useSessionStore.setState({ palettePanelSection: "swatches" });
+  });
+
+  it("defaults palettePanelSection to swatches", () => {
+    expect(useSessionStore.getState().palettePanelSection).toBe("swatches");
+  });
+
+  it("setPalettePanelSection updates active section", () => {
+    useSessionStore.getState().setPalettePanelSection("filters");
+    expect(useSessionStore.getState().palettePanelSection).toBe("filters");
+  });
+
+  it("persists palettePanelSection in localStorage", () => {
+    useSessionStore.getState().setPalettePanelSection("shading");
+    const stored = localStorage.getItem("pixelanea-session");
+    expect(stored).toContain('"palettePanelSection":"shading"');
   });
 });

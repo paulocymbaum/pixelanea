@@ -51,7 +51,7 @@ The UX critique audited `RightPalettePanel` and found Riley's paint loop blocked
 | ID | Task | Scope | Rationale | Depends on |
 |----|------|-------|-----------|------------|
 | B3-01 | Persist `palettePanelSection` in `sessionStore` (alongside `palettePanelWidth`); hydrate on editor load | frontend | UX.md persistent session memory; critique P2-1 | B1-02 |
-| B3-02 | Swatches tab: horizontal quick-preset chips + "See all" link jumping to Presets tab | frontend | Reduces tab hops for Casey; critique P2-3 | B1-03 |
+| B3-02 | Swatches tab: horizontal quick-preset chips + "See all" link jumping to Presets tab | frontend | Reduces tab hops for Casey; critique P2-3 | B1-03 | **Done** |
 | B3-03 | Optional: `]` / `[` to cycle sections (document alongside Alt+1–4) — only if Alt bindings validated in workshop | frontend | Alternative nav for Riley; lower priority than Alt+1–4 | B2-02 |
 
 **Scope rollup** (count of tasks per batch):

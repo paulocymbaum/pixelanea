@@ -2,6 +2,7 @@ import { ColorFiltersSection } from "@/components/filters/ColorFiltersSection";
 import { PaletteActions } from "@/components/palette/PaletteActions";
 import { PaletteLock } from "@/components/palette/PaletteLock";
 import { PalettePresets } from "@/components/palette/PalettePresets";
+import { PaletteQuickPresets } from "@/components/palette/PaletteQuickPresets";
 import { PaletteSectionRail } from "@/components/palette/PaletteSectionRail";
 import { PaletteShadingSection } from "@/components/palette/PaletteShadingSection";
 import { PaletteSwatchGrid } from "@/components/palette/PaletteSwatchGrid";
@@ -9,11 +10,10 @@ import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import {
   type PalettePanelSection,
-  usePaletteCollapsed,
   usePalettePanelSection,
-  useUiStore,
-} from "@/state/uiStore";
-import { useSessionStore } from "@/state/sessionStore";
+  useSessionStore,
+} from "@/state/sessionStore";
+import { usePaletteCollapsed, useUiStore } from "@/state/uiStore";
 import { Button } from "@/components/ui/Button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -23,6 +23,7 @@ function PaletteSectionContent({ section }: { section: PalettePanelSection }) {
       return (
         <>
           <PaletteSwatchGrid />
+          <PaletteQuickPresets />
           <PaletteActions />
         </>
       );

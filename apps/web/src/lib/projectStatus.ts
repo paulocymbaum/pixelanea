@@ -5,7 +5,7 @@
  * 1. checking
  * 2. error (sync)
  * 3. saving
- * 4. unsaved (`isDirty` || `isPaletteDirty` || `bundleDirty`)
+ * 4. unsaved (`isDirty` || `isPaletteDirty`) — bundle file staleness uses header dot only
  * 5. saved
  * 6. idle
  *
@@ -40,7 +40,6 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
     syncStatus,
     isDirty,
     isPaletteDirty,
-    bundleDirty,
   } = input;
 
   if (apiStatus === "checking") {
@@ -59,7 +58,7 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
     return { kind: "saving", label: copy.statusSaving };
   }
 
-  if (isDirty || isPaletteDirty || bundleDirty) {
+  if (isDirty || isPaletteDirty) {
     return { kind: "unsaved", label: copy.statusUnsaved };
   }
 

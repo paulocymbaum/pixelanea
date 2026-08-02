@@ -272,7 +272,7 @@ Active tool state uses **accent background + bold label + 3px left border** — 
 |--------|----------|
 | Canvas | Minimum 60% viewport width; always centered hero |
 | Left panel | Tools — icon + label |
-| Right panel | Palette — collapsible section rail (Swatches, Presets, Shading, Filters); state remembered per session |
+| Right panel | Palette — collapsible section rail (Swatches, Presets, Shading, Filters); active tab persisted in `sessionStore` |
 | Bottom strip | Frame picker + animation controls when `frameCount > 1` |
 | Header | Logo lockup, menus, project name, theme toggle |
 
@@ -327,6 +327,7 @@ Illustration-free. One sentence + primary CTA. No decorative mascots.
 ### Palette panel
 
 - Swatches in grid; active swatch: 2px accent ring + scale 1.05
+- Swatches tab: horizontal **quick preset** chips (`PaletteQuickPresets`) with "See all" → Presets tab
 - Add / remove / reorder colors
 - **Palette lock** toggle (visible, not buried)
 - Curated presets: Retro, Gameboy, Monochrome, NES, Pico-8, Pastel; import wizard also offers Match my image (4/8/16 colors)
