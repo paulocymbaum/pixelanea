@@ -5,7 +5,7 @@
  * 1. checking
  * 2. error (sync)
  * 3. saving
- * 4. unsaved (`isDirty` || `isPaletteDirty`)
+ * 4. unsaved (`isDirty` || `isPaletteDirty` || `bundleDirty`)
  * 5. saved
  * 6. idle
  *
@@ -30,10 +30,18 @@ export type ProjectStatusInput = {
   syncStatus: "idle" | "syncing" | "error";
   isDirty: boolean;
   isPaletteDirty: boolean;
+  bundleDirty: boolean;
 };
 
 export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
-  const { hasProject, apiStatus, syncStatus, isDirty, isPaletteDirty } = input;
+  const {
+    hasProject,
+    apiStatus,
+    syncStatus,
+    isDirty,
+    isPaletteDirty,
+    bundleDirty,
+  } = input;
 
   if (apiStatus === "checking") {
     return { kind: "checking" };
@@ -51,7 +59,7 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
     return { kind: "saving", label: copy.statusSaving };
   }
 
-  if (isDirty || isPaletteDirty) {
+  if (isDirty || isPaletteDirty || bundleDirty) {
     return { kind: "unsaved", label: copy.statusUnsaved };
   }
 
@@ -71,6 +79,7 @@ export function useDerivedProjectStatus(): ProjectStatus {
   const hasProject = useEditorStore((s) => s.projectId != null);
   const isDirty = useEditorStore((s) => s.isDirty);
   const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
+  const bundleDirty = useEditorStore((s) => s.bundleDirty);
   const syncStatus = useEditorStore((s) => s.syncStatus);
   const apiStatus = useUiStore((s) => s.apiStatus);
 
@@ -82,7 +91,15 @@ export function useDerivedProjectStatus(): ProjectStatus {
         syncStatus,
         isDirty,
         isPaletteDirty,
+        bundleDirty,
       }),
-    [hasProject, apiStatus, syncStatus, isDirty, isPaletteDirty],
+    [
+      hasProject,
+      apiStatus,
+      syncStatus,
+      isDirty,
+      isPaletteDirty,
+      bundleDirty,
+    ],
   );
 }

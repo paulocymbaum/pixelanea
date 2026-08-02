@@ -21,6 +21,8 @@ export type ExportGifRequest = components["schemas"]["ExportGifRequest"];
 export type OpenProjectRequest = components["schemas"]["OpenProjectRequest"];
 export type SaveProjectRequest = components["schemas"]["SaveProjectRequest"];
 export type SaveProjectResponse = components["schemas"]["SaveProjectResponse"];
+export type PickProjectPathRequest = components["schemas"]["PickProjectPathRequest"];
+export type PickProjectPathResponse = components["schemas"]["PickProjectPathResponse"];
 export type Color = components["schemas"]["Color"];
 export type ErrorResponse = components["schemas"]["ErrorResponse"];
 export type ApiClientConfig = {
@@ -36,6 +38,10 @@ export declare function createApiClient(config?: ApiClientConfig): {
         status: "ok";
         version: string;
     }>;
+    pickProjectPath: (body: PickProjectPathRequest) => Promise<{
+        path?: string;
+        cancelled?: boolean;
+    }>;
     createProject: (body: CreateProjectRequest) => Promise<{
         id: string;
         name: string;
@@ -45,6 +51,7 @@ export declare function createApiClient(config?: ApiClientConfig): {
         fps: number;
         cellSize: number;
         assetType: components["schemas"]["AssetType"];
+        loop: boolean;
         createdAt: string;
         updatedAt: string;
     }>;
@@ -57,6 +64,7 @@ export declare function createApiClient(config?: ApiClientConfig): {
         fps: number;
         cellSize: number;
         assetType: components["schemas"]["AssetType"];
+        loop: boolean;
         createdAt: string;
         updatedAt: string;
     }>;
@@ -69,6 +77,7 @@ export declare function createApiClient(config?: ApiClientConfig): {
         fps: number;
         cellSize: number;
         assetType: components["schemas"]["AssetType"];
+        loop: boolean;
         createdAt: string;
         updatedAt: string;
     }>;
@@ -81,6 +90,7 @@ export declare function createApiClient(config?: ApiClientConfig): {
         fps: number;
         cellSize: number;
         assetType: components["schemas"]["AssetType"];
+        loop: boolean;
         createdAt: string;
         updatedAt: string;
     }>;

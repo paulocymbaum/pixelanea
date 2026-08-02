@@ -65,13 +65,13 @@ jobs:
         run: pnpm lint
 
       - name: Frontend typecheck
-        run: pnpm --filter web exec tsc --noEmit
+        run: pnpm typecheck
 
       - name: QA matrix harness
-        run: pnpm --filter @pixelanea/web exec vitest run src/qa/
+        run: pnpm test:qa
 
       - name: Frontend unit tests
-        run: pnpm --filter @pixelanea/web test
+        run: pnpm test:unit
 
       - name: Build frontend
         run: ./scripts/assets-cache.sh ensure-web

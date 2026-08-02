@@ -1,13 +1,24 @@
-import { exportFilename, exportFrameToPng } from "@/canvas/exportFrame";
+import {
+  downloadBlob,
+  exportFilename,
+  exportFrameToPng,
+  exportGifFilename,
+  exportSpritesheetFilename,
+  exportSpritesheetToPng,
+} from "@/canvas/exportFrame";
 import {
   scanFramesForOffPalette,
   type OffPaletteReport,
 } from "@/canvas/offPaletteCheck";
+import { errors } from "@/content/errors";
 import { notifyExportSuccess } from "@/lib/exportNotify";
 import { useEditorStore } from "@/state/editorStore";
 import { resolveAllFramePixels } from "@/state/frameCache";
 import { flushFrameSync } from "@/state/persist";
+import { useUiStore } from "@/state/uiStore";
 import { useCallback, useRef, useState } from "react";
+import { mapApiError } from "@/api/errors";
+import { exportProjectGif } from "@/api/export";
 
 export type PreparedActiveFrame = {
   pixels: Uint8Array;
@@ -90,7 +101,36 @@ export function performPngExport(frame: PreparedActiveFrame): void {
     paletteColors: frame.paletteColors,
     filename,
   });
-  notifyExportSuccess(filename);
+  notifyExportSuccess(filename, "png");
+}
+
+export function performSpritesheetExport(
+  frames: readonly Uint8Array[],
+  gridWidth: number,
+  gridHeight: number,
+  paletteColors: readonly string[],
+  projectName: string,
+): void {
+  const filename = exportSpritesheetFilename(projectName);
+  exportSpritesheetToPng({
+    frames,
+    gridWidth,
+    gridHeight,
+    paletteColors,
+    filename,
+  });
+  notifyExportSuccess(filename, "spritesheet");
+}
+
+export async function performGifExport(
+  projectId: string,
+  projectName: string,
+  fps: number,
+): Promise<void> {
+  const blob = await exportProjectGif(projectId, { fps });
+  const filename = exportGifFilename(projectName);
+  downloadBlob(blob, filename);
+  notifyExportSuccess(filename, "gif");
 }
 
 export async function exportActiveFramePng(): Promise<void> {
@@ -108,9 +148,7 @@ type OffPaletteGuard = (
 ) => void;
 
 /** Named async entry for File → Export PNG (off-palette guard applied by caller). */
-export async function runPngExport(
-  guard: OffPaletteGuard,
-): Promise<void> {
+export async function runPngExport(guard: OffPaletteGuard): Promise<void> {
   const frame = await prepareActiveFrameForExport();
   if (!frame) {
     return;
@@ -118,6 +156,62 @@ export async function runPngExport(
 
   guard([frame.pixels], frame.paletteColors.length, () => {
     performPngExport(frame);
+  });
+}
+
+/** File → Export spritesheet — all frames in a horizontal PNG strip. */
+export async function runSpritesheetExport(guard: OffPaletteGuard): Promise<void> {
+  const prepared = await prepareAllFramesForExport();
+  if (!prepared.ok) {
+    if (prepared.message) {
+      useUiStore.getState().showToast(prepared.message);
+    }
+    return;
+  }
+
+  const state = useEditorStore.getState();
+  guard(prepared.frames, prepared.paletteLength, () => {
+    performSpritesheetExport(
+      prepared.frames,
+      state.gridWidth,
+      state.gridHeight,
+      state.paletteColors,
+      state.projectName,
+    );
+  });
+}
+
+/** File → Export GIF — server-encoded animation using project FPS. */
+export async function runGifExport(guard: OffPaletteGuard): Promise<void> {
+  const state = useEditorStore.getState();
+  if (!state.projectId) {
+    return;
+  }
+
+  if (state.frameCount < 2) {
+    useUiStore.getState().showToast(errors.exportGifInsufficientFrames);
+    return;
+  }
+
+  const prepared = await prepareAllFramesForExport();
+  if (!prepared.ok) {
+    if (prepared.message) {
+      useUiStore.getState().showToast(prepared.message);
+    }
+    return;
+  }
+
+  guard(prepared.frames, prepared.paletteLength, () => {
+    void performGifExport(state.projectId!, state.projectName, state.animationFps).catch(
+      (error) => {
+        const message = mapApiError(error);
+        useUiStore.getState().showToast(
+          message.includes("insufficient") || message.includes("gif")
+            ? errors.exportGifInsufficientFrames
+            : errors.exportGifFailed,
+        );
+      },
+    );
   });
 }
 

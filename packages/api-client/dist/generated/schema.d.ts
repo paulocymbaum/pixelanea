@@ -20,6 +20,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/dialog/pick-project-path": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Show native file picker for a .pixelanea bundle path
+         * @description Opens a native file dialog on the host (zenity on Linux desktop builds).
+         *
+         *     **Cancel semantics:** HTTP 200 with `{ "cancelled": true }` — not 204.
+         *
+         *     **Blocking:** Zenity runs synchronously on the server thread until the user
+         *     selects a file or dismisses the dialog. The server waits up to 300 seconds,
+         *     then returns 504 Gateway Timeout.
+         */
+        post: operations["pickProjectPath"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/projects": {
         parameters: {
             query?: never;
@@ -265,6 +291,27 @@ export interface components {
             /** @example 1.0.0 */
             version: string;
         };
+        PickProjectPathRequest: {
+            /**
+             * @description Whether to pick an existing bundle or a save destination
+             * @enum {string}
+             */
+            mode: "open" | "saveAs";
+            /** @description Optional directory or file path to pre-select in the dialog */
+            defaultPath?: string;
+            /** @description Suggested filename (without extension) for save dialogs */
+            defaultName?: string;
+        };
+        /**
+         * @description Exactly one of `path` or `cancelled` is set on success responses.
+         *     Cancel uses `{ "cancelled": true }` with HTTP 200.
+         */
+        PickProjectPathResponse: {
+            /** @description Absolute filesystem path to a .pixelanea bundle */
+            path?: string;
+            /** @description True when the user dismissed the dialog without choosing */
+            cancelled?: boolean;
+        };
         ErrorResponse: {
             message: string;
         };
@@ -282,12 +329,19 @@ export interface components {
             /** @default 16 */
             cellSize: number;
             assetType?: components["schemas"]["AssetType"];
+            /**
+             * @description Whether animation playback and GIF export repeat indefinitely
+             * @default true
+             */
+            loop: boolean;
         };
         UpdateProjectRequest: {
             name?: string;
             fps?: number;
             cellSize?: number;
             assetType?: components["schemas"]["AssetType"];
+            /** @description Whether animation playback and GIF export repeat indefinitely */
+            loop?: boolean;
         };
         OpenProjectRequest: {
             /** @description Absolute or relative filesystem path to a .pixelanea bundle file */
@@ -317,6 +371,8 @@ export interface components {
             fps: number;
             cellSize: number;
             assetType: components["schemas"]["AssetType"];
+            /** @description Whether animation playback and GIF export repeat indefinitely */
+            loop: boolean;
             /** Format: date-time */
             createdAt: string;
             /** Format: date-time */
@@ -388,11 +444,8 @@ export interface components {
         ExportGifRequest: {
             /** @description Animation speed; defaults to project fps */
             fps?: number;
-            /**
-             * @description Whether the GIF should loop indefinitely
-             * @default true
-             */
-            loop: boolean;
+            /** @description Whether the GIF should loop indefinitely; defaults to the project loop setting */
+            loop?: boolean;
         };
         PixelateImportRequest: {
             /**
@@ -473,6 +526,49 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    pickProjectPath: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PickProjectPathRequest"];
+            };
+        };
+        responses: {
+            /** @description Selected path or user cancelled */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PickProjectPathResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            /** @description Native file dialog unavailable on this host */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description File dialog timed out */
+            504: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

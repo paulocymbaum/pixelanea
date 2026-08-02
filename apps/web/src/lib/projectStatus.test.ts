@@ -14,6 +14,7 @@ function input(
     syncStatus: "idle",
     isDirty: false,
     isPaletteDirty: false,
+    bundleDirty: false,
     ...overrides,
   };
 }
@@ -72,6 +73,14 @@ describe("deriveProjectStatus", () => {
   it("returns unsaved when only palette is dirty", () => {
     expect(
       deriveProjectStatus(input({ isPaletteDirty: true })),
+    ).toEqual({ kind: "unsaved", label: copy.statusUnsaved });
+  });
+
+  it("returns unsaved when bundle is dirty but pixels are synced", () => {
+    expect(
+      deriveProjectStatus(
+        input({ isDirty: false, isPaletteDirty: false, bundleDirty: true }),
+      ),
     ).toEqual({ kind: "unsaved", label: copy.statusUnsaved });
   });
 

@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 import type { PalettePresetId } from "@/components/palette/palettePresets";
+import type { ImportColorCount, ImportPaletteMode } from "@/components/import/paletteImportOptions";
 import type { ResolutionPreset } from "@/components/import/resolutionPresets";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
 import type { CanvasSize } from "@/components/project/canvasSize";
@@ -13,6 +14,8 @@ type SessionState = {
   theme: ThemeMode | "system";
   palettePanelWidth: number;
   lastPalettePreset: PalettePresetId | null;
+  lastImportPaletteMode: ImportPaletteMode;
+  lastImportColorCount: ImportColorCount;
   hasVisited: boolean;
   lastEntryPath: EntryPath;
   lastResolution: ResolutionPreset;
@@ -22,6 +25,8 @@ type SessionState = {
   setTheme: (theme: SessionState["theme"]) => void;
   setPalettePanelWidth: (width: number) => void;
   setLastPalettePreset: (preset: PalettePresetId | null) => void;
+  setLastImportPaletteMode: (mode: ImportPaletteMode) => void;
+  setLastImportColorCount: (count: ImportColorCount) => void;
   setHasVisited: (visited: boolean) => void;
   setLastEntryPath: (path: EntryPath) => void;
   setLastResolution: (resolution: ResolutionPreset) => void;
@@ -38,6 +43,8 @@ export const useSessionStore = create<SessionState>()(
       theme: "system",
       palettePanelWidth: 240,
       lastPalettePreset: null,
+      lastImportPaletteMode: "image",
+      lastImportColorCount: 8,
       hasVisited: false,
       lastEntryPath: "blank",
       lastResolution: 32,
@@ -47,6 +54,8 @@ export const useSessionStore = create<SessionState>()(
       setTheme: (theme) => set({ theme }),
       setPalettePanelWidth: (width) => set({ palettePanelWidth: width }),
       setLastPalettePreset: (lastPalettePreset) => set({ lastPalettePreset }),
+      setLastImportPaletteMode: (lastImportPaletteMode) => set({ lastImportPaletteMode }),
+      setLastImportColorCount: (lastImportColorCount) => set({ lastImportColorCount }),
       setHasVisited: (hasVisited) => set({ hasVisited }),
       setLastEntryPath: (lastEntryPath) => set({ lastEntryPath }),
       setLastResolution: (lastResolution) => set({ lastResolution }),

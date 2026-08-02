@@ -9,6 +9,7 @@
 #include "image/remove_background.hpp"
 
 #include <array>
+#include <chrono>
 #include <cstdint>
 #include <vector>
 
@@ -335,4 +336,15 @@ TEST_CASE("downscale_box fills every target pixel", "[pixelate]") {
     REQUIRE(downscaled.pixels[offset + 1] == 120);
     REQUIRE(downscaled.pixels[offset + 2] == 140);
   }
+}
+
+TEST_CASE("downscale 4K to 64x64 within performance budget", "[pixelate][benchmark]") {
+  const auto source = solid_rgba(3840, 2160, 128, 64, 200);
+  const auto start = std::chrono::steady_clock::now();
+  const auto downscaled = downscale_box(source, 64, 64);
+  const auto elapsed = std::chrono::steady_clock::now() - start;
+
+  REQUIRE(downscaled.width == 64);
+  REQUIRE(downscaled.height == 64);
+  REQUIRE(elapsed < std::chrono::milliseconds(2000));
 }

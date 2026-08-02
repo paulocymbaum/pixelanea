@@ -35,7 +35,7 @@ export function FrameThumbnail({
   onReorder,
 }: FrameThumbnailProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const canDrag = draggable && !isPlaying && onReorder;
+  const canDrag = Boolean(draggable && !isPlaying && onReorder);
 
   useEffect(() => {
     const canvas = canvasRef.current;

@@ -1,6 +1,12 @@
 import { copy } from "@/content/copy";
 
-export type PalettePresetId = "retro" | "gameboy" | "monochrome";
+export type PalettePresetId =
+  | "retro"
+  | "gameboy"
+  | "monochrome"
+  | "nes"
+  | "pico8"
+  | "pastel";
 
 export type PalettePreset = {
   id: PalettePresetId;
@@ -11,6 +17,9 @@ const PALETTE_PRESET_LABELS: Record<PalettePresetId, string> = {
   retro: copy.palettePresetRetro,
   gameboy: copy.palettePresetGameboy,
   monochrome: copy.palettePresetMonochrome,
+  nes: copy.palettePresetNes,
+  pico8: copy.palettePresetPico8,
+  pastel: copy.palettePresetPastel,
 };
 
 /** User-facing label for a palette preset button (shared by grid + QA harness). */
@@ -40,6 +49,45 @@ export const PALETTE_PRESETS: readonly PalettePreset[] = [
   {
     id: "monochrome",
     colors: ["#000000", "#545454", "#A8A8A8", "#FCFCFC"],
+  },
+  {
+    id: "nes",
+    colors: [
+      "#000000",
+      "#FCFCFC",
+      "#F83800",
+      "#D82800",
+      "#FC9838",
+      "#00A800",
+      "#0078F8",
+      "#0058F8",
+    ],
+  },
+  {
+    id: "pico8",
+    colors: [
+      "#000000",
+      "#1D2B53",
+      "#7E2553",
+      "#008751",
+      "#AB5236",
+      "#5F574F",
+      "#C2C3C7",
+      "#FFF1E8",
+    ],
+  },
+  {
+    id: "pastel",
+    colors: [
+      "#2D2A32",
+      "#FFF5E1",
+      "#FFC9DE",
+      "#B8E0D2",
+      "#A8D8EA",
+      "#D4A5FF",
+      "#FFD6A5",
+      "#FFADAD",
+    ],
   },
 ] as const;
 

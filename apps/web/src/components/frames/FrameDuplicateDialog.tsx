@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/Dialog";
 import {
   ANIMATION_FRAME_PRESETS,
-  type AnimationFramePreset,
 } from "@/components/project/animationFramePresets";
 import { duplicateFrames } from "@/api/frames";
 import { copy } from "@/content/copy";
@@ -18,6 +17,7 @@ import { useActiveFrameIndex, useEditorStore } from "@/state/editorStore";
 import { flushFrameSync } from "@/state/persist";
 
 type FillMode = "copy" | "blank";
+type DuplicateFrameCount = (typeof ANIMATION_FRAME_PRESETS)[number];
 
 type FrameDuplicateDialogProps = {
   open: boolean;
@@ -33,7 +33,7 @@ export function FrameDuplicateDialog({
   const reloadAllFrames = useEditorStore((s) => s.reloadAllFrames);
   const setActiveTool = useEditorStore((s) => s.setActiveTool);
 
-  const [frameCount, setFrameCount] = useState<AnimationFramePreset>(8);
+  const [frameCount, setFrameCount] = useState<DuplicateFrameCount>(8);
   const [fillMode, setFillMode] = useState<FillMode>("copy");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -20,7 +20,7 @@ Returning users see a **quick-start** button that reuses your last canvas size (
 ### Blank canvas
 
 1. Click **Start blank**.
-2. Choose a canvas size (16×16, 32×32, 64×64, or custom dimensions).
+2. Choose a canvas size (16×16, 32×32, 64×64, 128×128, 256×256, or custom dimensions).
 3. Click **Create project** for a single frame, or use the secondary **8 frames** shortcut to start animated.
 4. Animation can also be added later from the frame strip (see [Animation](#animation)).
 

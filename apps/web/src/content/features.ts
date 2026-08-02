@@ -1,10 +1,9 @@
 /**
- * Sprint 1 MVP feature flags — toggle post-MVP surfaces here only.
- * Defaults keep File → Export PNG and hide advanced animation/export chrome.
- * Re-enable spritesheet/GIF: set flags true and restore handlers in shell/exportActions.ts (R1-514).
+ * Post-MVP feature flags — toggle surfaces here only.
+ * Sprint 2+ ships export and onion skin in the default build.
  */
 export const features = {
-  exportSpritesheet: false,
-  exportGif: false,
-  onionSkin: false,
+  exportSpritesheet: true,
+  exportGif: true,
+  onionSkin: true,
 } as const;

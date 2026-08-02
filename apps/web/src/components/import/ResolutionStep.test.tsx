@@ -15,6 +15,8 @@ describe("ResolutionStep", () => {
     );
 
     expect(screen.getByText(copy.importWizardResolutionHint)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Large sprite\s+128×128/ })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Tile\s+256×256/ })).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: copy.importWizardRemoveBackgroundOn }),
     ).toHaveAttribute("aria-pressed", "true");

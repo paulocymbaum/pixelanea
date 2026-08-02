@@ -113,4 +113,4 @@ Pick one based on time and age:
 
 - [User guide](../user-guide.md)
 - [Shortcuts reference](../shortcuts.md)
-- [BACKLOG.md](../../BACKLOG.md) — V1-304 PDF template deliverable tracked there
+- [BACKLOG.md](../../BACKLOG.md) — E2-014 workshop teacher kit (template + PDF)

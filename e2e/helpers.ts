@@ -204,6 +204,18 @@ export async function openFileMenu(page: Page): Promise<void> {
 
 export async function clickFileMenuItem(page: Page, label: string): Promise<void> {
   await openFileMenu(page);
+  const exportItems = [
+    "PNG (current frame)",
+    "Spritesheet (all frames)",
+    "GIF animation",
+  ];
+  if (exportItems.includes(label) || label === "Export PNG") {
+    await page.getByRole("menuitem", { name: "Export" }).click();
+    const resolved =
+      label === "Export PNG" ? "PNG (current frame)" : label;
+    await page.getByRole("menuitem", { name: resolved }).click();
+    return;
+  }
   await page.getByRole("menuitem", { name: label }).click();
 }
 

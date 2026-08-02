@@ -119,8 +119,8 @@ One shell serves all personas through **collapsible panels and sensible defaults
 
 **UX requirements:**
 - Import wizard as **equal front door** — not buried in File menu
-- Plain-language resolution presets
-- Curated palette suggestions (Retro, Gameboy, Monochrome)
+- Plain-language resolution presets (16×16 through 256×256)
+- Curated palette suggestions (Retro, Gameboy, Monochrome, NES, Pico-8, Pastel) plus **Match my image** auto-extract (4/8/16 colors)
 - Collapsible palette panel (uses ≤8 colors)
 - Guided copy; icons + labels on toolbar
 
@@ -317,7 +317,7 @@ Launch → New project → Blank 32×32 → Canvas focused → Pick color → Pa
 ### Flow 2 — Photo to pixel (Casey, &lt;5 minutes)
 
 ```text
-Launch → From image → Drop file → Pick "Sprite 32×32" → Choose palette preset
+Launch → From image → Drop file → Pick "Sprite 32×32" → Match my image or pick a style preset
       → Preview → Accept → Cleanup paint (optional) → Save
 ```
 
@@ -393,7 +393,7 @@ New 16×16 → Import/define 16-color palette → Enable palette lock
 | Pause | Returns to edit mode on current frame |
 | FPS | Slider 1–24; default 8 |
 | Loop | Toggle; on by default |
-| Onion skin | Behind `features.onionSkin` flag (off in Sprint 1 default) |
+| Onion skin | Toggle in animation player; shows previous frame at 30% opacity |
 
 ### Project I/O
 
@@ -403,8 +403,7 @@ New 16×16 → Import/define 16-color palette → Enable palette lock
 | Open | Native file picker (desktop) with `.pixelanea` filter; path dialog fallback |
 | Save | Write bundle; **Project saved.** toast; status bar shows sync state |
 | Save As | New path; asset type defaults to Character; overwrite confirm |
-| Export PNG | Current frame; success toast with filename |
-| Export spritesheet / GIF | Behind feature flags (off in Sprint 1 default) |
+| Export | File → Export submenu: PNG (current frame), spritesheet (all frames), GIF animation |
 | Import image | Pixelate wizard; File menu or home **From image** |
 | Unsaved guard | Confirm before New / Open / Import when dirty |
 

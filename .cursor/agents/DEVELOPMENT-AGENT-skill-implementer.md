@@ -80,7 +80,7 @@ Share the task list briefly in chat, then proceed to Step 3 without waiting unle
 
 #### Backlog status (mandatory — first action)
 
-When the run targets tickets, batches, or tasks tracked in a backlog (e.g. `BACKLOG_SPRINT_1.md`, `BACKLOG.md`, or a linked `test_matrix_unit.md` scope), **always** mark them **In progress** in that backlog **before** writing application code or other substantive implementation work.
+When the run targets tickets, batches, or tasks tracked in a backlog (e.g. `BACKLOG.md` or a linked `test_matrix_unit.md` scope), **always** mark them **In progress** in that backlog **before** writing application code or other substantive implementation work.
 
 1. Identify every batch ID, ticket ID, or backlog row in scope (from the user prompt, `02_plan.md`, or investigation).
 2. Edit the relevant backlog file(s) immediately — do not defer to the end of the run.

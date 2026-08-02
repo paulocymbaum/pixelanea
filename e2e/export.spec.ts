@@ -14,7 +14,7 @@ test.describe("@export", () => {
     await waitForFramePut(page);
 
     const downloadPromise = page.waitForEvent("download");
-    await clickFileMenuItem(page, "Export PNG");
+    await clickFileMenuItem(page, "PNG (current frame)");
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toBe("Untitled-project-frame-1.png");

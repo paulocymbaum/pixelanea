@@ -85,6 +85,10 @@ export function NewProjectPage({
       setLastResolution(32);
     } else if (matchesResolutionPreset(size, 64)) {
       setLastResolution(64);
+    } else if (matchesResolutionPreset(size, 128)) {
+      setLastResolution(128);
+    } else if (matchesResolutionPreset(size, 256)) {
+      setLastResolution(256);
     }
     setLastFrameCount(frames);
     setLastEntryPath("blank");

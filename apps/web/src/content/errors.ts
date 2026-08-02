@@ -16,6 +16,9 @@ export const errors = {
   bundleWriteFailed:
     "Couldn't write the project file. Check the folder permissions and try again.",
   projectAlreadyOpen: "This project is already open.",
+  exportGifInsufficientFrames:
+    "Need at least two frames to export a GIF. Duplicate frames first.",
+  exportGifFailed: "Couldn't export the animation. Try again after saving.",
   filePickerUnavailable:
     "No file picker is available. Install zenity for native dialogs or enter a path manually.",
   invalidCanvasSize: "Enter whole numbers between 1 and 512 for width and height.",

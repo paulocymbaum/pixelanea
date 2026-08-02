@@ -18,7 +18,13 @@ import { FileDropStep } from "./FileDropStep";
 import { isAcceptedImageType } from "./fileUtils";
 import { fileToBase64 } from "./fileUtils";
 import { ImportStepIndicator } from "./ImportStepIndicator";
-import { PalettePresetStep } from "./PalettePresetStep";
+import { PaletteStep } from "./PaletteStep";
+import {
+  clampImportColorCount,
+  type ImportColorCount,
+  type ImportPaletteMode,
+} from "./paletteImportOptions";
+import type { ResolutionPreset } from "./resolutionPresets";
 import { PreviewStep } from "./PreviewStep";
 import { ResolutionStep } from "./ResolutionStep";
 import type { ImportWizardStep } from "./types";
@@ -40,9 +46,13 @@ const DEFAULT_PROJECT = {
 export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const lastResolution = useSessionStore((s) => s.lastResolution);
   const lastPalettePreset = useSessionStore((s) => s.lastPalettePreset);
+  const lastImportPaletteMode = useSessionStore((s) => s.lastImportPaletteMode);
+  const lastImportColorCount = useSessionStore((s) => s.lastImportColorCount);
   const removeBackground = useSessionStore((s) => s.removeBackground);
   const setLastResolution = useSessionStore((s) => s.setLastResolution);
   const setLastPalettePreset = useSessionStore((s) => s.setLastPalettePreset);
+  const setLastImportPaletteMode = useSessionStore((s) => s.setLastImportPaletteMode);
+  const setLastImportColorCount = useSessionStore((s) => s.setLastImportColorCount);
   const setRemoveBackground = useSessionStore((s) => s.setRemoveBackground);
   const setHasVisited = useSessionStore((s) => s.setHasVisited);
   const setLastEntryPath = useSessionStore((s) => s.setLastEntryPath);
@@ -53,6 +63,12 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const [resolution, setResolution] = useState(lastResolution);
   const [palettePreset, setPalettePreset] = useState(
     lastPalettePreset ?? "retro",
+  );
+  const [paletteMode, setPaletteMode] = useState<ImportPaletteMode>(
+    lastImportPaletteMode,
+  );
+  const [paletteColorCount, setPaletteColorCount] = useState<ImportColorCount>(
+    lastImportColorCount,
   );
   const [previewProjectId, setPreviewProjectId] = useState<string | null>(null);
   const [previewPixels, setPreviewPixels] = useState<Uint8Array | null>(null);
@@ -101,6 +117,11 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
     }
   };
 
+  const handleResolutionChange = (value: ResolutionPreset) => {
+    setResolution(value);
+    setPaletteColorCount((prev) => clampImportColorCount(prev, value));
+  };
+
   const runPreview = useCallback(async () => {
     if (!imageData) {
       return;
@@ -128,7 +149,7 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       setPreviewProjectId(activeProjectId);
     }
 
-    const preset = getPalettePreset(palettePreset);
+    const preset = paletteMode === "style" ? getPalettePreset(palettePreset) : undefined;
     if (preset) {
       const saved = await saveImportPalette(activeProjectId, preset.colors);
       if (!saved.ok) {
@@ -138,13 +159,18 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
       }
     }
 
-    const pixelate = await pixelateImage(activeProjectId, {
+    const effectiveColorCount = clampImportColorCount(paletteColorCount, resolution);
+
+    const pixelateBody = {
       imageData,
       targetWidth: resolution,
       targetHeight: resolution,
       frameIndex: 0,
       removeBackground,
-    });
+      ...(paletteMode === "image" ? { maxColors: effectiveColorCount } : {}),
+    };
+
+    const pixelate = await pixelateImage(activeProjectId, pixelateBody);
 
     if (!pixelate.ok) {
       setError(pixelate.message);
@@ -175,7 +201,15 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
     setPreviewWidth(response.width);
     setPreviewHeight(response.height);
     setIsLoading(false);
-  }, [imageData, palettePreset, previewProjectId, removeBackground, resolution]);
+  }, [
+    imageData,
+    paletteColorCount,
+    paletteMode,
+    palettePreset,
+    previewProjectId,
+    removeBackground,
+    resolution,
+  ]);
 
   const goNext = async () => {
     if (step === "file") {
@@ -195,7 +229,11 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
     }
 
     if (step === "palette") {
-      setLastPalettePreset(palettePreset);
+      setLastImportPaletteMode(paletteMode);
+      setLastImportColorCount(paletteColorCount);
+      if (paletteMode === "style") {
+        setLastPalettePreset(palettePreset);
+      }
       setStep("preview");
       await runPreview();
       return;
@@ -279,7 +317,7 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
         {step === "resolution" ? (
           <ResolutionStep
             value={resolution}
-            onChange={setResolution}
+            onChange={handleResolutionChange}
             removeBackground={removeBackground}
             onRemoveBackgroundChange={setRemoveBackground}
           />
@@ -293,9 +331,14 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
         hidden={step !== "palette"}
       >
         {step === "palette" ? (
-          <PalettePresetStep
-            value={palettePreset}
-            onChange={setPalettePreset}
+          <PaletteStep
+            resolution={resolution}
+            mode={paletteMode}
+            onModeChange={setPaletteMode}
+            presetId={palettePreset}
+            onPresetChange={setPalettePreset}
+            colorCount={paletteColorCount}
+            onColorCountChange={setPaletteColorCount}
           />
         ) : null}
       </div>

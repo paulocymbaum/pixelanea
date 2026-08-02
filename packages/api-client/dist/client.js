@@ -60,6 +60,7 @@ async function requestBinary(path, options = {}, config = {}) {
 export function createApiClient(config = {}) {
     return {
         getHealth: () => request("/api/health", {}, config),
+        pickProjectPath: (body) => request("/api/dialog/pick-project-path", { method: "POST", body: JSON.stringify(body) }, config),
         createProject: (body) => request("/api/projects", { method: "POST", body: JSON.stringify(body) }, config),
         openProject: (body) => request("/api/projects/open", { method: "POST", body: JSON.stringify(body) }, config),
         getProject: (projectId) => request(`/api/projects/${projectId}`, {}, config),

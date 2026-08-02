@@ -3,11 +3,12 @@ import { fetchFrame, pixelsFromFrame } from "@/api/frames";
 import { Button } from "@/components/ui/Button";
 import { Slider } from "@/components/ui/Slider";
 import { copy } from "@/content/copy";
+import { features } from "@/content/features";
 import { cn } from "@/lib/cn";
-import { useEditorStore } from "@/state/editorStore";
+import { useEditorStore, useOnionSkinEnabled } from "@/state/editorStore";
 import { writeFramePixels } from "@/state/frameCache";
 import { flushFrameSync } from "@/state/persist";
-import { Pause, Play, Repeat } from "lucide-react";
+import { Layers, Pause, Play, Repeat } from "lucide-react";
 
 type AnimationPlayerProps = {
   className?: string;
@@ -23,6 +24,8 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
   const setAnimationFps = useEditorStore((s) => s.setAnimationFps);
   const setAnimationLoop = useEditorStore((s) => s.setAnimationLoop);
   const advancePlaybackFrame = useEditorStore((s) => s.advancePlaybackFrame);
+  const onionSkinEnabled = useOnionSkinEnabled();
+  const setOnionSkinEnabled = useEditorStore((s) => s.setOnionSkinEnabled);
 
   const rafRef = useRef<number | null>(null);
   const lastTickRef = useRef(0);
@@ -194,6 +197,26 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
         <Repeat className="h-4 w-4" strokeWidth={1.5} />
         {copy.animationLoop}
       </Button>
+
+      {features.onionSkin ? (
+        <Button
+          type="button"
+          variant={onionSkinEnabled ? "primary" : "secondary"}
+          size="default"
+          onClick={() => setOnionSkinEnabled(!onionSkinEnabled)}
+          disabled={frameCount <= 1}
+          aria-pressed={onionSkinEnabled}
+          aria-label={
+            onionSkinEnabled
+              ? copy.animationOnionSkinOn
+              : copy.animationOnionSkinOff
+          }
+          className="min-h-10"
+        >
+          <Layers className="h-4 w-4" strokeWidth={1.5} />
+          {copy.animationOnionSkin}
+        </Button>
+      ) : null}
     </div>
   );
 }

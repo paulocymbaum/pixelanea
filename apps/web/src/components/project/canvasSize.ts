@@ -23,7 +23,11 @@ export function matchesResolutionPreset(
 export function isPresetCanvasSize(size: CanvasSize): boolean {
   return (
     size.width === size.height &&
-    (size.width === 16 || size.width === 32 || size.width === 64)
+    (size.width === 16 ||
+      size.width === 32 ||
+      size.width === 64 ||
+      size.width === 128 ||
+      size.width === 256)
   );
 }
 

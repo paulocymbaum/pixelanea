@@ -84,3 +84,28 @@ TEST_CASE("MigrationRunner is idempotent on re-apply", "[migration]") {
 
   std::filesystem::remove(db_path, ec);
 }
+
+TEST_CASE("MigrationRunner upgrades schema v1 to current", "[migration]") {
+  const auto db_path = temp_db_path();
+  const auto v1_dir =
+      std::filesystem::temp_directory_path() / "pixelanea-tests" / "migrations_v1_only";
+  std::filesystem::create_directories(v1_dir);
+  std::filesystem::copy_file(
+      std::filesystem::path(PIXELANEA_MIGRATIONS_DIR) / "001_initial.sql",
+      v1_dir / "001_initial.sql",
+      std::filesystem::copy_options::overwrite_existing);
+
+  std::error_code ec;
+  std::filesystem::remove(db_path, ec);
+
+  auto connection = Connection::open(db_path);
+  MigrationRunner{v1_dir}.apply_all(*connection);
+  REQUIRE(query_int(connection->handle(),
+                    "SELECT value FROM app_meta WHERE key = 'schema_version'") == 1);
+
+  MigrationRunner{std::filesystem::path(PIXELANEA_MIGRATIONS_DIR)}.apply_all(*connection);
+  REQUIRE(query_int(connection->handle(),
+                    "SELECT value FROM app_meta WHERE key = 'schema_version'") == 3);
+
+  std::filesystem::remove(db_path, ec);
+}

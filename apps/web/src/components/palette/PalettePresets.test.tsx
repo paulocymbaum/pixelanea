@@ -19,6 +19,9 @@ describe("PalettePresets", () => {
     expect(screen.getByText(copy.palettePresetRetro)).toBeInTheDocument();
     expect(screen.getByText(copy.palettePresetGameboy)).toBeInTheDocument();
     expect(screen.getByText(copy.palettePresetMonochrome)).toBeInTheDocument();
+    expect(screen.getByText(copy.palettePresetNes)).toBeInTheDocument();
+    expect(screen.getByText(copy.palettePresetPico8)).toBeInTheDocument();
+    expect(screen.getByText(copy.palettePresetPastel)).toBeInTheDocument();
   });
 
   it("applies a preset to the store", () => {

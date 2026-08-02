@@ -178,6 +178,16 @@ async function openBundle(path: string): Promise<void> {
 
 async function selectFileMenuItem(label: string): Promise<void> {
   fireEvent.keyDown(screen.getByRole("button", { name: "File" }), { key: "Enter" });
+  const exportLabels = new Set([
+    copy.fileMenuExportPng,
+    copy.fileMenuExportSpritesheet,
+    copy.fileMenuExportGif,
+  ]);
+  if (exportLabels.has(label)) {
+    await act(async () => {
+      fireEvent.click(screen.getByRole("menuitem", { name: copy.fileMenuExport }));
+    });
+  }
   await act(async () => {
     fireEvent.click(screen.getByRole("menuitem", { name: label }));
   });

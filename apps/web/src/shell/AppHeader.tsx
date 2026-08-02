@@ -13,7 +13,7 @@ import { Button } from "@/components/ui";
 import { OffPaletteExportDialog } from "@/components/project/OffPaletteExportDialog";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { FileMenu } from "./FileMenu";
-import { runPngExport, useOffPaletteExportGuard } from "./exportActions";
+import { runGifExport, runPngExport, runSpritesheetExport, useOffPaletteExportGuard } from "./exportActions";
 import { buildFileMenuItems } from "./fileMenuItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { ViewMenu } from "./ViewMenu";
@@ -50,10 +50,24 @@ export function AppHeader({
     });
   }, [offPaletteGuard.runGuardedExport]);
 
+  const handleExportSpritesheet = useCallback(() => {
+    runSpritesheetExport(offPaletteGuard.runGuardedExport).catch(() => {
+      // Export errors surface via sync/toast layers; header stays non-blocking.
+    });
+  }, [offPaletteGuard.runGuardedExport]);
+
+  const handleExportGif = useCallback(() => {
+    runGifExport(offPaletteGuard.runGuardedExport).catch(() => {
+      // Export errors surface via sync/toast layers; header stays non-blocking.
+    });
+  }, [offPaletteGuard.runGuardedExport]);
+
   const fileItems = buildFileMenuItems({
     fileActions,
     onImportImage,
     onExportPng: handleExportPng,
+    onExportSpritesheet: handleExportSpritesheet,
+    onExportGif: handleExportGif,
   });
 
   return (

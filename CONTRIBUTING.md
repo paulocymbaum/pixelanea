@@ -15,13 +15,16 @@ Thank you for helping build a free, local-first pixel art editor. This guide cov
 3. Start the dev stack (C++ API + Vite):
 
    ```bash
-   ./scripts/dev.sh
+   pnpm dev
    ```
 
 4. Run tests before opening a PR:
 
    ```bash
-   pnpm test
+   pnpm typecheck
+   pnpm test:unit
+   pnpm test:qa        # if you touched routes, guards, or I/O
+   pnpm test:smoke     # full smoke gate before merge
    ```
 
 ## Architecture rules
@@ -70,16 +73,17 @@ See `.cursor/skills/pixelanea-frontend-standards/SKILL.md` for detailed frontend
 - All user-facing strings live in `apps/web/src/content/`.
 - Use plain language — no error codes in toasts.
 - Confirm dialogs only for destructive actions (delete, overwrite, remove in-use color).
-- Post-MVP surfaces (spritesheet/GIF export, onion skin) are gated in `content/features.ts` — do not add new primary chrome without checking flags.
+- Post-MVP surfaces can be toggled in `content/features.ts` for experiments — defaults ship spritesheet, GIF, and onion skin.
 
 ## Testing
 
 | Layer | Command | When |
 |-------|---------|------|
-| Typecheck | `pnpm --filter @pixelanea/web exec tsc --noEmit` | Always |
-| Unit / integration | `pnpm --filter @pixelanea/web test` | Touched `apps/web` |
-| QA matrices | `pnpm --filter @pixelanea/web exec vitest run src/qa/` | Route guards, I/O, import, animation |
-| Backend | `pnpm test:backend` or `ctest --test-dir server/build` | Touched `server/` |
+| Typecheck | `pnpm typecheck` | Always |
+| Unit / integration | `pnpm test:unit` | Touched `apps/web` |
+| QA matrices | `pnpm test:qa` | Route guards, I/O, import, animation |
+| Backend unit | `ctest --test-dir server/build` | Touched `server/` |
+| Smoke gate | `pnpm test:smoke` (or `test:smoke:backend` / `test:smoke:frontend`) | Before merge; mirrors CI smoke steps |
 | E2E | `pnpm test:e2e` | User flows; install browsers with `pnpm test:e2e:install` first |
 | Sprint gate | `./scripts/ci-sprint1.sh` | Before sprint-close PRs |
 
@@ -87,8 +91,9 @@ QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MV
 
 ## Pull request checklist
 
-- [ ] `pnpm test` passes locally (or scoped commands for your change)
-- [ ] `pnpm --filter @pixelanea/web exec vitest run src/qa/` green if you touched routes, guards, or I/O
+- [ ] `pnpm typecheck` and `pnpm test:unit` pass locally (or scoped commands for your change)
+- [ ] `pnpm test:qa` green if you touched routes, guards, or I/O
+- [ ] `pnpm test:smoke` green before merge when touching build or integration paths
 - [ ] OpenAPI updated if API shape changed; client regenerated
 - [ ] No layer boundary violations (UI → API only)
 - [ ] New copy in `content/`, not inline in components

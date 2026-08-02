@@ -22,7 +22,7 @@ export function ResolutionStep({
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm text-secondary">{copy.importWizardResolutionHint}</p>
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {RESOLUTION_PRESETS.map((option) => (
           <Button
             key={option.size}

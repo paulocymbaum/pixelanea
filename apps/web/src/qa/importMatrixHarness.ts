@@ -8,6 +8,7 @@ import { getResolutionOption } from "@/components/import/resolutionPresets";
 import type { ResolutionPreset } from "@/components/import/resolutionPresets";
 import type { PalettePresetId } from "@/components/palette/palettePresets";
 import { palettePresetLabel } from "@/components/palette/palettePresets";
+import type { ImportColorCount, ImportPaletteMode } from "@/components/import/paletteImportOptions";
 import { copy } from "@/content/copy";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
@@ -91,6 +92,8 @@ export function resetImportSession(
     theme: "system",
     palettePanelWidth: 240,
     lastPalettePreset: null,
+    lastImportPaletteMode: "image",
+    lastImportColorCount: 8,
     hasVisited: false,
     lastEntryPath: "blank",
     lastResolution: 32,
@@ -333,7 +336,21 @@ export async function selectResolution(size: ResolutionPreset): Promise<void> {
 }
 
 export async function selectPalettePreset(id: PalettePresetId): Promise<void> {
+  await selectPaletteMode("style");
   await clickButton(palettePresetLabel(id));
+}
+
+export async function selectPaletteMode(mode: ImportPaletteMode): Promise<void> {
+  const label =
+    mode === "image"
+      ? copy.importWizardPaletteModeImage
+      : copy.importWizardPaletteModeStyle;
+  await clickButton(new RegExp(`${label}\\s+`));
+}
+
+export async function selectColorCount(count: ImportColorCount): Promise<void> {
+  const meta = copy.importWizardColorCountOption(count);
+  await clickButton(new RegExp(`${meta.label}\\s+${meta.description}`));
 }
 
 export async function toggleRemoveBackground(): Promise<void> {

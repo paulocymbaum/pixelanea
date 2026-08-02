@@ -57,6 +57,7 @@ import {
   resetImportSession,
   restoreFileReader,
   selectPalettePreset,
+  selectColorCount,
   selectResolution,
   stubMatchMedia,
   stubPreviewCanvas,
@@ -212,6 +213,9 @@ function installDefaultMocks(): void {
         width: body.targetWidth ?? 32,
         height: body.targetHeight ?? 32,
         fill: 1,
+        ...(body.maxColors
+          ? { palette: (savedPaletteColors ?? RETRO_COLORS).slice(0, body.maxColors) }
+          : {}),
       });
       lastPixelate = response;
       return { ok: true, response };
@@ -289,7 +293,7 @@ describe("QA-002 import matrix", () => {
       await clickNext();
       await selectResolution(32);
       await clickNext();
-      await selectPalettePreset("retro");
+      await selectColorCount(8);
       await clickNext();
 
       await waitForPreview(32);
@@ -300,9 +304,10 @@ describe("QA-002 import matrix", () => {
           targetHeight: 32,
           frameIndex: 0,
           removeBackground: true,
+          maxColors: 8,
         }),
       );
-      expect(saveImportPaletteMock).toHaveBeenCalledWith("proj-1", RETRO_COLORS);
+      expect(saveImportPaletteMock).not.toHaveBeenCalled();
       expect(createBlankProjectMock).toHaveBeenCalledWith(
         expect.objectContaining({ frameCount: 1 }),
       );
@@ -319,6 +324,8 @@ describe("QA-002 import matrix", () => {
       expect(state.gridHeight).toBe(32);
       expect(state.pixels[0]).toBe(1);
       expect(state.paletteColors[1]).toBe(RETRO_COLORS[0]);
+      expect(useSessionStore.getState().lastImportPaletteMode).toBe("image");
+      expect(useSessionStore.getState().lastImportColorCount).toBe(8);
       expect(useSessionStore.getState().lastEntryPath).toBe("import");
       expect(useSessionStore.getState().hasVisited).toBe(true);
     });
@@ -333,7 +340,7 @@ describe("QA-002 import matrix", () => {
         expect.objectContaining({ targetWidth: 16, targetHeight: 16 }),
       );
 
-      for (const size of [32, 64] as const) {
+      for (const size of [32, 64, 128] as const) {
         await clickStepTab("resolution");
         await selectResolution(size);
         await clickNext();
@@ -346,34 +353,109 @@ describe("QA-002 import matrix", () => {
         expect(previewCanvas().height).toBe(size);
       }
 
-      expect(useSessionStore.getState().lastResolution).toBe(64);
+      expect(useSessionStore.getState().lastResolution).toBe(128);
     });
 
-    it("[HP-003] palette presets quantize the preview to preset colors", async () => {
-      renderImportWizard();
-      await advanceToPaletteStep(imageFile("tree.png"), 16);
+    it(
+      "[HP-003] palette presets quantize the preview to preset colors",
+      async () => {
+        renderImportWizard();
+        await advanceToPaletteStep(imageFile("tree.png"), 16);
 
-      const cases = [
-        { id: "retro" as const, colors: RETRO_COLORS },
-        { id: "gameboy" as const, colors: GAMEBOY_COLORS },
-        { id: "monochrome" as const, colors: MONOCHROME_COLORS },
-      ];
+        const cases = [
+          { id: "retro" as const, colors: RETRO_COLORS },
+          { id: "gameboy" as const, colors: GAMEBOY_COLORS },
+          { id: "monochrome" as const, colors: MONOCHROME_COLORS },
+          { id: "nes" as const, colors: getPalettePreset("nes")!.colors },
+          { id: "pico8" as const, colors: getPalettePreset("pico8")!.colors },
+          { id: "pastel" as const, colors: getPalettePreset("pastel")!.colors },
+        ];
 
-      for (const [index, preset] of cases.entries()) {
-        if (index > 0) {
-          await clickStepTab("palette");
+        for (const [index, preset] of cases.entries()) {
+          if (index > 0) {
+            await clickStepTab("palette");
+          }
+          await selectPalettePreset(preset.id);
+          await clickNext();
+          await waitForPreview(16);
+
+          expect(saveImportPaletteMock).toHaveBeenLastCalledWith(
+            expect.any(String),
+            preset.colors,
+          );
+          expect(previewRgbAt(capture, 0, 0)).toEqual(hexToRgb(preset.colors[0]!));
+          expect(useSessionStore.getState().lastPalettePreset).toBe(preset.id);
+          expect(useSessionStore.getState().lastImportPaletteMode).toBe("style");
         }
-        await selectPalettePreset(preset.id);
+      },
+      15_000,
+    );
+
+    it("[HP-005] match-image mode sends maxColors without preset PUT", async () => {
+      const extracted = ["#112233", "#445566", "#778899", "#AABBCC"];
+      pixelateImageMock.mockImplementation(
+        async (_projectId: string, body: PixelateImportRequest) => {
+          const response = pixelateResponse({
+            width: body.targetWidth ?? 16,
+            height: body.targetHeight ?? 16,
+            fill: 1,
+            palette: extracted.slice(0, body.maxColors ?? 8),
+          });
+          lastPixelate = response;
+          return { ok: true, response };
+        },
+      );
+
+      renderImportWizard();
+      await advanceToPaletteStep(imageFile("logo.png"), 16);
+
+      for (const count of [4, 8, 16] as const) {
+        await selectColorCount(count);
         await clickNext();
         await waitForPreview(16);
-
-        expect(saveImportPaletteMock).toHaveBeenLastCalledWith(
+        expect(pixelateImageMock).toHaveBeenLastCalledWith(
           expect.any(String),
-          preset.colors,
+          expect.objectContaining({ maxColors: count }),
         );
-        expect(previewRgbAt(capture, 0, 0)).toEqual(hexToRgb(preset.colors[0]!));
-        expect(useSessionStore.getState().lastPalettePreset).toBe(preset.id);
+        expect(saveImportPaletteMock).not.toHaveBeenCalled();
+        expect(useSessionStore.getState().lastImportColorCount).toBe(count);
+        if (count !== 16) {
+          await clickStepTab("palette");
+        }
       }
+    });
+
+    it("[HP-006] high-resolution import exposes extra color counts and sends maxColors", async () => {
+      pixelateImageMock.mockImplementation(
+        async (_projectId: string, body: PixelateImportRequest) => {
+          const response = pixelateResponse({
+            width: body.targetWidth ?? 128,
+            height: body.targetHeight ?? 128,
+            fill: 1,
+            palette: Array.from({ length: body.maxColors ?? 8 }, (_, i) =>
+              `#${String(i).padStart(2, "0")}1111`,
+            ),
+          });
+          lastPixelate = response;
+          return { ok: true, response };
+        },
+      );
+
+      renderImportWizard();
+      await advanceToPaletteStep(imageFile("landscape.png"), 128);
+      await selectColorCount(64);
+      await clickNext();
+      await waitForPreview(128);
+
+      expect(pixelateImageMock).toHaveBeenLastCalledWith(
+        "proj-1",
+        expect.objectContaining({
+          targetWidth: 128,
+          targetHeight: 128,
+          maxColors: 64,
+        }),
+      );
+      expect(useSessionStore.getState().lastImportColorCount).toBe(64);
     });
 
     it("[HP-004] background removal is on by default and keys out the background", async () => {

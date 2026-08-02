@@ -293,7 +293,7 @@ Active tool state uses **accent background + bold label + 3px left border** — 
 
 Three equal-weight entry paths:
 
-1. **Start blank** — resolution presets (16×16, 32×32, 64×64)
+1. **Start blank** — resolution presets (16×16 through 256×256)
 2. **From image** — import / pixelate wizard
 3. **Animation** — toggle or card: 8 / 16 / 32 frames
 
@@ -329,7 +329,7 @@ Illustration-free. One sentence + primary CTA. No decorative mascots.
 - Swatches in grid; active swatch: 2px accent ring + scale 1.05
 - Add / remove / reorder colors
 - **Palette lock** toggle (visible, not buried)
-- Curated presets: Retro, Gameboy, Monochrome
+- Curated presets: Retro, Gameboy, Monochrome, NES, Pico-8, Pastel; import wizard also offers Match my image (4/8/16 colors)
 - Optional color index overlay (View → Show technical info)
 
 ### Frame strip

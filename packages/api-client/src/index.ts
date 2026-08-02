@@ -17,6 +17,7 @@ export {
   type PixelateImportResponse,
   type DuplicateFramesRequest,
   type DuplicateFramesResponse,
+  type ExportGifRequest,
   type CopyFrameRequest,
   type CopyFrameResponse,
   type ReorderFramesRequest,

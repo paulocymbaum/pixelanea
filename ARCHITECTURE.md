@@ -608,8 +608,8 @@ Pixelanea uses three complementary test layers:
 
 | Layer | Location | Command | Purpose |
 |-------|----------|---------|---------|
-| Unit / integration | `apps/web/src/**/*.test.{ts,tsx}`, `server/` Catch2 | `pnpm test` | Tools, hooks, API wrappers, domain |
-| QA matrices | `apps/web/src/qa/*Matrix.test.tsx` | `vitest run src/qa/` | Route guards, import wizard, I/O, animation regressions |
+| Unit / integration | `apps/web/src/**/*.test.{ts,tsx}`, `server/` Catch2 | `pnpm test:unit`, `ctest --test-dir server/build` | Tools, hooks, API wrappers, domain |
+| QA matrices | `apps/web/src/qa/*Matrix.test.tsx` | `pnpm test:qa` | Route guards, import wizard, I/O, animation regressions |
 | E2E | `e2e/*.spec.ts` | `pnpm test:e2e` | Browser smoke (`@smoke`) and navigation (`@routing`) |
 
 Playwright starts the stack via `scripts/e2e-webserver.sh` (C++ API + Vite). The sprint gate script `scripts/ci-sprint1.sh` runs typecheck, QA matrices, unit tests, optional E2E, and backend tests locally.

@@ -68,22 +68,26 @@ describe("AppHeader", () => {
     );
   });
 
-  it("shows Export PNG only when advanced export flags are off", async () => {
+  it("shows Export submenu with PNG, spritesheet, and GIF", async () => {
     render(<AppHeader onNewProject={() => {}} />);
 
     fireEvent.keyDown(screen.getByRole("button", { name: "File" }), {
       key: "Enter",
     });
 
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: copy.fileMenuExport }),
+    );
+
     expect(
       await screen.findByRole("menuitem", { name: copy.fileMenuExportPng }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("menuitem", { name: copy.fileMenuExportSpritesheet }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("menuitem", { name: copy.fileMenuExportSpritesheet }),
+    ).toBeInTheDocument();
     expect(
-      screen.queryByRole("menuitem", { name: copy.fileMenuExportGif }),
-    ).not.toBeInTheDocument();
+      screen.getByRole("menuitem", { name: copy.fileMenuExportGif }),
+    ).toBeInTheDocument();
   });
 
   it("shows Import image when onImportImage is provided", async () => {
@@ -216,6 +220,10 @@ describe("AppHeader", () => {
       key: "Enter",
     });
 
+    fireEvent.click(
+      await screen.findByRole("menuitem", { name: copy.fileMenuExport }),
+    );
+
     const exportItem = await screen.findByRole("menuitem", {
       name: copy.fileMenuExportPng,
     });
@@ -225,6 +233,9 @@ describe("AppHeader", () => {
       expect(exportFrameToPngMock).toHaveBeenCalledTimes(1);
     });
     expect(notifyExportSuccessMock).toHaveBeenCalledTimes(1);
-    expect(notifyExportSuccessMock).toHaveBeenCalledWith("My-Art-frame-1.png");
+    expect(notifyExportSuccessMock).toHaveBeenCalledWith(
+      "My-Art-frame-1.png",
+      "png",
+    );
   });
 });

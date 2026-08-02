@@ -1,6 +1,7 @@
 import { copy } from "@/content/copy";
+import { features } from "@/content/features";
 import { hasActiveColorFilters } from "@/lib/colorFilters";
-import { useEditorStore } from "@/state/editorStore";
+import { useEditorStore, useOnionSkinEnabled } from "@/state/editorStore";
 import { useCallback, useEffect, useRef } from "react";
 import {
   isCellInBounds,
@@ -25,7 +26,9 @@ export function Canvas() {
   const pixels = useEditorStore((s) => s.pixels);
   const paletteColors = useEditorStore((s) => s.paletteColors);
   const frameCount = useEditorStore((s) => s.frameCount);
+  const activeFrameIndex = useEditorStore((s) => s.activeFrameIndex);
   const framePixelsByIndex = useEditorStore((s) => s.framePixelsByIndex);
+  const onionSkinEnabled = useOnionSkinEnabled();
   const colorFilters = useEditorStore((s) => s.colorFilters);
   const placingLighting = useEditorStore((s) => s.placingLighting);
   const addColorFilterLightingPoint = useEditorStore(
@@ -58,6 +61,18 @@ export function Canvas() {
     const showFilterPreview =
       !readOnly && hasActiveColorFilters(colorFilters);
 
+    let onionSkinPixels: Uint8Array | undefined;
+    if (
+      features.onionSkin &&
+      onionSkinEnabled &&
+      !isPlaying &&
+      !readOnly &&
+      frameCount > 1 &&
+      activeFrameIndex > 0
+    ) {
+      onionSkinPixels = framePixelsByIndex[activeFrameIndex - 1];
+    }
+
     renderGrid({
       ctx,
       cssWidth,
@@ -70,6 +85,7 @@ export function Canvas() {
       tokens,
       colorFilters: showFilterPreview ? colorFilters : undefined,
       showLightingMarkers: showFilterPreview && !isPlaying,
+      onionSkinPixels,
     });
   }, [
     gridWidth,
@@ -82,6 +98,10 @@ export function Canvas() {
     colorFilters,
     readOnly,
     isPlaying,
+    frameCount,
+    activeFrameIndex,
+    framePixelsByIndex,
+    onionSkinEnabled,
   ]);
 
   useEffect(() => {
