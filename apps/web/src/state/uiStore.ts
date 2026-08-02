@@ -1,8 +1,15 @@
 import { create } from "zustand";
 import { useShallow } from "zustand/react/shallow";
 
+export type PalettePanelSection =
+  | "swatches"
+  | "presets"
+  | "shading"
+  | "filters";
+
 type UiState = {
   paletteCollapsed: boolean;
+  palettePanelSection: PalettePanelSection;
   showTechnicalInfo: boolean;
   apiStatus: "checking" | "connected" | "disconnected";
   apiVersion: string | null;
@@ -12,6 +19,7 @@ type UiState = {
   toastMessage: string | null;
   shortcutsOverlayOpen: boolean;
   setPaletteCollapsed: (collapsed: boolean) => void;
+  setPalettePanelSection: (section: PalettePanelSection) => void;
   setShowTechnicalInfo: (show: boolean) => void;
   setApiStatus: (status: UiState["apiStatus"], version?: string | null) => void;
   setOnboardingDismissed: (dismissed: boolean) => void;
@@ -25,6 +33,7 @@ type UiState = {
 
 export const useUiStore = create<UiState>((set) => ({
   paletteCollapsed: false,
+  palettePanelSection: "swatches",
   showTechnicalInfo: false,
   apiStatus: "checking",
   apiVersion: null,
@@ -34,6 +43,7 @@ export const useUiStore = create<UiState>((set) => ({
   toastMessage: null,
   shortcutsOverlayOpen: false,
   setPaletteCollapsed: (collapsed) => set({ paletteCollapsed: collapsed }),
+  setPalettePanelSection: (section) => set({ palettePanelSection: section }),
   setShowTechnicalInfo: (show) => set({ showTechnicalInfo: show }),
   setApiStatus: (status, version = null) =>
     set({ apiStatus: status, apiVersion: version }),
@@ -48,6 +58,8 @@ export const useUiStore = create<UiState>((set) => ({
 }));
 
 export const usePaletteCollapsed = () => useUiStore((s) => s.paletteCollapsed);
+export const usePalettePanelSection = () =>
+  useUiStore((s) => s.palettePanelSection);
 export const useApiStatus = () =>
   useUiStore(
     useShallow((s) => ({ status: s.apiStatus, version: s.apiVersion })),

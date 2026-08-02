@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { FrameStripPlaceholder } from "@/components/frames/FrameStripPlaceholder";
-import { PaletteMoreToolsSection } from "@/components/palette/PaletteMoreToolsSection";
+import { PaletteSectionRail } from "@/components/palette/PaletteSectionRail";
+import { TooltipProvider } from "@/components/ui";
 import { UnsavedChangesDialog } from "@/components/project/UnsavedChangesDialog";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
@@ -139,17 +140,27 @@ describe("Sprint UI accessibility (S1-909)", () => {
     });
   });
 
-  describe("PaletteMoreToolsSection", () => {
-    it("expands via keyboard on summary", () => {
-      render(<PaletteMoreToolsSection />);
+  describe("PaletteSectionRail", () => {
+    it("exposes section tabs with aria-current on the active tab", () => {
+      render(
+        <TooltipProvider>
+          <PaletteSectionRail />
+        </TooltipProvider>,
+      );
 
-      const summary = screen.getByText(copy.paletteMoreToolsSummary);
-      summary.focus();
-      fireEvent.keyDown(summary, { key: " " });
+      const swatches = screen.getByRole("button", {
+        name: copy.palettePanelSectionSwatches,
+      });
+      expect(swatches).toHaveAttribute("aria-current", "true");
 
+      fireEvent.click(
+        screen.getByRole("button", { name: copy.palettePanelSectionShading }),
+      );
+
+      expect(swatches).not.toHaveAttribute("aria-current");
       expect(
-        screen.getByText(copy.paletteShadingSectionLabel),
-      ).toBeInTheDocument();
+        screen.getByRole("button", { name: copy.palettePanelSectionShading }),
+      ).toHaveAttribute("aria-current", "true");
     });
   });
 });

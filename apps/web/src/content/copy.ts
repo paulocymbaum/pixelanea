@@ -72,6 +72,10 @@ export const copy = {
   colorFiltersApplyHint:
     "Preview is non-destructive. Apply bakes the look into the current frame pixels.",
   palettePresetsLabel: "Presets",
+  palettePanelSectionSwatches: "Swatches",
+  palettePanelSectionPresets: "Presets",
+  palettePanelSectionShading: "Shading palettes",
+  palettePanelSectionFilters: "Color filters",
   paletteMoreToolsSummary: "More tools",
   palettePresetRetro: "Retro",
   palettePresetGameboy: "Gameboy",

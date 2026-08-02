@@ -272,7 +272,7 @@ Active tool state uses **accent background + bold label + 3px left border** — 
 |--------|----------|
 | Canvas | Minimum 60% viewport width; always centered hero |
 | Left panel | Tools — icon + label |
-| Right panel | Palette — collapsible, state remembered per session |
+| Right panel | Palette — collapsible section rail (Swatches, Presets, Shading, Filters); state remembered per session |
 | Bottom strip | Frame picker + animation controls when `frameCount > 1` |
 | Header | Logo lockup, menus, project name, theme toggle |
 
@@ -495,7 +495,7 @@ import { Button, Dialog, DialogContent, Slider, Tooltip, toolButtonVariants } fr
 |--------|--------|----------------------|
 | Header | `AppHeader` | `bg-surface`, `border-border`, `text-md` |
 | Tool rail | `LeftToolRail` | `toolButtonVariants`, Lucide 20px / stroke 1.5 |
-| Palette panel | `RightPalettePanel` | `transition-panel`, collapsible width from `sessionStore` |
+| Palette panel | `RightPalettePanel` | `transition-panel`, `PaletteSectionRail` (4 tabs), collapsible width from `sessionStore` |
 | Canvas area | `EditorLayout` | `bg-canvas`, `min-w-[60vw]` on canvas column |
 | Frame strip | `BottomFrameStrip` | Hidden when `frameCount ≤ 1`; `border-accent` on active frame |
 

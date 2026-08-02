@@ -40,154 +40,156 @@ export function ColorFiltersSection({ className }: ColorFiltersSectionProps) {
 
   return (
     <section
-      className={cn("flex flex-col gap-3 border-t border-border p-3", className)}
+      className={cn("flex flex-col border-t border-border", className)}
       aria-label={copy.colorFiltersSectionLabel}
     >
-      <span className="text-sm font-medium text-primary">
-        {copy.colorFiltersSectionLabel}
-      </span>
-      <p className="text-sm text-secondary">{copy.colorFiltersApplyHint}</p>
-
-      <label className="flex items-center gap-2 text-sm text-primary">
-        <input
-          type="checkbox"
-          checked={colorFilters.overlayEnabled}
-          disabled={disabled}
-          onChange={(event) => setOverlayEnabled(event.target.checked)}
-          className="h-4 w-4 rounded border-border accent-accent"
-        />
-        {copy.colorFiltersOverlayEnabled}
-      </label>
-
-      {colorFilters.overlayEnabled ? (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-3">
-            <div
-              className="h-10 w-10 shrink-0 rounded-md border-2 border-border"
-              style={{ backgroundColor: colorFilters.overlayColor }}
-              aria-hidden="true"
-            />
-            <input
-              type="color"
-              value={colorFilters.overlayColor}
-              disabled={disabled}
-              onChange={(event) => setOverlayColor(event.target.value)}
-              className="h-10 min-w-0 flex-1 cursor-pointer rounded-md border border-border bg-surface p-1 disabled:opacity-50"
-              aria-label={copy.colorFiltersOverlayColorLabel}
-            />
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between text-sm text-primary">
-              <span>{copy.colorFiltersOverlayOpacityLabel}</span>
-              <span className="text-secondary">
-                {copy.colorFiltersOverlayOpacityValue(
-                  Math.round(colorFilters.overlayOpacity * 100),
-                )}
-              </span>
-            </div>
-            <Slider
-              min={0}
-              max={100}
-              step={1}
-              disabled={disabled}
-              value={[Math.round(colorFilters.overlayOpacity * 100)]}
-              onValueChange={([value]) =>
-                setOverlayOpacity((value ?? 0) / 100)
-              }
-              aria-label={copy.colorFiltersOverlayOpacityLabel}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3 p-3">
         <span className="text-sm font-medium text-primary">
-          {copy.colorFiltersLightingLabel}
+          {copy.colorFiltersSectionLabel}
         </span>
-        <Button
-          type="button"
-          variant={placingLighting ? "primary" : "secondary"}
-          disabled={disabled}
-          aria-pressed={placingLighting}
-          onClick={() => setPlacingLighting(!placingLighting)}
-          className="w-full"
-        >
-          {placingLighting
-            ? copy.colorFiltersPlaceLightingOn
-            : copy.colorFiltersPlaceLighting}
-        </Button>
+        <p className="text-sm text-secondary">{copy.colorFiltersApplyHint}</p>
+
+        <label className="flex items-center gap-2 text-sm text-primary">
+          <input
+            type="checkbox"
+            checked={colorFilters.overlayEnabled}
+            disabled={disabled}
+            onChange={(event) => setOverlayEnabled(event.target.checked)}
+            className="h-4 w-4 rounded border-border accent-accent"
+          />
+          {copy.colorFiltersOverlayEnabled}
+        </label>
+
+        {colorFilters.overlayEnabled ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className="h-10 w-10 shrink-0 rounded-md border-2 border-border"
+                style={{ backgroundColor: colorFilters.overlayColor }}
+                aria-hidden="true"
+              />
+              <input
+                type="color"
+                value={colorFilters.overlayColor}
+                disabled={disabled}
+                onChange={(event) => setOverlayColor(event.target.value)}
+                className="h-10 min-w-0 flex-1 cursor-pointer rounded-md border border-border bg-surface p-1 disabled:opacity-50"
+                aria-label={copy.colorFiltersOverlayColorLabel}
+              />
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between text-sm text-primary">
+                <span>{copy.colorFiltersOverlayOpacityLabel}</span>
+                <span className="text-secondary">
+                  {copy.colorFiltersOverlayOpacityValue(
+                    Math.round(colorFilters.overlayOpacity * 100),
+                  )}
+                </span>
+              </div>
+              <Slider
+                min={0}
+                max={100}
+                step={1}
+                disabled={disabled}
+                value={[Math.round(colorFilters.overlayOpacity * 100)]}
+                onValueChange={([value]) =>
+                  setOverlayOpacity((value ?? 0) / 100)
+                }
+                aria-label={copy.colorFiltersOverlayOpacityLabel}
+              />
+            </div>
+          </div>
+        ) : null}
+
+        <div className="flex flex-col gap-2">
+          <span className="text-sm font-medium text-primary">
+            {copy.colorFiltersLightingLabel}
+          </span>
+          <Button
+            type="button"
+            variant={placingLighting ? "primary" : "secondary"}
+            disabled={disabled}
+            aria-pressed={placingLighting}
+            onClick={() => setPlacingLighting(!placingLighting)}
+            className="w-full"
+          >
+            {placingLighting
+              ? copy.colorFiltersPlaceLightingOn
+              : copy.colorFiltersPlaceLighting}
+          </Button>
+        </div>
+
+        {colorFilters.lightingPoints.length > 0 ? (
+          <ul className="flex flex-col gap-3">
+            {colorFilters.lightingPoints.map((point, index) => (
+              <li
+                key={point.id}
+                className="flex flex-col gap-2 rounded-md border border-border p-2"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-medium text-primary">
+                    {copy.colorFiltersLightingPointLabel(index)} ({point.x},{" "}
+                    {point.y})
+                  </span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="default"
+                    disabled={disabled}
+                    onClick={() => removeLightingPoint(point.id)}
+                    className="min-h-8 px-2 text-sm"
+                  >
+                    {copy.colorFiltersRemoveLighting}
+                  </Button>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-sm text-primary">
+                    <span>{copy.colorFiltersLightingRadiusLabel}</span>
+                    <span className="text-secondary">{point.radius}</span>
+                  </div>
+                  <Slider
+                    min={LIGHTING_RADIUS_MIN}
+                    max={LIGHTING_RADIUS_MAX}
+                    step={1}
+                    disabled={disabled}
+                    value={[point.radius]}
+                    onValueChange={([value]) =>
+                      updateLightingPoint(point.id, { radius: value ?? point.radius })
+                    }
+                    aria-label={copy.colorFiltersLightingRadiusLabel}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-sm text-primary">
+                    <span>{copy.colorFiltersLightingIntensityLabel}</span>
+                    <span className="text-secondary">
+                      {Math.round(point.intensity * 100)}%
+                    </span>
+                  </div>
+                  <Slider
+                    min={LIGHTING_INTENSITY_MIN * 100}
+                    max={LIGHTING_INTENSITY_MAX * 100}
+                    step={5}
+                    disabled={disabled}
+                    value={[Math.round(point.intensity * 100)]}
+                    onValueChange={([value]) =>
+                      updateLightingPoint(point.id, {
+                        intensity: (value ?? 0) / 100,
+                      })
+                    }
+                    aria-label={copy.colorFiltersLightingIntensityLabel}
+                  />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
-      {colorFilters.lightingPoints.length > 0 ? (
-        <ul className="flex flex-col gap-3">
-          {colorFilters.lightingPoints.map((point, index) => (
-            <li
-              key={point.id}
-              className="flex flex-col gap-2 rounded-md border border-border p-2"
-            >
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-sm font-medium text-primary">
-                  {copy.colorFiltersLightingPointLabel(index)} ({point.x},{" "}
-                  {point.y})
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="default"
-                  disabled={disabled}
-                  onClick={() => removeLightingPoint(point.id)}
-                  className="min-h-8 px-2 text-sm"
-                >
-                  {copy.colorFiltersRemoveLighting}
-                </Button>
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-sm text-primary">
-                  <span>{copy.colorFiltersLightingRadiusLabel}</span>
-                  <span className="text-secondary">{point.radius}</span>
-                </div>
-                <Slider
-                  min={LIGHTING_RADIUS_MIN}
-                  max={LIGHTING_RADIUS_MAX}
-                  step={1}
-                  disabled={disabled}
-                  value={[point.radius]}
-                  onValueChange={([value]) =>
-                    updateLightingPoint(point.id, { radius: value ?? point.radius })
-                  }
-                  aria-label={copy.colorFiltersLightingRadiusLabel}
-                />
-              </div>
-
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between text-sm text-primary">
-                  <span>{copy.colorFiltersLightingIntensityLabel}</span>
-                  <span className="text-secondary">
-                    {Math.round(point.intensity * 100)}%
-                  </span>
-                </div>
-                <Slider
-                  min={LIGHTING_INTENSITY_MIN * 100}
-                  max={LIGHTING_INTENSITY_MAX * 100}
-                  step={5}
-                  disabled={disabled}
-                  value={[Math.round(point.intensity * 100)]}
-                  onValueChange={([value]) =>
-                    updateLightingPoint(point.id, {
-                      intensity: (value ?? 0) / 100,
-                    })
-                  }
-                  aria-label={copy.colorFiltersLightingIntensityLabel}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
-      <div className="flex flex-col gap-2">
+      <div className="sticky bottom-0 flex flex-col gap-2 border-t border-border bg-surface p-3">
         <Button
           type="button"
           variant="primary"

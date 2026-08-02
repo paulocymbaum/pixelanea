@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui";
 import { copy } from "@/content/copy";
 import { cn } from "@/lib/cn";
 import {
@@ -70,42 +71,55 @@ export function PaletteActions({ className }: PaletteActionsProps) {
     colorDialogMode === "add" ? copy.paletteDefaultNewColor : activeHex;
 
   return (
-    <div className={cn("flex flex-col gap-2 border-t border-border p-3", className)}>
-      <div className="flex flex-wrap gap-2">
-        <Button
-          type="button"
-          variant="secondary"
-          size="default"
-          disabled={!canAdd || paletteLocked}
-          onClick={() => openColorDialog("add")}
-          className="min-h-10"
-        >
-          <Plus className="h-4 w-4" strokeWidth={1.5} />
-          {copy.paletteAddColor}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="default"
-          disabled={paletteLocked}
-          onClick={() => openColorDialog("edit")}
-          className="min-h-10"
-        >
-          <Pencil className="h-4 w-4" strokeWidth={1.5} />
-          {copy.paletteEditColor}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="default"
-          disabled={!canRemove || paletteLocked}
-          onClick={handleRemove}
-          className="min-h-10"
-        >
-          <Minus className="h-4 w-4" strokeWidth={1.5} />
-          {copy.paletteRemoveColor}
-        </Button>
-      </div>
+    <div className={cn("flex gap-2 border-t border-border p-3", className)}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            disabled={!canAdd || paletteLocked}
+            onClick={() => openColorDialog("add")}
+            className="min-h-10 min-w-10"
+            aria-label={copy.paletteAddColor}
+          >
+            <Plus className="h-5 w-5" strokeWidth={1.5} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{copy.paletteAddColor}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            disabled={paletteLocked}
+            onClick={() => openColorDialog("edit")}
+            className="min-h-10 min-w-10"
+            aria-label={copy.paletteEditColor}
+          >
+            <Pencil className="h-5 w-5" strokeWidth={1.5} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{copy.paletteEditColor}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            disabled={!canRemove || paletteLocked}
+            onClick={handleRemove}
+            className="min-h-10 min-w-10"
+            aria-label={copy.paletteRemoveColor}
+          >
+            <Minus className="h-5 w-5" strokeWidth={1.5} />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{copy.paletteRemoveColor}</TooltipContent>
+      </Tooltip>
 
       <PaletteColorDialog
         open={colorDialogOpen}
