@@ -18,4 +18,7 @@ export function stubCanvasEnvironment() {
     lineTo: vi.fn(),
     stroke: vi.fn(),
   } as unknown as CanvasRenderingContext2D);
+
+  HTMLCanvasElement.prototype.setPointerCapture = vi.fn();
+  HTMLCanvasElement.prototype.releasePointerCapture = vi.fn();
 }

@@ -1,15 +1,18 @@
 import { Button } from "@/components/ui/Button";
+import { copy } from "@/content/copy";
 import { cn } from "@/lib/cn";
 import {
   PALETTE_PRESETS,
   palettePresetLabel,
   type PalettePreset,
-  type PalettePresetId,
+  type PaletteSelectionId,
 } from "./palettePresets";
 
 export type PalettePresetGridProps = {
-  selectedId?: PalettePresetId | null;
+  selectedId?: PaletteSelectionId | null;
   onSelect: (preset: PalettePreset) => void;
+  onSelectSource?: () => void;
+  showSourcePalette?: boolean;
   disabled?: boolean;
   showSwatchPreview?: boolean;
   className?: string;
@@ -18,17 +21,33 @@ export type PalettePresetGridProps = {
 export function PalettePresetGrid({
   selectedId = null,
   onSelect,
+  onSelectSource,
+  showSourcePalette = false,
   disabled = false,
   showSwatchPreview = false,
   className,
 }: PalettePresetGridProps) {
-  const selectedPreset = selectedId
-    ? PALETTE_PRESETS.find((preset) => preset.id === selectedId)
-    : undefined;
+  const selectedPreset =
+    selectedId && selectedId !== "source"
+      ? PALETTE_PRESETS.find((preset) => preset.id === selectedId)
+      : undefined;
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       <div className="flex flex-wrap gap-2">
+        {showSourcePalette && onSelectSource ? (
+          <Button
+            type="button"
+            variant={selectedId === "source" ? "primary" : "secondary"}
+            size="default"
+            disabled={disabled}
+            onClick={onSelectSource}
+            className="min-h-10"
+            aria-pressed={selectedId === "source"}
+          >
+            {copy.palettePresetSource}
+          </Button>
+        ) : null}
         {PALETTE_PRESETS.map((preset) => (
           <Button
             key={preset.id}
@@ -55,6 +74,9 @@ export function PalettePresetGrid({
             />
           ))}
         </div>
+      ) : null}
+      {showSwatchPreview && selectedId === "source" ? (
+        <p className="text-sm text-secondary">{copy.palettePresetSource}</p>
       ) : null}
     </div>
   );

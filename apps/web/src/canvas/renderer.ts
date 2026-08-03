@@ -53,6 +53,11 @@ export type RepaintGridCellsOptions = {
 
 const CHECKER_CELL_PX = 8;
 
+const lastHiDpiSize = new WeakMap<
+  HTMLCanvasElement,
+  { width: number; height: number; dpr: number }
+>();
+
 export function readCanvasTokens(element: HTMLElement): CanvasTokens {
   const style = getComputedStyle(element);
   return {
@@ -68,8 +73,25 @@ export function setupHiDpiCanvas(
   cssHeight: number,
 ): CanvasRenderingContext2D {
   const dpr = window.devicePixelRatio || 1;
-  canvas.width = Math.max(1, Math.round(cssWidth * dpr));
-  canvas.height = Math.max(1, Math.round(cssHeight * dpr));
+  const pixelWidth = Math.max(1, Math.round(cssWidth * dpr));
+  const pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
+  const last = lastHiDpiSize.get(canvas);
+
+  if (
+    !last ||
+    last.width !== pixelWidth ||
+    last.height !== pixelHeight ||
+    last.dpr !== dpr
+  ) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+    lastHiDpiSize.set(canvas, {
+      width: pixelWidth,
+      height: pixelHeight,
+      dpr,
+    });
+  }
+
   canvas.style.width = `${cssWidth}px`;
   canvas.style.height = `${cssHeight}px`;
 

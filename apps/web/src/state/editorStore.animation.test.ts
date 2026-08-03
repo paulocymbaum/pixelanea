@@ -18,6 +18,24 @@ describe("editorStore palette presets and lock", () => {
     const state = useEditorStore.getState();
     expect(state.paletteColors).toEqual(["#111111", "#EEEEEE"]);
     expect(state.isPaletteDirty).toBe(true);
+    expect(state.undoStack).toHaveLength(1);
+  });
+
+  it("undoes palette preset apply", () => {
+    const original = [...DEFAULT_PALETTE_COLORS];
+    useEditorStore.setState({
+      paletteColors: original,
+      activeColorIndex: 1,
+      undoStack: [],
+    });
+
+    useEditorStore.getState().applyPalettePreset(["#111111", "#EEEEEE"]);
+    useEditorStore.getState().undo();
+
+    const state = useEditorStore.getState();
+    expect(state.paletteColors).toEqual(original);
+    expect(state.undoStack).toHaveLength(0);
+    expect(state.redoStack).toHaveLength(1);
   });
 
   it("rejects preset apply when locked", () => {

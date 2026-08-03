@@ -8,7 +8,13 @@ type PalettePresetsProps = {
 };
 
 export function PalettePresets({ className }: PalettePresetsProps) {
-  const { applyPreset, locked, lastPreset } = usePalettePresetApply();
+  const {
+    applyPreset,
+    applySourcePalette,
+    hasSourcePalette,
+    locked,
+    lastPreset,
+  } = usePalettePresetApply();
 
   return (
     <div className={cn("flex flex-col gap-2 border-t border-border p-3", className)}>
@@ -18,6 +24,8 @@ export function PalettePresets({ className }: PalettePresetsProps) {
       <PalettePresetGrid
         selectedId={lastPreset}
         disabled={locked}
+        showSourcePalette={hasSourcePalette}
+        onSelectSource={applySourcePalette}
         onSelect={(preset) => applyPreset(preset.id, preset.colors)}
       />
     </div>

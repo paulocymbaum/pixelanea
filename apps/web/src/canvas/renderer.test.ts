@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
-import { ONION_SKIN_OPACITY, renderGrid, repaintGridCells } from "./renderer";
+import { ONION_SKIN_OPACITY, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
 
 function createMockContext() {
   const alphaLog: number[] = [];
@@ -214,5 +214,45 @@ describe("repaintGridCells stroke overlay", () => {
 
     expect(fillStyles).toContain("#00ff00");
     expect(fillStyles).not.toContain("#ff0000");
+  });
+});
+
+describe("setupHiDpiCanvas", () => {
+  it("does not reset backing store when CSS size is unchanged", () => {
+    const widthSets: number[] = [];
+    const heightSets: number[] = [];
+    const canvas = document.createElement("canvas");
+    let internalWidth = 0;
+    let internalHeight = 0;
+
+    Object.defineProperty(canvas, "width", {
+      get: () => internalWidth,
+      set: (value: number) => {
+        widthSets.push(value);
+        internalWidth = value;
+      },
+      configurable: true,
+    });
+    Object.defineProperty(canvas, "height", {
+      get: () => internalHeight,
+      set: (value: number) => {
+        heightSets.push(value);
+        internalHeight = value;
+      },
+      configurable: true,
+    });
+
+    const ctx = {
+      setTransform: vi.fn(),
+    };
+    vi.spyOn(canvas, "getContext").mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+
+    setupHiDpiCanvas(canvas, 320, 240);
+    setupHiDpiCanvas(canvas, 320, 240);
+
+    expect(widthSets).toHaveLength(1);
+    expect(heightSets).toHaveLength(1);
   });
 });

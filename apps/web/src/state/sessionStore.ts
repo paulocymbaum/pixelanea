@@ -5,7 +5,7 @@ import type {
   ImportColorCount,
   ImportPaletteMode,
 } from "@/components/import/paletteImportOptions";
-import type { PalettePresetId } from "@/components/palette/palettePresets";
+import type { PaletteSelectionId } from "@/components/palette/palettePresets";
 import type { ResolutionPreset } from "@/components/import/resolutionPresets";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
 import type { CanvasSize } from "@/components/project/canvasSize";
@@ -22,7 +22,7 @@ type SessionState = {
   theme: ThemeMode | "system";
   palettePanelWidth: number;
   palettePanelSection: PalettePanelSection;
-  lastPalettePreset: PalettePresetId | null;
+  lastPalettePreset: PaletteSelectionId | null;
   lastImportPaletteMode: ImportPaletteMode;
   lastImportColorCount: ImportColorCount;
   hasVisited: boolean;
@@ -34,7 +34,7 @@ type SessionState = {
   setTheme: (theme: SessionState["theme"]) => void;
   setPalettePanelWidth: (width: number) => void;
   setPalettePanelSection: (section: PalettePanelSection) => void;
-  setLastPalettePreset: (preset: PalettePresetId | null) => void;
+  setLastPalettePreset: (preset: PaletteSelectionId | null) => void;
   setLastImportPaletteMode: (mode: ImportPaletteMode) => void;
   setLastImportColorCount: (count: ImportColorCount) => void;
   setHasVisited: (visited: boolean) => void;

@@ -6,4 +6,5 @@ export const tools: Record<ToolId, string> = {
   eyedropper: "Eyedropper",
   fill: "Fill",
   line: "Line",
+  hand: "Hand",
 };

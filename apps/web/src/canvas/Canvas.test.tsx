@@ -47,4 +47,13 @@ describe("Canvas", () => {
 
     expect(screen.queryByText(copy.emptyCanvasHint)).not.toBeInTheDocument();
   });
+
+  it("uses the hand tool cursor when hand is active", () => {
+    useEditorStore.setState({ activeTool: "hand" });
+
+    render(<Canvas />);
+    const canvas = screen.getByLabelText("Pixel canvas");
+
+    expect(canvas).toHaveStyle({ cursor: "grab" });
+  });
 });

@@ -55,6 +55,7 @@ type EditorState = {
   gridHeight: number;
   pixels: Uint8Array;
   paletteColors: readonly string[];
+  sourcePaletteColors: readonly string[] | null;
   isStrokeActive: boolean;
   strokePreviewTick: number;
   hoverCell: CellCoord | null;
@@ -159,6 +160,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
     gridHeight: DEFAULT_GRID_SIZE,
     pixels: createEmptyPixels(DEFAULT_GRID_SIZE, DEFAULT_GRID_SIZE),
     paletteColors: DEFAULT_PALETTE_COLORS,
+    sourcePaletteColors: null,
     isStrokeActive: false,
     strokePreviewTick: 0,
     hoverCell: null,
@@ -204,6 +206,7 @@ export const useEditorStore = create<EditorState>((set, get) => {
         frameCount,
         pixels,
         paletteColors,
+        sourcePaletteColors: [...paletteColors],
         bundlePath,
         assetType,
         animationFps: clampAnimationFps(fps),
@@ -319,6 +322,8 @@ export const useActiveTool = () => useEditorStore((s) => s.activeTool);
 export const useActiveColorIndex = () =>
   useEditorStore((s) => s.activeColorIndex);
 export const usePaletteColors = () => useEditorStore((s) => s.paletteColors);
+export const useSourcePaletteColors = () =>
+  useEditorStore((s) => s.sourcePaletteColors);
 export const useFrameCount = () => useEditorStore((s) => s.frameCount);
 export const useProjectName = () => useEditorStore((s) => s.projectName);
 export const useBundlePath = () => useEditorStore((s) => s.bundlePath);

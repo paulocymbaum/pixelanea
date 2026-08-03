@@ -8,6 +8,9 @@ export type PalettePresetId =
   | "pico8"
   | "pastel";
 
+/** Preset chip id in the editor, including the imported/source palette. */
+export type PaletteSelectionId = PalettePresetId | "source";
+
 export type PalettePreset = {
   id: PalettePresetId;
   colors: readonly string[];
@@ -25,6 +28,13 @@ const PALETTE_PRESET_LABELS: Record<PalettePresetId, string> = {
 /** User-facing label for a palette preset button (shared by grid + QA harness). */
 export function palettePresetLabel(id: PalettePresetId): string {
   return PALETTE_PRESET_LABELS[id];
+}
+
+export function paletteSelectionLabel(id: PaletteSelectionId): string {
+  if (id === "source") {
+    return copy.palettePresetSource;
+  }
+  return palettePresetLabel(id);
 }
 
 /** Curated presets per UX.md / DESIGN.md — applied via PUT /palette. */
@@ -95,21 +105,15 @@ export function getPalettePreset(id: PalettePresetId): PalettePreset | undefined
   return PALETTE_PRESETS.find((preset) => preset.id === id);
 }
 
-/** Curated quick-access presets for the Swatches tab chip row (Casey shortcut). */
-export const QUICK_PALETTE_PRESET_IDS: readonly PalettePresetId[] = [
-  "retro",
-  "gameboy",
-  "monochrome",
-  "nes",
-] as const;
-
-const QUICK_PRESET_LIMIT = 4;
+/** All curated presets shown in the Swatches quick row and Presets tab. */
+export const QUICK_PALETTE_PRESET_IDS: readonly PalettePresetId[] =
+  PALETTE_PRESETS.map((preset) => preset.id);
 
 /**
- * Presets shown on the Swatches tab: last-used first (when set), then curated ids.
+ * Presets shown on the Swatches tab: last-used first (when set), then all curated ids.
  */
 export function getQuickPalettePresets(
-  lastPreset: PalettePresetId | null,
+  lastPreset: PaletteSelectionId | null,
 ): readonly PalettePreset[] {
   const seen = new Set<PalettePresetId>();
   const result: PalettePreset[] = [];
@@ -122,11 +126,10 @@ export function getQuickPalettePresets(
     result.push(preset);
   };
 
-  if (lastPreset) {
+  if (lastPreset && lastPreset !== "source") {
     add(lastPreset);
   }
   for (const id of QUICK_PALETTE_PRESET_IDS) {
-    if (result.length >= QUICK_PRESET_LIMIT) break;
     add(id);
   }
 

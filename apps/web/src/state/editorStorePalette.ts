@@ -10,6 +10,8 @@ import {
   schedulePaletteSync,
 } from "@/state/persist";
 import { writeFramePixels } from "@/state/frameCache";
+import { SetPaletteColorsCommand } from "@/state/commands/setPaletteColors";
+import { dispatchCommands } from "@/state/editorStoreCommands";
 import type { StoreApi } from "zustand";
 
 type PaletteEditorSlice = {
@@ -36,21 +38,15 @@ export function createPaletteActions(
         return;
       }
 
-      const paletteColors = colors.map((hex) => normalizeHex(hex) ?? hex);
-      const activeColorIndex = Math.min(
-        state.activeColorIndex,
-        paletteColors.length - 1,
+      dispatchCommands(
+        get,
+        set,
+        new SetPaletteColorsCommand(
+          state.paletteColors,
+          state.activeColorIndex,
+          colors,
+        ),
       );
-
-      set({
-        paletteColors,
-        activeColorIndex,
-        isPaletteDirty: true,
-        bundleDirty: true,
-        paletteSyncStatus: "idle",
-        paletteSyncError: null,
-      });
-      schedulePaletteSync();
     },
 
     addPaletteColor: (hexInput: string) => {

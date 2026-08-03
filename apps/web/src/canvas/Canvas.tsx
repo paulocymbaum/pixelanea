@@ -1,7 +1,7 @@
 import { copy } from "@/content/copy";
 import { useCanvasRenderState, useStrokePreviewRedraw } from "@/canvas/useCanvasRenderState";
 import { useViewportStore } from "@/state/viewportStore";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isCellInBounds,
   screenToCell,
@@ -17,6 +17,13 @@ export function Canvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toolInput = useToolInput();
   const pixelsRef = useRef<Uint8Array>(new Uint8Array());
+  const panDragRef = useRef<{
+    startX: number;
+    startY: number;
+    panX: number;
+    panY: number;
+  } | null>(null);
+  const [isPanning, setIsPanning] = useState(false);
 
   const renderState = useCanvasRenderState();
   const {
@@ -174,8 +181,18 @@ export function Canvas() {
   );
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (panDragRef.current && activeTool === "hand") {
+      const drag = panDragRef.current;
+      useViewportStore.getState().setViewport({
+        zoom,
+        panX: drag.panX + (event.clientX - drag.startX),
+        panY: drag.panY + (event.clientY - drag.startY),
+      });
+      return;
+    }
+
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (!cell || readOnly || placingLighting) {
+    if (!cell || readOnly || placingLighting || activeTool === "hand") {
       return;
     }
     toolInput.onPointerMove(event.nativeEvent, cell);
@@ -183,6 +200,18 @@ export function Canvas() {
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
+
+    if (activeTool === "hand" && !readOnly) {
+      panDragRef.current = {
+        startX: event.clientX,
+        startY: event.clientY,
+        panX,
+        panY,
+      };
+      setIsPanning(true);
+      return;
+    }
+
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
     if (!cell || readOnly) {
       return;
@@ -202,18 +231,35 @@ export function Canvas() {
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (panDragRef.current) {
+      panDragRef.current = null;
+      setIsPanning(false);
+      return;
+    }
+
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (!cell || readOnly || placingLighting) {
+    if (!cell || readOnly || placingLighting || activeTool === "hand") {
       return;
     }
     toolInput.onPointerUp(event.nativeEvent, cell);
+  };
+
+  const endPan = () => {
+    if (panDragRef.current) {
+      panDragRef.current = null;
+      setIsPanning(false);
+    }
   };
 
   const canvasCursor = readOnly
     ? "not-allowed"
     : placingLighting
       ? "crosshair"
-      : getToolCursor(activeTool);
+      : activeTool === "hand"
+        ? isPanning
+          ? "grabbing"
+          : "grab"
+        : getToolCursor(activeTool);
 
   const blankCheckPixels = committedPixels ?? pixelsRef.current;
   const canvasIsBlank =
@@ -239,8 +285,11 @@ export function Canvas() {
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUp}
-        onPointerCancel={handlePointerUp}
-        onPointerLeave={() => setHoverCell(null)}
+        onPointerCancel={endPan}
+        onPointerLeave={() => {
+          endPan();
+          setHoverCell(null);
+        }}
       />
       {showEmptyCanvasHint ? (
         <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-base text-secondary">

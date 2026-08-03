@@ -19,14 +19,26 @@ describe("PaletteQuickPresets", () => {
     });
   });
 
-  it("renders quick preset chips and see-all link", () => {
+  it("renders all quick preset chips and see-all link", () => {
     render(<PaletteQuickPresets />);
 
     expect(screen.getByText(copy.paletteQuickPresetsLabel)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: copy.paletteQuickPresetsSeeAll })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: copy.palettePresetRetro })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: copy.palettePresetGameboy })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: copy.palettePresetPico8 })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: copy.palettePresetPico8 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: copy.palettePresetPastel })).toBeInTheDocument();
+  });
+
+  it("shows original image chip when source palette is stored", () => {
+    useEditorStore.setState({
+      sourcePaletteColors: ["#AABBCC", "#112233"],
+    });
+    render(<PaletteQuickPresets />);
+
+    expect(
+      screen.getByRole("button", { name: copy.palettePresetSource }),
+    ).toBeInTheDocument();
   });
 
   it("applies a preset and records last preset", () => {

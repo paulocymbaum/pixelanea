@@ -86,6 +86,7 @@ export const copy = {
   palettePresetNes: "NES",
   palettePresetPico8: "Pico-8",
   palettePresetPastel: "Pastel",
+  palettePresetSource: "Original image",
   animationPlay: "Play animation",
   animationPause: "Pause animation",
   animationFps: "Animation speed",

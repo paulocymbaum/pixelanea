@@ -14,7 +14,13 @@ type PaletteQuickPresetsProps = {
 };
 
 export function PaletteQuickPresets({ className }: PaletteQuickPresetsProps) {
-  const { applyPreset, locked, lastPreset } = usePalettePresetApply();
+  const {
+    applyPreset,
+    applySourcePalette,
+    hasSourcePalette,
+    locked,
+    lastPreset,
+  } = usePalettePresetApply();
   const setPalettePanelSection = useSessionStore((s) => s.setPalettePanelSection);
   const quickPresets = getQuickPalettePresets(lastPreset);
 
@@ -39,7 +45,19 @@ export function PaletteQuickPresets({ className }: PaletteQuickPresetsProps) {
           {copy.paletteQuickPresetsSeeAll}
         </button>
       </div>
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="flex flex-wrap gap-2 pb-1">
+        {hasSourcePalette ? (
+          <Button
+            type="button"
+            variant={lastPreset === "source" ? "primary" : "secondary"}
+            disabled={locked}
+            onClick={applySourcePalette}
+            className="h-8 min-h-8 shrink-0 px-2 text-sm"
+            aria-pressed={lastPreset === "source"}
+          >
+            {copy.palettePresetSource}
+          </Button>
+        ) : null}
         {quickPresets.map((preset) => (
           <Button
             key={preset.id}

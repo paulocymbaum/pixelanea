@@ -9,6 +9,7 @@ import { PAINT_TOOL_IDS, type ToolId } from "@/tools/registry";
 import {
   Copy,
   Eraser,
+  Hand,
   PaintBucket,
   Pencil,
   Pipette,
@@ -21,6 +22,7 @@ const toolIcons: Record<ToolId, typeof Pencil> = {
   eyedropper: Pipette,
   fill: PaintBucket,
   line: Slash,
+  hand: Hand,
 };
 
 export function LeftToolRail() {

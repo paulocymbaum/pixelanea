@@ -13,6 +13,7 @@ const TOOL_SHORTCUTS: Record<string, ToolId> = {
   i: "eyedropper",
   g: "fill",
   l: "line",
+  h: "hand",
 };
 
 export const PALETTE_SECTION_ALT_KEYS: Record<number, PalettePanelSection> = {

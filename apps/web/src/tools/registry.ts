@@ -1,6 +1,7 @@
 import { eraserTool } from "./eraserTool";
 import { eyedropperTool } from "./eyedropperTool";
 import { fillTool } from "./fillTool";
+import { handTool } from "./handTool";
 import { lineTool } from "./lineTool";
 import { paintTool } from "./paintTool";
 import type { Tool } from "./types";
@@ -11,6 +12,7 @@ const toolRegistry = {
   eyedropper: eyedropperTool,
   fill: fillTool,
   line: lineTool,
+  hand: handTool,
 } satisfies Record<string, Tool>;
 
 export type ToolId = keyof typeof toolRegistry;

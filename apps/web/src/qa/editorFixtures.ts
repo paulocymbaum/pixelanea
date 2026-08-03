@@ -36,6 +36,7 @@ export function resetEditor(overrides: EditorFixtureOverrides = {}): void {
     gridHeight: height,
     pixels: new Uint8Array(pixels),
     paletteColors: DEFAULT_PALETTE_COLORS,
+    sourcePaletteColors: null,
     paletteLocked: false,
     readOnly: false,
     isPlaying: false,
