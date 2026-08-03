@@ -1,4 +1,4 @@
-import { vi, type Mock } from "vitest";
+import type { Mock } from "vitest";
 import type { Frame, FrameMetadata, Project } from "@pixelanea/api-client";
 import type { SaveResult } from "@/state/sync/types";
 import { PaintCellsCommand } from "@/state/commands/paintCells";

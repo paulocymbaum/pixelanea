@@ -81,9 +81,7 @@ export async function tryServerDialogTier(
  * local Pixelanea server cannot open or save bundles from FSA selections alone.
  * This tier always declines so the ProjectPathDialog fallback can collect a path.
  */
-export async function tryFileSystemAccessTier(
-  _input: PickProjectPathInput,
-): Promise<PickProjectPathTierResult> {
+export async function tryFileSystemAccessTier(): Promise<PickProjectPathTierResult> {
   if (
     typeof window === "undefined" ||
     !("showOpenFilePicker" in window) ||

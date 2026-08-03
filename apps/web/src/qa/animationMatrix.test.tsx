@@ -1,6 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { Canvas } from "@/canvas/Canvas";
 import { AnimationPlayer } from "@/components/animation/AnimationPlayer";
 import { FrameDuplicateDialog } from "@/components/frames/FrameDuplicateDialog";
 import { FrameThumbnailMenu } from "@/components/frames/FrameThumbnailMenu";
@@ -24,7 +23,6 @@ import {
   paintActiveFrame,
   reorderResponse,
   resetAnimationProject,
-  stubElementBox,
 } from "./animationMatrixHarness";
 
 vi.mock("@/content/features", () => ({
@@ -68,7 +66,6 @@ import {
   reorderFrames,
   saveFrame,
 } from "@/api/frames";
-import { renderGrid } from "@/canvas/renderer";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -109,10 +106,6 @@ async function confirmDuplicate(preset: 8 | 16 | 32) {
   await waitFor(() => {
     expect(duplicateFrames).toHaveBeenCalled();
   });
-}
-
-function lastRenderCall() {
-  return vi.mocked(renderGrid).mock.calls.at(-1)?.[0];
 }
 
 describe("QA-003 animation matrix", () => {

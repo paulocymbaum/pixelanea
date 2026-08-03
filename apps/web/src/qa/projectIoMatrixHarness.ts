@@ -15,12 +15,7 @@ import type {
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
 import { useEditorStore } from "@/state/editorStore";
 import { ensureFrameCached, writeFramePixels } from "@/state/frameCache";
-import {
-  EDITOR_FIXTURE_PROJECT_ID,
-  resetEditor,
-  type EditorFixtureOverrides,
-} from "@/qa/editorFixtures";
-import { useViewportStore } from "@/state/viewportStore";
+import { resetEditor, type EditorFixtureOverrides } from "@/qa/editorFixtures";
 
 export const MATRIX_PROJECT_ID = "project-io-project";
 export const MATRIX_GRID = 8;

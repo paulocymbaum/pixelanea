@@ -22,9 +22,9 @@ export class SetPaletteColorsCommand implements Command {
     );
   }
 
-  apply(_pixels: Uint8Array, _gridWidth: number): void {}
+  apply(): void {}
 
-  revert(_pixels: Uint8Array, _gridWidth: number): void {}
+  revert(): void {}
 
   paletteApplyState(): {
     paletteColors: readonly string[];

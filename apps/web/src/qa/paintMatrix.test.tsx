@@ -31,7 +31,6 @@ import {
   lineTool,
   paintCell,
   paintCells,
-  paintTool,
   pixelAt,
   pointerEvent,
   resetPaintProject,
@@ -334,7 +333,7 @@ describe("QA-001 paint matrix", () => {
           }),
       );
 
-      const saveFrameMock = vi.fn().mockImplementation(async (...args: unknown[]) => {
+      const saveFrameMock = vi.fn().mockImplementation(async () => {
         await new Promise<void>((resolve) => {
           resolvePut = resolve;
         });
@@ -377,7 +376,6 @@ describe("QA-001 paint matrix", () => {
       );
 
       paintCell(1, 1);
-      const painted = pixelAt(1, 1);
       const flushPromise = flushFrameSync();
       useEditorStore.getState().undo();
       expect(pixelAt(1, 1)).toBe(0);

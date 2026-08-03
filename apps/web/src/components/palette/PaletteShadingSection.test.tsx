@@ -1,7 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
-import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import { PaletteShadingSection } from "./PaletteShadingSection";
 

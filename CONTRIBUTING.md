@@ -122,8 +122,8 @@ QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MV
 
 ## Code style
 
-- **TypeScript:** match existing patterns; run `pnpm lint`
-- **C++:** C++17; Catch2 for server tests
+- **TypeScript:** match existing patterns; run `pnpm lint` (or `pnpm lint:web`)
+- **C++:** C++17; Catch2 for server tests; run `pnpm lint:cpp` for layer-boundary checks
 - **Commits:** imperative subject; explain *why* in the body when non-obvious
 
 ## Reporting issues

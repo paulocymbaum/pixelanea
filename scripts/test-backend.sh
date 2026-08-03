@@ -30,6 +30,13 @@ fi
 
 echo "=== Backend test suite ==="
 
+# 0: C++ boundary lint (fast; no compile)
+if ./scripts/lint-cpp.sh >/dev/null 2>&1; then
+  pass "cpp boundary lint"
+else
+  fail "cpp boundary lint"
+fi
+
 # 1–2: build
 if "${CMAKE}" -S server -B server/build \
   -DCMAKE_BUILD_TYPE=Debug \

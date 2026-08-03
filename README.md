@@ -75,7 +75,8 @@ pnpm dev
 
 ```bash
 # Fast feedback (seconds–minutes)
-pnpm lint
+pnpm lint              # ESLint (web) + C++ layer boundaries
+pnpm lint:cpp          # C++ architecture boundaries only
 pnpm typecheck
 pnpm test:unit
 pnpm test:qa

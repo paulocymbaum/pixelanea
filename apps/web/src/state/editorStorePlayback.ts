@@ -115,7 +115,7 @@ export function createPlaybackActions(
         return false;
       }
 
-      let cached = ensureFrameCached(state);
+      const cached = ensureFrameCached(state);
       const lastIndex = state.frameCount - 1;
 
       if (state.animationBoomerang) {

@@ -15,13 +15,12 @@ import {
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/App";
-import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
 import { SkippableOverlay } from "@/components/onboarding/SkippableOverlay";
 import { getPalettePreset } from "@/components/palette/palettePresets";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
-import { resetEditor, type EditorFixtureOverrides } from "@/qa/editorFixtures";
+import { resetEditor } from "@/qa/editorFixtures";
 import { useEditorStore } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
