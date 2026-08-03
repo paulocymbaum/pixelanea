@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 32" fill="none" role="img" aria-label="Pixelanea">
+  <!-- P·Mark: five blocks forming P; accent at top-left of counter -->
+  <rect x="0" y="0" width="8" height="8" fill="#3F6F5A"/>
+  <rect x="8" y="0" width="8" height="8" fill="#18181B"/>
+  <rect x="0" y="8" width="8" height="8" fill="#18181B"/>
+  <rect x="0" y="16" width="8" height="8" fill="#18181B"/>
+  <rect x="0" y="24" width="8" height="8" fill="#18181B"/>
+  <!-- Wordmark: Outfit SemiBold approximation -->
+  <text x="28" y="23" font-family="Outfit, system-ui, sans-serif" font-size="18" font-weight="600" letter-spacing="-0.02em" fill="#18181B">Pixel</text>
+  <text x="78" y="23" font-family="Outfit, system-ui, sans-serif" font-size="18" font-weight="600" letter-spacing="-0.02em" fill="#3F6F5A">anea</text>
+</svg>

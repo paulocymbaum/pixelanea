@@ -13,6 +13,7 @@
     "build:desktop": "./scripts/build-desktop.sh",
     "desktop": "./scripts/run-desktop.sh",
     "install:desktop": "./scripts/install-desktop-linux.sh",
+    "package:deb": "./scripts/package-deb.sh",
     "lint": "pnpm --filter @pixelanea/web lint",
     "typecheck": "pnpm --filter @pixelanea/web exec tsc --noEmit",
     "test:unit": "pnpm --filter @pixelanea/web test",
