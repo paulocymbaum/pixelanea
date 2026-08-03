@@ -51,7 +51,7 @@ export function RightPalettePanel() {
 
   if (collapsed) {
     return (
-      <div className="flex w-10 shrink-0 flex-col border-l border-border bg-surface">
+      <div className="flex w-10 shrink-0 flex-col border-l border-border bg-surface lg:w-16">
         <Button
           type="button"
           variant="ghost"

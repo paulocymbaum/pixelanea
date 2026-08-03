@@ -5,6 +5,7 @@ import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import { DEFAULT_COLOR_FILTER_SETTINGS } from "@/lib/colorFilters";
 import { useSessionStore } from "@/state/sessionStore";
+import { useUiStore } from "@/state/uiStore";
 import { PaletteSectionRail } from "./PaletteSectionRail";
 
 function renderRail() {
@@ -21,9 +22,10 @@ describe("PaletteSectionRail", () => {
     useEditorStore.setState({
       colorFilters: DEFAULT_COLOR_FILTER_SETTINGS,
     });
+    useUiStore.setState({ paletteMoreToolsExpanded: false });
   });
 
-  it("renders four section tabs with accessible labels", () => {
+  it("renders primary section tabs with accessible labels", () => {
     renderRail();
 
     expect(
@@ -33,10 +35,13 @@ describe("PaletteSectionRail", () => {
       screen.getByRole("button", { name: copy.palettePanelSectionPresets }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: copy.palettePanelSectionShading }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: copy.palettePanelSectionShading }),
+    ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: copy.palettePanelSectionFilters }),
+      screen.queryByRole("button", { name: copy.palettePanelSectionFilters }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: copy.paletteMoreToolsExpand }),
     ).toBeInTheDocument();
   });
 
@@ -52,6 +57,7 @@ describe("PaletteSectionRail", () => {
   });
 
   it("switches active section on click", () => {
+    useUiStore.setState({ paletteMoreToolsExpanded: true });
     renderRail();
 
     fireEvent.click(
@@ -65,6 +71,7 @@ describe("PaletteSectionRail", () => {
   });
 
   it("calls onSectionSelect when a tab is clicked", () => {
+    useUiStore.setState({ paletteMoreToolsExpanded: true });
     const onSectionSelect = vi.fn();
     render(
       <TooltipProvider>
@@ -80,6 +87,7 @@ describe("PaletteSectionRail", () => {
   });
 
   it("announces active filters on the Filters tab", () => {
+    useUiStore.setState({ paletteMoreToolsExpanded: true });
     useEditorStore.setState({
       colorFilters: {
         ...DEFAULT_COLOR_FILTER_SETTINGS,
@@ -99,14 +107,19 @@ describe("PaletteSectionRail", () => {
     ).toBeInTheDocument();
   });
 
-  it("hides filter badge when filters are inactive", () => {
+  it("expands more tools to reveal shading and filters", () => {
     renderRail();
 
-    const filtersButton = screen.getByRole("button", {
-      name: copy.palettePanelSectionFilters,
-    });
+    fireEvent.click(
+      screen.getByRole("button", { name: copy.paletteMoreToolsExpand }),
+    );
+
     expect(
-      filtersButton.querySelector('[data-testid="filter-active-badge"]'),
-    ).not.toBeInTheDocument();
+      screen.getByRole("button", { name: copy.palettePanelSectionShading }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: copy.palettePanelSectionFilters }),
+    ).toBeInTheDocument();
+    expect(useUiStore.getState().paletteMoreToolsExpanded).toBe(true);
   });
 });

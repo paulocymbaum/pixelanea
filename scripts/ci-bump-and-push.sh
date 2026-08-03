@@ -1,10 +1,28 @@
 #!/usr/bin/env bash
 # Bump VERSION on CI and push with conflict retry (+1 from latest remote on each attempt).
+#
+# Branch bump policy (semver major.minor.patch):
+#   develop       -> patch  (e.g. 1.0.0 -> 1.0.1)
+#   main|master   -> minor  (e.g. 1.0.5 -> 1.1.0)
+#   major         -> manual only: ./scripts/bump-version.sh major
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 BRANCH="${1:-${GITHUB_REF_NAME:-main}}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-5}"
+
+case "${BRANCH}" in
+  develop)
+    BUMP_LEVEL="patch"
+    ;;
+  main|master)
+    BUMP_LEVEL="minor"
+    ;;
+  *)
+    echo "No auto-bump configured for branch: ${BRANCH}" >&2
+    exit 1
+    ;;
+esac
 
 cd "${ROOT_DIR}"
 
@@ -22,17 +40,17 @@ VERSION_PATHS=(
 )
 
 for attempt in $(seq 1 "${MAX_ATTEMPTS}"); do
-  echo "==> Version bump attempt ${attempt}/${MAX_ATTEMPTS}"
+  echo "==> Version bump attempt ${attempt}/${MAX_ATTEMPTS} (${BUMP_LEVEL} on ${BRANCH})"
 
   git fetch origin "${BRANCH}"
   git checkout "${BRANCH}"
   git reset --hard "origin/${BRANCH}"
 
-  "${ROOT_DIR}/scripts/bump-version.sh"
+  "${ROOT_DIR}/scripts/bump-version.sh" "${BUMP_LEVEL}"
   NEW_VERSION="$(tr -d '[:space:]' < VERSION)"
 
   git add "${VERSION_PATHS[@]}"
-  git commit -m "chore: bump version to ${NEW_VERSION} [skip ci]"
+  git commit -m "chore: bump ${BUMP_LEVEL} version to ${NEW_VERSION} [skip ci]"
 
   if git push origin "HEAD:${BRANCH}"; then
     echo "==> Pushed version ${NEW_VERSION}"

@@ -51,10 +51,12 @@ mkdir -p "${PKG_ROOT}/usr/bin"
 mkdir -p "${PKG_ROOT}/usr/share/applications"
 mkdir -p "${PKG_ROOT}/usr/share/mime/packages"
 mkdir -p "${PKG_ROOT}/usr/share/pixmaps"
+mkdir -p "${PKG_ROOT}/usr/share/icons/hicolor"
 
 stage_linux_desktop_assets "${PKG_ROOT}/${APP_DIR}"
 stage_linux_desktop_shell_binary "${PKG_ROOT}/usr/bin"
-install -m 644 "${ROOT_DIR}/brand/logo-glyph.svg" "${PKG_ROOT}/usr/share/pixmaps/pixelanea.svg"
+stage_linux_hicolor_icons "${PKG_ROOT}/usr/share/icons/hicolor"
+install -m 644 "${ROOT_DIR}/brand/app-icon.svg" "${PKG_ROOT}/usr/share/pixmaps/pixelanea.svg"
 write_linux_desktop_launcher "${PKG_ROOT}/usr/bin/pixelanea-browser" system
 write_linux_pixelanea_mime "${PKG_ROOT}/usr/share/mime/packages"
 write_linux_pixelanea_open_desktop "${PKG_ROOT}/usr/share/applications/pixelanea-open.desktop"
@@ -101,6 +103,9 @@ fi
 if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
 fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  gtk-update-icon-cache -f /usr/share/icons/hicolor >/dev/null 2>&1 || true
+fi
 EOF
 chmod 755 "${PKG_ROOT}/DEBIAN/postinst"
 
@@ -112,6 +117,9 @@ if command -v update-mime-database >/dev/null 2>&1; then
 fi
 if command -v update-desktop-database >/dev/null 2>&1; then
   update-desktop-database /usr/share/applications >/dev/null 2>&1 || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+  gtk-update-icon-cache -f /usr/share/icons/hicolor >/dev/null 2>&1 || true
 fi
 EOF
 chmod 755 "${PKG_ROOT}/DEBIAN/postrm"

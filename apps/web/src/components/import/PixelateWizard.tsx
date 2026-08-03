@@ -13,6 +13,7 @@ import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
 import { loadProjectIntoEditor } from "@/lib/loadProject";
 import { useSessionStore } from "@/state/sessionStore";
+import { useUiStore } from "@/state/uiStore";
 import { getPalettePreset } from "@/components/palette/palettePresets";
 import { FileDropStep } from "./FileDropStep";
 import { isAcceptedImageType } from "./fileUtils";
@@ -56,6 +57,11 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const setRemoveBackground = useSessionStore((s) => s.setRemoveBackground);
   const setHasVisited = useSessionStore((s) => s.setHasVisited);
   const setLastEntryPath = useSessionStore((s) => s.setLastEntryPath);
+  const setPalettePanelSection = useSessionStore((s) => s.setPalettePanelSection);
+  const setPaletteMoreToolsExpanded = useUiStore(
+    (s) => s.setPaletteMoreToolsExpanded,
+  );
+  const setPaletteCollapsed = useUiStore((s) => s.setPaletteCollapsed);
 
   const [step, setStep] = useState<ImportWizardStep>("file");
   const [file, setFile] = useState<File | null>(null);
@@ -246,6 +252,9 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
         setError(loaded.message);
         return;
       }
+      setPalettePanelSection("swatches");
+      setPaletteMoreToolsExpanded(false);
+      setPaletteCollapsed(false);
       setHasVisited(true);
       setLastEntryPath("import");
       onComplete();

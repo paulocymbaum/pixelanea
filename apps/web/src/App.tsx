@@ -139,6 +139,22 @@ export function App() {
     setRoute(nextRoute);
   }, [resetImportWizard]);
 
+  const handleRouteGuardSave = useCallback(() => {
+    setRouteGuardOpen(false);
+    const nextRoute = pendingRouteRef.current;
+    pendingRouteRef.current = null;
+    if (!nextRoute) {
+      return;
+    }
+
+    projectFileActions.saveThen(() => {
+      if (nextRoute === "import-wizard") {
+        resetImportWizard();
+      }
+      setRoute(nextRoute);
+    });
+  }, [projectFileActions, resetImportWizard]);
+
   const routeGuardDialog = (
     <UnsavedChangesDialog
       open={routeGuardOpen}
@@ -149,6 +165,8 @@ export function App() {
         }
       }}
       onDiscard={handleRouteGuardDiscard}
+      onSave={handleRouteGuardSave}
+      canSave={projectFileActions.canSave}
     />
   );
 
@@ -186,7 +204,7 @@ export function App() {
     <div className="flex min-h-screen flex-col">
       <ConnectionBanner />
       {page}
-      {route === "new-project" ? projectFileActions.dialogs : null}
+      {route !== "import-wizard" ? projectFileActions.dialogs : null}
       {routeGuardDialog}
     </div>
   );

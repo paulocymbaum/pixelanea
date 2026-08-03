@@ -24,7 +24,7 @@ apps/web/src/
 │   ├── animation/               # AnimationPlayer, FpsSlider, LoopToggle
 │   ├── project/                 # NewProjectDialog, OpenSave dialogs
 │   ├── import/                  # PixelateWizard steps + live preview
-│   └── onboarding/              # SkippableOverlay (3 steps)
+│   └── onboarding/              # SkippableOverlay (4 steps)
 ├── canvas/
 │   ├── coordinates.ts           # world ↔ screen, snap, zoom, pan
 │   ├── renderer.ts              # checkerboard, grid, pixels, onion-skin

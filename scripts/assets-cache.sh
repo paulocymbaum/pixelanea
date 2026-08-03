@@ -137,12 +137,17 @@ cmd_status() {
 }
 
 cmd_sync_brand() {
-  mkdir -p "${ROOT_DIR}/apps/web/public"
+  mkdir -p "${ROOT_DIR}/apps/web/public/favicon" "${ROOT_DIR}/apps/web/public/icons"
+  for asset in logo-glyph.svg logo-lockup.svg logo-mark.svg logo-wordmark.svg app-icon.svg; do
+    if [[ -f "${ROOT_DIR}/brand/${asset}" ]]; then
+      cp "${ROOT_DIR}/brand/${asset}" "${ROOT_DIR}/apps/web/public/${asset}"
+    fi
+  done
   if [[ -f "${ROOT_DIR}/brand/logo-glyph.svg" ]]; then
-    cp "${ROOT_DIR}/brand/logo-glyph.svg" "${ROOT_DIR}/apps/web/public/logo-glyph.svg"
+    cp "${ROOT_DIR}/brand/logo-glyph.svg" "${ROOT_DIR}/apps/web/public/favicon/favicon.svg"
   fi
-  if [[ -f "${ROOT_DIR}/brand/logo-lockup.svg" ]]; then
-    cp "${ROOT_DIR}/brand/logo-lockup.svg" "${ROOT_DIR}/apps/web/public/logo-lockup.svg"
+  if [[ -f "${ROOT_DIR}/scripts/generate-brand-pngs.py" ]]; then
+    python3 "${ROOT_DIR}/scripts/generate-brand-pngs.py"
   fi
 }
 

@@ -7,6 +7,7 @@ import {
   E2E_SAVE_BASENAME,
   E2E_SAVE_PATH,
   enterEditorAfterReload,
+  expectPixelsSyncedToServer,
   getFramePixels,
   mockProjectPicker,
   paintStroke,
@@ -108,8 +109,6 @@ test.describe("@smoke", () => {
     const frameSync = waitForFrameSync(page);
     await paintStroke(page);
     await frameSync;
-    await expect(page.getByRole("status")).toContainText("All changes saved", {
-      timeout: 15_000,
-    });
+    await expectPixelsSyncedToServer(page);
   });
 });

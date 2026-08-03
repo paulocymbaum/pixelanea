@@ -383,7 +383,13 @@ apps/web/
 ├── tailwind.config.js              # Tailwind extension → CSS variables
 ├── index.html                      # Root mount; favicon link
 ├── public/
-│   └── logo-glyph.svg              # Grid mark (copied from brand/)
+│   ├── logo-glyph.svg              # Grid mark (copied from brand/)
+│   ├── logo-mark.svg               # P-Mark (copied from brand/)
+│   ├── logo-lockup.svg             # Lockup (copied from brand/)
+│   ├── logo-wordmark.svg           # Wordmark (copied from brand/)
+│   ├── app-icon.svg                # Garden Frame 512 (copied from brand/)
+│   ├── favicon/                    # favicon.svg + PNG sizes (sync-brand)
+│   └── icons/                      # PWA icons 192/512 (generate-brand-pngs.py)
 └── src/
     ├── main.tsx                    # Imports styles/globals.css
     ├── lib/
@@ -416,7 +422,11 @@ apps/web/
 
 brand/                              # Repo-root brand assets (shared reference)
 ├── colors.css                      # Named palette hex values
-└── logo-glyph.svg                  # 4×4 grid mark (accent bottom-right)
+├── logo-glyph.svg                  # 4×4 grid mark (accent bottom-right)
+├── logo-mark.svg                   # P-Mark (accent in counter)
+├── logo-lockup.svg                 # P-Mark + wordmark
+├── logo-wordmark.svg               # Marketing wordmark
+└── app-icon.svg                    # Garden Frame 512
 ```
 
 Feature folders (`components/palette/`, `components/animation/`, etc.) compose `components/ui/` primitives — they are documented in [ARCHITECTURE.md](./ARCHITECTURE.md) and the frontend standards skill, not duplicated here.
@@ -609,12 +619,12 @@ Marketing can be **10% bolder**. The app stays calm so creative work stays in fo
 | Global styles | `apps/web/src/styles/globals.css` | Done |
 | Tailwind extension | `apps/web/tailwind.config.js` | Done |
 | UI primitives | `apps/web/src/components/ui/` | Done (Button, DropdownMenu, Dialog, Tooltip, Slider) |
-| Logo lockup | `brand/logo-lockup.svg` | Pending |
-| Logo mark | `brand/logo-mark.svg` | Pending |
-| Wordmark | `brand/logo-wordmark.svg` | Pending |
-| Favicon set | `apps/web/public/favicon/` | Pending |
-| App icons | `apps/web/public/icons/` | Pending |
-| File type icon | `.pixelanea` association | Pending |
+| Logo lockup | `brand/logo-lockup.svg` | Done |
+| Logo mark | `brand/logo-mark.svg` | Done |
+| Wordmark | `brand/logo-wordmark.svg` | Done |
+| Favicon set | `apps/web/public/favicon/` | Done |
+| App icons | `apps/web/public/icons/` | Done |
+| File type icon | `.pixelanea` association (`application-x-pixelanea` hicolor + MIME) | Done |
 
 ---
 

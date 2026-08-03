@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ImagePlus, Pencil } from "lucide-react";
+import { FolderOpen, ImagePlus, Pencil } from "lucide-react";
 import { createBlankProject } from "@/api/projects";
 import { Button } from "@/components/ui/Button";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
@@ -126,19 +126,6 @@ export function NewProjectPage({
           <p className="mt-2 text-base text-secondary">
             {copy.newProjectSubtitle}
           </p>
-          {onOpenExisting ? (
-            <div className="mt-4">
-              <Button
-                type="button"
-                variant="secondary"
-                className="min-h-12 px-6"
-                disabled={isCreating}
-                onClick={onOpenExisting}
-              >
-                {copy.newProjectOpenExisting}
-              </Button>
-            </div>
-          ) : null}
         </header>
 
         {hasVisited ? (
@@ -189,6 +176,23 @@ export function NewProjectPage({
               {copy.newProjectChooseAgain}
             </button>
           </div>
+        ) : null}
+
+        {onOpenExisting ? (
+          <button
+            type="button"
+            onClick={onOpenExisting}
+            disabled={isCreating}
+            className={cn(newProjectEntryCardClass(false), "mb-4 w-full")}
+          >
+            <FolderOpen className="h-10 w-10 text-accent" strokeWidth={1.5} />
+            <span className="text-lg font-semibold text-primary">
+              {copy.newProjectOpenExisting}
+            </span>
+            <span className="text-sm text-secondary">
+              {copy.newProjectOpenExistingDescription}
+            </span>
+          </button>
         ) : null}
 
         <div className="grid gap-4 sm:grid-cols-2">

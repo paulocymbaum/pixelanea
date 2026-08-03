@@ -21,6 +21,15 @@ If the native window fails on a machine, use `pixelanea-browser` as a fallback (
 - Projector: use **light theme** for better contrast on bright rooms (toggle in header).
 - Seat students so the canvas area is visible on the shared screen.
 - Print [shortcuts.md](../shortcuts.md) handouts (one per pair).
+- Print the [student handout](./student-handout.md) ([PDF](./pdf/student-handout.pdf)) and [facilitator one-pager](./facilitator-one-pager.md) ([PDF](./pdf/facilitator-one-pager.pdf)).
+
+### Workshop kit (E2-014)
+
+| Asset | Path |
+|-------|------|
+| Facilitator one-pager | [facilitator-one-pager.md](./facilitator-one-pager.md) · [PDF](./pdf/facilitator-one-pager.pdf) |
+| Student handout | [student-handout.md](./student-handout.md) · [PDF](./pdf/student-handout.pdf) |
+| Template projects | [templates/README.md](./templates/README.md) |
 
 ### Starter project (optional)
 

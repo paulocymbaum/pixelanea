@@ -62,9 +62,15 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
     void startPlayback();
   };
 
+  const showOnionOpacity =
+    features.onionSkin && onionSkinEnabled && frameCount > 1;
+
   return (
     <div
-      className={cn("flex items-center gap-3", className)}
+      className={cn(
+        "flex flex-wrap items-center gap-x-3 gap-y-2",
+        className,
+      )}
       aria-label="Animation player"
     >
       <Button
@@ -133,46 +139,47 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
       </Button>
 
       {features.onionSkin ? (
-        <>
-          <Button
-            type="button"
-            variant={onionSkinEnabled ? "primary" : "secondary"}
-            size="default"
-            onClick={() => setOnionSkinEnabled(!onionSkinEnabled)}
-            disabled={frameCount <= 1}
-            aria-pressed={onionSkinEnabled}
-            aria-label={
-              onionSkinEnabled
-                ? copy.animationOnionSkinOn
-                : copy.animationOnionSkinOff
-            }
-            className="min-h-10"
-          >
-            <Layers className="h-4 w-4" strokeWidth={1.5} />
-            {copy.animationOnionSkin}
-          </Button>
+        <Button
+          type="button"
+          variant={onionSkinEnabled ? "primary" : "secondary"}
+          size="default"
+          onClick={() => setOnionSkinEnabled(!onionSkinEnabled)}
+          disabled={frameCount <= 1}
+          aria-pressed={onionSkinEnabled}
+          aria-label={
+            onionSkinEnabled
+              ? copy.animationOnionSkinOn
+              : copy.animationOnionSkinOff
+          }
+          className="min-h-10"
+        >
+          <Layers className="h-4 w-4" strokeWidth={1.5} />
+          {copy.animationOnionSkin}
+        </Button>
+      ) : null}
 
-          {onionSkinEnabled ? (
-            <div className="flex min-w-[120px] items-center gap-2">
-              <Slider
-                value={[onionOpacityPercent]}
-                min={10}
-                max={100}
-                step={5}
-                onValueChange={([value]) => {
-                  if (value !== undefined) {
-                    setOnionSkinOpacity(value / 100);
-                  }
-                }}
-                disabled={frameCount <= 1}
-                aria-label={copy.animationOnionSkinOpacity}
-              />
-              <span className="w-10 shrink-0 text-sm text-secondary">
-                {copy.animationOnionSkinOpacityValue(onionOpacityPercent)}
-              </span>
-            </div>
-          ) : null}
-        </>
+      {showOnionOpacity ? (
+        <div
+          className="flex min-w-[120px] items-center gap-2 max-[1199px]:w-full max-[1199px]:basis-full"
+          data-testid="onion-opacity-row"
+        >
+          <Slider
+            value={[onionOpacityPercent]}
+            min={10}
+            max={100}
+            step={5}
+            onValueChange={([value]) => {
+              if (value !== undefined) {
+                setOnionSkinOpacity(value / 100);
+              }
+            }}
+            disabled={frameCount <= 1}
+            aria-label={copy.animationOnionSkinOpacity}
+          />
+          <span className="w-10 shrink-0 text-sm text-secondary">
+            {copy.animationOnionSkinOpacityValue(onionOpacityPercent)}
+          </span>
+        </div>
       ) : null}
     </div>
   );

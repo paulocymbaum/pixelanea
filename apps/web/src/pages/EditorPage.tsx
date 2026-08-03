@@ -34,6 +34,14 @@ export function EditorPage({
   const shouldShowOnboarding =
     showOnboarding && !onboardingDismissed && apiStatus === "connected";
 
+  const setOnboardingOverlayVisible = useUiStore(
+    (s) => s.setOnboardingOverlayVisible,
+  );
+
+  useEffect(() => {
+    setOnboardingOverlayVisible(shouldShowOnboarding);
+  }, [shouldShowOnboarding, setOnboardingOverlayVisible]);
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="flex h-screen flex-col">

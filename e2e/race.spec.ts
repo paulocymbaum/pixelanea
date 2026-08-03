@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import {
   countPaintedPixels,
   createBlankProject,
+  expectPixelsSyncedToServer,
   getFramePixels,
   isFrameSyncRequest,
   paintFrame2Mark,
@@ -60,9 +61,7 @@ test.describe("@race @sync", () => {
 
     releaseFirstPut?.();
     await syncResponses;
-    await expect(page.getByRole("status")).toContainText("All changes saved", {
-      timeout: 15_000,
-    });
+    await expectPixelsSyncedToServer(page);
     await expect(page.getByRole("alert")).toHaveCount(0);
     // Server coalesce after undo+in-flight PUT: paintMatrix RACE-002 + syncCoordinator tests.
   });
@@ -108,9 +107,7 @@ test.describe("@race @sync", () => {
 
     releaseFirstPut?.();
     await syncAfterRelease;
-    await expect(page.getByRole("status")).toContainText("All changes saved", {
-      timeout: 15_000,
-    });
+    await expectPixelsSyncedToServer(page);
 
     const paintedCount = await countPaintedPixels(page, projectId, 0);
     expect(paintedCount).toBeGreaterThan(0);

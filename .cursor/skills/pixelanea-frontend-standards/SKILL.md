@@ -88,7 +88,7 @@ Organize by UX domain, not by atomic design level:
 | `frames/` | Thumbnail strip, frame switch | Instant switch from local cache; active frame accent border |
 | `animation/` | Play/pause, FPS slider (1–24), loop toggle | Play → `readOnly`; pause → edit current frame |
 | `project/` | New / Open / Save / Save As dialogs | Confirm only: overwrite, delete project |
-| `onboarding/` | Skippable 3-step overlay (Morgan/Riley) | Never blocks paint; Casey uses import wizard instead |
+| `onboarding/` | Skippable 4-step overlay (Morgan/Riley) | Never blocks paint; Casey uses import wizard instead |
 | `import/` | Pixelate wizard (Casey front door) | Step indicator, back button, live preview before commit |
 
 ### State slices (`state/`)

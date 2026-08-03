@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import {
   advanceImportToPreview,
+  expectPixelsSyncedToServer,
   openImportWizard,
   paintStroke,
   SAMPLE_IMAGE,
@@ -31,8 +32,6 @@ test.describe("@onboarding", () => {
     const putFrame = waitForFramePut(page);
     await paintStroke(page);
     await putFrame;
-    await expect(page.getByRole("status")).toContainText("All changes saved", {
-      timeout: 15_000,
-    });
+    await expectPixelsSyncedToServer(page);
   });
 });

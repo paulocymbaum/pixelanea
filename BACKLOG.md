@@ -21,7 +21,7 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 
 ### Workshop & UX
 
-- [ ] E2-014 — Workshop teacher kit (printable template + PDF handout)
+- [x] E2-014 — Workshop teacher kit (printable template + PDF handout)
 - [ ] Download landing page (GitHub Releases vs curated page — product decision)
 
 ### Editor polish

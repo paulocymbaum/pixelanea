@@ -71,6 +71,8 @@ REQUIRED_PATHS=(
   "./usr/share/applications/pixelanea-open.desktop"
   "./usr/share/mime/packages/pixelanea-pixelanea.xml"
   "./usr/share/pixmaps/pixelanea.svg"
+  "./usr/share/icons/hicolor/48x48/mimetypes/application-x-pixelanea.png"
+  "./usr/share/icons/hicolor/48x48/apps/pixelanea.png"
 )
 
 if ! CONTENTS="$(dpkg-deb -c "${DEB_FILE}" 2>&1)"; then
@@ -123,6 +125,11 @@ fi
 
 if ! grep -q 'application/x-pixelanea' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/share/mime/packages/pixelanea-pixelanea.xml 2>/dev/null)"; then
   echo "ERROR: MIME package missing application/x-pixelanea" >&2
+  exit 1
+fi
+
+if ! grep -q 'application-x-pixelanea' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/share/mime/packages/pixelanea-pixelanea.xml 2>/dev/null)"; then
+  echo "ERROR: MIME package must reference application-x-pixelanea icon" >&2
   exit 1
 fi
 

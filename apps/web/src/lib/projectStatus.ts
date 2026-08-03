@@ -5,9 +5,10 @@
  * 1. checking
  * 2. error (sync)
  * 3. saving
- * 4. unsaved (`isDirty` || `isPaletteDirty`) — bundle file staleness uses header dot only
- * 5. saved
- * 6. idle
+ * 4. unsaved (`isDirty` || `isPaletteDirty`)
+ * 5. not saved to file (`bundleDirty` while pixels/palette are synced)
+ * 6. saved
+ * 7. idle
  *
  * Disconnect UX is owned by ConnectionBanner — not repeated here.
  */
@@ -40,6 +41,7 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
     syncStatus,
     isDirty,
     isPaletteDirty,
+    bundleDirty,
   } = input;
 
   if (apiStatus === "checking") {
@@ -60,6 +62,10 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
 
   if (isDirty || isPaletteDirty) {
     return { kind: "unsaved", label: copy.statusUnsaved };
+  }
+
+  if (bundleDirty && hasProject) {
+    return { kind: "unsaved", label: copy.statusNotSavedToDisk };
   }
 
   if (hasProject) {

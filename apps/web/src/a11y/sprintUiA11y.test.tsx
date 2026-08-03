@@ -140,6 +140,7 @@ describe("Sprint UI accessibility (S1-909)", () => {
 
   describe("PaletteSectionRail", () => {
     it("exposes section tabs with aria-current on the active tab", () => {
+      useUiStore.setState({ paletteMoreToolsExpanded: true });
       render(
         <TooltipProvider>
           <PaletteSectionRail />

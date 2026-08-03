@@ -49,7 +49,7 @@ describe("RightPalettePanel", () => {
   });
 
   it("shows section icons when collapsed and expands on icon click", () => {
-    useUiStore.setState({ paletteCollapsed: true });
+    useUiStore.setState({ paletteCollapsed: true, paletteMoreToolsExpanded: true });
     useSessionStore.setState({ palettePanelSection: "swatches" });
     renderPanel();
 

@@ -11,6 +11,8 @@ type UiState = {
   importWizardStep: number;
   toastMessage: string | null;
   shortcutsOverlayOpen: boolean;
+  onboardingOverlayVisible: boolean;
+  paletteMoreToolsExpanded: boolean;
   setPaletteCollapsed: (collapsed: boolean) => void;
   setShowTechnicalInfo: (show: boolean) => void;
   setApiStatus: (status: UiState["apiStatus"], version?: string | null) => void;
@@ -21,6 +23,8 @@ type UiState = {
   showToast: (message: string) => void;
   clearToast: () => void;
   setShortcutsOverlayOpen: (open: boolean) => void;
+  setOnboardingOverlayVisible: (visible: boolean) => void;
+  setPaletteMoreToolsExpanded: (expanded: boolean) => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
@@ -33,6 +37,8 @@ export const useUiStore = create<UiState>((set) => ({
   importWizardStep: 0,
   toastMessage: null,
   shortcutsOverlayOpen: false,
+  onboardingOverlayVisible: false,
+  paletteMoreToolsExpanded: false,
   setPaletteCollapsed: (collapsed) => set({ paletteCollapsed: collapsed }),
   setShowTechnicalInfo: (show) => set({ showTechnicalInfo: show }),
   setApiStatus: (status, version = null) =>
@@ -45,9 +51,15 @@ export const useUiStore = create<UiState>((set) => ({
   showToast: (message) => set({ toastMessage: message }),
   clearToast: () => set({ toastMessage: null }),
   setShortcutsOverlayOpen: (open) => set({ shortcutsOverlayOpen: open }),
+  setOnboardingOverlayVisible: (visible) =>
+    set({ onboardingOverlayVisible: visible }),
+  setPaletteMoreToolsExpanded: (expanded) =>
+    set({ paletteMoreToolsExpanded: expanded }),
 }));
 
 export const usePaletteCollapsed = () => useUiStore((s) => s.paletteCollapsed);
+export const usePaletteMoreToolsExpanded = () =>
+  useUiStore((s) => s.paletteMoreToolsExpanded);
 export const useApiStatus = () =>
   useUiStore(
     useShallow((s) => ({ status: s.apiStatus, version: s.apiVersion })),

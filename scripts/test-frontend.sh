@@ -161,6 +161,43 @@ else
   fail "logo glyph synced brand → public (static)"
 fi
 
+for asset in logo-mark.svg logo-lockup.svg logo-wordmark.svg app-icon.svg; do
+  if [[ -f "brand/${asset}" && -f "apps/web/public/${asset}" ]] \
+    && cmp -s "brand/${asset}" "apps/web/public/${asset}"; then
+    pass "${asset} synced brand → public (static)"
+  else
+    fail "${asset} synced brand → public (static)"
+  fi
+done
+
+for png in \
+  apps/web/public/favicon/favicon.svg \
+  apps/web/public/favicon/favicon-16x16.png \
+  apps/web/public/favicon/favicon-32x32.png \
+  apps/web/public/favicon/apple-touch-icon.png \
+  apps/web/public/icons/icon-192.png \
+  apps/web/public/icons/icon-512.png; do
+  if [[ -f "${png}" ]]; then
+    pass "$(basename "$(dirname "${png}")")/$(basename "${png}") present (static)"
+  else
+    fail "$(basename "$(dirname "${png}")")/$(basename "${png}") present (static)"
+  fi
+done
+
+if [[ -f packaging/linux/icons/hicolor/48x48/mimetypes/application-x-pixelanea.png \
+  && -f packaging/linux/icons/hicolor/48x48/apps/pixelanea.png ]]; then
+  pass "linux hicolor icons present (static)"
+else
+  fail "linux hicolor icons present (static)"
+fi
+
+if grep -q 'favicon/favicon.svg' apps/web/index.html \
+  && grep -q 'apple-touch-icon' apps/web/index.html; then
+  pass "index.html favicon links (static)"
+else
+  fail "index.html favicon links (static)"
+fi
+
 DESIGN_TEST_OK=true
 for f in \
   apps/web/src/components/ui/Button.test.tsx \

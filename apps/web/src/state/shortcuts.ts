@@ -6,6 +6,7 @@ import {
   useSessionStore,
 } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
+import { useViewportStore } from "@/state/viewportStore";
 import type { ToolId } from "@/tools/registry";
 
 const TOOL_SHORTCUTS: Record<string, ToolId> = {
@@ -60,6 +61,12 @@ function isEditableTarget(target: EventTarget | null): boolean {
     element.tagName === "TEXTAREA" ||
     element.isContentEditable
   );
+}
+
+function expandPaletteMoreToolsIfNeeded(section: PalettePanelSection) {
+  if (section === "shading" || section === "filters") {
+    useUiStore.getState().setPaletteMoreToolsExpanded(true);
+  }
 }
 
 export function useEditorShortcuts() {
@@ -179,11 +186,37 @@ export function useEditorShortcuts() {
         return;
       }
 
+      if (!mod && !event.altKey && !event.shiftKey) {
+        const { gridWidth, gridHeight } = useEditorStore.getState();
+        const containerSize = useViewportStore.getState().containerSize;
+        const anchor = {
+          x: containerSize.width / 2,
+          y: containerSize.height / 2,
+        };
+
+        if (event.key === "=" || event.key === "+") {
+          event.preventDefault();
+          useViewportStore.getState().zoomIn(anchor);
+          return;
+        }
+        if (event.key === "-") {
+          event.preventDefault();
+          useViewportStore.getState().zoomOut(anchor);
+          return;
+        }
+        if (event.key === "0") {
+          event.preventDefault();
+          useViewportStore.getState().fitToView(undefined, gridWidth, gridHeight);
+          return;
+        }
+      }
+
       if (event.altKey && !mod) {
         const digit = Number.parseInt(event.key, 10);
         const section = getPaletteSectionFromAltDigit(digit);
         if (section) {
           event.preventDefault();
+          expandPaletteMoreToolsIfNeeded(section);
           setPalettePanelSection(section);
           setPaletteCollapsed(false);
           return;
@@ -194,14 +227,18 @@ export function useEditorShortcuts() {
         if (event.key === "]") {
           event.preventDefault();
           const current = useSessionStore.getState().palettePanelSection;
-          setPalettePanelSection(cyclePalettePanelSection(current, "next"));
+          const next = cyclePalettePanelSection(current, "next");
+          expandPaletteMoreToolsIfNeeded(next);
+          setPalettePanelSection(next);
           setPaletteCollapsed(false);
           return;
         }
         if (event.key === "[") {
           event.preventDefault();
           const current = useSessionStore.getState().palettePanelSection;
-          setPalettePanelSection(cyclePalettePanelSection(current, "prev"));
+          const prev = cyclePalettePanelSection(current, "prev");
+          expandPaletteMoreToolsIfNeeded(prev);
+          setPalettePanelSection(prev);
           setPaletteCollapsed(false);
           return;
         }

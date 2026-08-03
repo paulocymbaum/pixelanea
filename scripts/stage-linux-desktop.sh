@@ -21,6 +21,19 @@ stage_linux_desktop_assets() {
   (tar -C "${_STAGE_ROOT_DIR}/apps/web/dist" --exclude='.pixelanea-assets-hash' -cf - .) \
     | tar -C "${target_dir}/web" -xf -
   install -m 644 "${_STAGE_ROOT_DIR}/brand/logo-glyph.svg" "${target_dir}/logo-glyph.svg"
+  install -m 644 "${_STAGE_ROOT_DIR}/brand/app-icon.svg" "${target_dir}/app-icon.svg"
+}
+
+# Install Freedesktop hicolor icons (app launcher + .pixelanea MIME type).
+stage_linux_hicolor_icons() {
+  local icons_dest="$1"
+  local icons_src="${_STAGE_ROOT_DIR}/packaging/linux/icons/hicolor"
+  if [[ ! -d "${icons_src}/48x48/mimetypes" ]]; then
+    echo "stage_linux_hicolor_icons: missing ${icons_src}; run: python3 scripts/generate-brand-pngs.py" >&2
+    return 1
+  fi
+  mkdir -p "${icons_dest}"
+  cp -a "${icons_src}/." "${icons_dest}/"
 }
 
 # Copy the release Tauri shell binary into a bin directory (e.g. usr/bin).
@@ -45,7 +58,7 @@ write_linux_pixelanea_mime() {
 <mime-type type="application/x-pixelanea">
   <comment>Pixelanea project</comment>
   <glob pattern="*.pixelanea"/>
-  <icon name="pixelanea"/>
+  <icon name="application-x-pixelanea"/>
 </mime-type>
 MIME
 }

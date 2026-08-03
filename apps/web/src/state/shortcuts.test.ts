@@ -5,6 +5,7 @@ import { copy } from "@/content/copy";
 import { useSessionStore } from "@/state/sessionStore";
 import { useEditorStore } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
+import { useViewportStore } from "@/state/viewportStore";
 import {
   cyclePalettePanelSection,
   useEditorShortcuts,
@@ -28,7 +29,7 @@ describe("cyclePalettePanelSection", () => {
 describe("useEditorShortcuts", () => {
   beforeEach(() => {
     useSessionStore.setState({ palettePanelSection: "swatches" });
-    useUiStore.setState({ shortcutsOverlayOpen: false, toastMessage: null });
+    useUiStore.setState({ shortcutsOverlayOpen: false, toastMessage: null, paletteMoreToolsExpanded: false });
     useEditorStore.setState({
       gridWidth: 4,
       gridHeight: 4,
@@ -283,5 +284,34 @@ describe("useEditorShortcuts", () => {
 
     fireEvent.keyDown(window, { key: "ArrowUp" });
     expect(useEditorStore.getState().pastePreview?.originY).toBe(2);
+  });
+
+  it("+ and - zoom the viewport; 0 fits canvas to view", () => {
+    useViewportStore.setState({
+      zoom: 1,
+      panX: 0,
+      panY: 0,
+      containerSize: { width: 400, height: 300 },
+    });
+    render(createElement(ShortcutHarness));
+
+    fireEvent.keyDown(window, { key: "=" });
+    expect(useViewportStore.getState().zoom).toBeGreaterThan(1);
+
+    fireEvent.keyDown(window, { key: "-" });
+    expect(useViewportStore.getState().zoom).toBeLessThanOrEqual(1);
+
+    useViewportStore.setState({ zoom: 2, viewportUserAdjusted: true });
+    fireEvent.keyDown(window, { key: "0" });
+    expect(useViewportStore.getState().viewportUserAdjusted).toBe(false);
+  });
+
+  it("Alt+3 expands more tools and selects shading", () => {
+    render(createElement(ShortcutHarness));
+
+    fireEvent.keyDown(window, { key: "3", altKey: true });
+
+    expect(useUiStore.getState().paletteMoreToolsExpanded).toBe(true);
+    expect(useSessionStore.getState().palettePanelSection).toBe("shading");
   });
 });

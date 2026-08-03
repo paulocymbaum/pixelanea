@@ -41,9 +41,9 @@ const EDIT_ROWS: ShortcutRow[] = [
 ];
 
 const VIEW_ROWS: ShortcutRow[] = [
-  { keys: "—", label: copy.shortcutZoomIn },
-  { keys: "—", label: copy.shortcutZoomOut },
-  { keys: "—", label: copy.shortcutZoomFit },
+  { keys: "+", label: copy.shortcutZoomIn },
+  { keys: "-", label: copy.shortcutZoomOut },
+  { keys: "0", label: copy.shortcutZoomFit },
   { keys: "?", label: copy.shortcutShortcutsOverlay },
 ];
 

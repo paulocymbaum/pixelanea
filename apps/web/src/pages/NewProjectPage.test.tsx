@@ -158,4 +158,61 @@ describe("NewProjectPage", () => {
       );
     });
   });
+
+  it("shows prominent open-existing card when handler is provided", () => {
+    const onOpenExisting = vi.fn();
+    render(
+      <NewProjectPage
+        onOpenEditor={() => {}}
+        onStartImport={() => {}}
+        onOpenExisting={onOpenExisting}
+      />,
+    );
+
+    const openCard = screen.getByRole("button", {
+      name: new RegExp(copy.newProjectOpenExisting),
+    });
+    expect(openCard).toBeInTheDocument();
+    expect(
+      screen.getByText(copy.newProjectOpenExistingDescription),
+    ).toBeInTheDocument();
+
+    fireEvent.click(openCard);
+    expect(onOpenExisting).toHaveBeenCalledTimes(1);
+  });
+
+  it("hides open-existing card when handler is not provided", () => {
+    render(<NewProjectPage onOpenEditor={() => {}} onStartImport={() => {}} />);
+    expect(
+      screen.queryByText(copy.newProjectOpenExistingDescription),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: copy.newProjectOpenExisting }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("open-existing card matches blank and import entry card styling", () => {
+    render(
+      <NewProjectPage
+        onOpenEditor={() => {}}
+        onStartImport={() => {}}
+        onOpenExisting={() => {}}
+      />,
+    );
+
+    const openCard = screen
+      .getByText(copy.newProjectOpenExisting)
+      .closest("button");
+    const blankCard = screen
+      .getByText(copy.newProjectBlankTitle)
+      .closest("button");
+
+    expect(openCard).toBeTruthy();
+    expect(blankCard).toBeTruthy();
+    expect(openCard?.className).toContain("rounded-panel");
+    expect(openCard?.className).toContain("border-2");
+    expect(openCard?.className).toContain("bg-elevated");
+    expect(blankCard?.className).toContain("rounded-panel");
+    expect(blankCard?.className).toContain("border-2");
+  });
 });

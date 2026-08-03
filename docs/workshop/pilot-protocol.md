@@ -9,7 +9,7 @@ Validate ≥80% save rate in a 5-user workshop dry-run before v1.0.0.
 - `pixelanea_<version>_amd64.deb` installed on each machine (`sudo apt install ./pixelanea_*.deb`)
 - Optional: `sudo apt install zenity` for native File Open/Save dialogs
 - `docs/workshop/teacher-guide.md` printed or projected
-- Template project: `docs/workshop/templates/starter.pixelanea` (copy per student)
+- Template project: `docs/examples/projects/blank-starter.pixelanea` (copy per student; see [templates/README.md](./templates/README.md))
 
 ## Session (45 min)
 

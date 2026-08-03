@@ -4,6 +4,7 @@ import {
   collapsePalettePanel,
   createBlankProject,
   dismissOnboarding,
+  expectPixelsSyncedToServer,
   expandPalettePanel,
   getFramePixels,
   lockPalette,
@@ -163,7 +164,7 @@ test.describe("@smoke palette section rail", () => {
     await createBlankProject(page);
     await collapsePalettePanel(page);
 
-    await paletteSectionNav(page).getByRole("button", { name: "Shading palettes" }).click();
+    await selectPaletteSection(page, "shading");
 
     await expect(palettePanel(page)).toBeVisible();
     await expect(paletteSectionNav(page).getByRole("button", { name: "Shading palettes" })).toHaveAttribute(
@@ -332,7 +333,7 @@ test.describe("@error palette section rail", () => {
 });
 
 test.describe("@regression palette section rail", () => {
-  test("PR-REG-001: paint stroke from Swatches tab shows saved status", async ({
+  test("PR-REG-001: paint stroke from Swatches tab shows synced-not-saved status", async ({
     page,
   }) => {
     await createBlankProject(page);
@@ -341,9 +342,7 @@ test.describe("@regression palette section rail", () => {
     await paintStroke(page);
     await putFrame;
 
-    await expect(page.getByRole("status")).toContainText("All changes saved", {
-      timeout: 15_000,
-    });
+    await expectPixelsSyncedToServer(page);
   });
 
   test("PR-REG-002: palette lock blocks preset apply from Presets tab", async ({

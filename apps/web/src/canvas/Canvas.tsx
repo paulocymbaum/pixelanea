@@ -11,6 +11,7 @@ import {
 import { getToolCursor } from "@/tools/registry";
 import { useToolInput } from "@/tools/useToolInput";
 import { useEditorStore } from "@/state/editorStore";
+import { useUiStore } from "@/state/uiStore";
 import { ZoomControls } from "./ZoomControls";
 
 export function Canvas() {
@@ -280,6 +281,49 @@ export function Canvas() {
   };
 
   const pastePreview = useEditorStore((s) => s.pastePreview);
+  const projectId = useEditorStore((s) => s.projectId);
+  const shortcutsOverlayOpen = useUiStore((s) => s.shortcutsOverlayOpen);
+  const onboardingOverlayVisible = useUiStore((s) => s.onboardingOverlayVisible);
+  const canvasFocusProjectRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!projectId || !committedPixels || gridWidth <= 0 || gridHeight <= 0) {
+      return;
+    }
+
+    if (shortcutsOverlayOpen || onboardingOverlayVisible) {
+      return;
+    }
+
+    if (document.querySelector('[role="dialog"][data-state="open"]')) {
+      return;
+    }
+
+    if (canvasFocusProjectRef.current === projectId) {
+      return;
+    }
+
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    canvas.focus({ preventScroll: true });
+    canvasFocusProjectRef.current = projectId;
+  }, [
+    committedPixels,
+    gridWidth,
+    gridHeight,
+    projectId,
+    shortcutsOverlayOpen,
+    onboardingOverlayVisible,
+  ]);
+
+  useEffect(() => {
+    if (!projectId) {
+      canvasFocusProjectRef.current = null;
+    }
+  }, [projectId]);
 
   const canvasCursor = readOnly
     ? "not-allowed"
@@ -311,8 +355,9 @@ export function Canvas() {
     >
       <canvas
         ref={canvasRef}
-        className="block h-full w-full touch-none"
+        className="block h-full w-full touch-none outline-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring"
         aria-label="Pixel canvas"
+        tabIndex={-1}
         style={{ cursor: canvasCursor }}
         onPointerMove={handlePointerMove}
         onPointerDown={handlePointerDown}

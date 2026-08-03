@@ -18,6 +18,7 @@ describe("StatusBar", () => {
       projectId: "p1",
       isDirty: false,
       isPaletteDirty: false,
+      bundleDirty: false,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
       frameSyncError: null,
@@ -60,6 +61,13 @@ describe("StatusBar", () => {
     useEditorStore.setState({ isDirty: true });
     render(<StatusBar />);
     expect(screen.getByText(copy.statusUnsaved)).toBeInTheDocument();
+  });
+
+  it("shows not saved to file when bundle is dirty but pixels are synced", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
+    useEditorStore.setState({ bundleDirty: true });
+    render(<StatusBar />);
+    expect(screen.getByText(copy.statusNotSavedToDisk)).toBeInTheDocument();
   });
 
   it("shows saving while syncing", () => {

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pixelanea — Facilitator one-pager</title>
+  <style>
+    @page { margin: 1.2cm; size: A4; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      font-size: 11pt;
+      line-height: 1.4;
+      color: #18181b;
+      max-width: 18cm;
+      margin: 0 auto;
+    }
+    h1 { font-size: 16pt; margin: 0 0 0.25em; }
+    h2 { font-size: 12pt; margin: 1em 0 0.4em; border-bottom: 1px solid #d1d1d6; padding-bottom: 0.2em; }
+    table { width: 100%; border-collapse: collapse; font-size: 10pt; margin: 0.5em 0; }
+    th, td { border: 1px solid #d1d1d6; padding: 0.35em 0.5em; text-align: left; }
+    th { background: #f4f4f6; }
+    ul { margin: 0.3em 0; padding-left: 1.2em; }
+    .meta { color: #52525b; font-size: 10pt; margin-bottom: 1em; }
+    .footer { margin-top: 1.5em; font-size: 9pt; color: #52525b; }
+  </style>
+</head>
+<body>
+  <h1>Pixelanea workshop — facilitator one-pager</h1>
+  <p class="meta"><strong>45–60 min · local-first · no accounts</strong></p>
+
+  <h2>Before class (15 min)</h2>
+  <ol>
+    <li>Install <code>.deb</code> on lab machines (see teacher-guide.md).</li>
+    <li>Optional: <code>sudo apt install zenity</code> for native file dialogs.</li>
+    <li>Copy templates from <code>docs/workshop/templates/</code>:
+      <ul>
+        <li><code>blank-starter.pixelanea</code> — one per student</li>
+        <li><code>happy-face.pixelanea</code> — finished sprite demo</li>
+        <li><code>walk-cycle.pixelanea</code> — animation demo</li>
+      </ul>
+    </li>
+    <li>Print student handout (one per pair) and shortcuts reference.</li>
+  </ol>
+
+  <h2>Session at a glance</h2>
+  <table>
+    <tr><th>Time</th><th>Activity</th></tr>
+    <tr><td>5 min</td><td>What is pixel art? Show a <code>.pixelanea</code> file</td></tr>
+    <tr><td>5 min</td><td><strong>Open existing</strong> template vs <strong>Start blank</strong></td></tr>
+    <tr><td>15 min</td><td>Guided draw: face or fruit on 16×16 or 32×32</td></tr>
+    <tr><td>10 min</td><td>Palette presets + lock</td></tr>
+    <tr><td>10 min</td><td>Eraser ("Fix mistakes") + undo</td></tr>
+    <tr><td>10 min</td><td>Optional: Duplicate to 8 frames → Play</td></tr>
+    <tr><td>5 min</td><td><strong>Save As</strong> → confirm <strong>All changes saved</strong></td></tr>
+  </table>
+
+  <h2>Key UI phrases</h2>
+  <table>
+    <tr><th>Say</th><th>UI label</th></tr>
+    <tr><td>"Fix mistakes"</td><td>Eraser</td></tr>
+    <tr><td>"Pick a color from your art"</td><td>Eyedropper</td></tr>
+    <tr><td>"Stay inside your color set"</td><td>Lock palette</td></tr>
+    <tr><td>"When it says All changes saved, you're good"</td><td>Status bar</td></tr>
+  </table>
+
+  <h2>If file picker fails</h2>
+  <p>Students see a manual path field. Write a template on the board, e.g. <code>/home/student/Desktop/my-art.pixelanea</code>.</p>
+
+  <p class="footer">Full guide: docs/workshop/teacher-guide.md · Templates: docs/workshop/templates/</p>
+</body>
+</html>

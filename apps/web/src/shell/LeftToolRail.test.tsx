@@ -46,13 +46,13 @@ describe("LeftToolRail", () => {
     );
   });
 
-  it("renders duplicate as icon-only secondary chrome action", () => {
+  it("renders duplicate with icon and visible label", () => {
     render(<LeftToolRail />);
 
     const duplicateButton = screen.getByRole("button", {
       name: copy.frameDuplicateTitle,
     });
-    expect(duplicateButton.querySelector("span")).toBeNull();
+    expect(duplicateButton).toHaveTextContent(copy.frameDuplicateToolLabel);
     expect(duplicateButton.className).toContain("text-secondary/80");
   });
 

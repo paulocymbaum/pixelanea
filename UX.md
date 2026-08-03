@@ -312,7 +312,7 @@ Launch → New project → Blank 32×32 → Canvas focused → Pick color → Pa
 
 - No account, no wizard unless user chose "From image"
 - Canvas auto-focused; palette visible
-- Optional skippable 3-step overlay for Morgan's cohort
+- Optional skippable 4-step overlay for Morgan's cohort (pick color → paint → save → animate)
 
 ### Flow 2 — Photo to pixel (Casey, &lt;5 minutes)
 
@@ -413,7 +413,7 @@ New 16×16 → Import/define 16-color palette → Enable palette lock
 
 | Segment | Approach |
 |---------|----------|
-| Riley | 3-step skippable overlay: pick color → paint → save. Never blocks. |
+| Riley | 4-step skippable overlay: pick color → paint → save → animate. Never blocks. |
 | Casey | Import wizard *is* the onboarding |
 | Morgan | Pre-distributed template file; teacher handout, not in-app tutorial |
 | Alex | No onboarding; defaults to blank 32×32 |

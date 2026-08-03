@@ -20,4 +20,4 @@ Manual fallback (if you need a custom starter):
 2. Save As `starter.pixelanea` in this folder.
 3. Distribute copies; students rename on Save As.
 
-See [teacher-guide.md](../teacher-guide.md) and [pilot-protocol.md](../pilot-protocol.md).
+See [teacher-guide.md](../teacher-guide.md), [facilitator-one-pager.md](../facilitator-one-pager.md), and [pilot-protocol.md](../pilot-protocol.md).

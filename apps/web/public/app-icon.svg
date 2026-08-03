@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Garden Frame: soft rounded square, 2px inset border, centered P-Mark -->
+  <rect x="0" y="0" width="512" height="512" rx="112" ry="112" fill="#F4F4F6"/>
+  <rect x="2" y="2" width="508" height="508" rx="110" ry="110" fill="none" stroke="#D1D1D6" stroke-width="2"/>
+  <g transform="translate(128, 64)">
+    <rect x="0" y="0" width="128" height="128" fill="#18181B"/>
+    <rect x="128" y="0" width="128" height="128" fill="#18181B"/>
+    <rect x="0" y="128" width="128" height="128" fill="#18181B"/>
+    <rect x="128" y="128" width="128" height="128" fill="#3F6F5A"/>
+    <rect x="0" y="256" width="128" height="128" fill="#18181B"/>
+    <rect x="128" y="256" width="128" height="128" fill="#18181B"/>
+  </g>
+</svg>

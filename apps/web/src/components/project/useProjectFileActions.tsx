@@ -458,6 +458,14 @@ export function useProjectFileActions({
     </>
   );
 
+  const saveThen = useCallback(
+    (onSuccess: () => void) => {
+      afterSaveRef.current = onSuccess;
+      void handleSave();
+    },
+    [handleSave],
+  );
+
   return {
     onNewProject: handleNewProjectRequest,
     onOpenProject: handleOpenProjectRequest,
@@ -466,6 +474,7 @@ export function useProjectFileActions({
     onSaveAs: () => {
       void pickAndSaveAs();
     },
+    saveThen,
     canSave: Boolean(projectId) && !navigationBlocked,
     isSaving: isSubmitting,
     isFileNavigationDisabled: navigationBlocked,

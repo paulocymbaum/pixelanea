@@ -132,13 +132,42 @@ export function paletteSectionContent(page: Page) {
   return palettePanel(page).locator("> div.flex.min-h-0").last();
 }
 
+export async function expandPaletteMoreTools(page: Page): Promise<void> {
+  // Label from copy.paletteMoreToolsExpand — Shading/Filters sit behind More tools (B2-04).
+  const expand = paletteSectionNav(page).getByRole("button", {
+    name: "Show shading and filters",
+  });
+  if (await expand.isVisible().catch(() => false)) {
+    await expand.click();
+  }
+}
+
 export async function selectPaletteSection(
   page: Page,
   section: PaletteSectionId,
 ): Promise<void> {
+  if (section === "shading" || section === "filters") {
+    await expandPaletteMoreTools(page);
+  }
   await paletteSectionNav(page)
     .getByRole("button", { name: PALETTE_SECTION_LABELS[section] })
     .click();
+}
+
+export async function expectPixelsSyncedToServer(page: Page): Promise<void> {
+  await expect(page.getByRole("status")).toContainText("Not saved to file", {
+    timeout: 15_000,
+  });
+}
+
+/** After save-to-disk or open of a clean bundle — copy.statusSaved. */
+export async function expectAllChangesSaved(
+  page: Page,
+  options: { timeout?: number } = {},
+): Promise<void> {
+  await expect(page.getByRole("status")).toContainText("All changes saved", {
+    timeout: options.timeout ?? 10_000,
+  });
 }
 
 export async function collapsePalettePanel(page: Page): Promise<void> {

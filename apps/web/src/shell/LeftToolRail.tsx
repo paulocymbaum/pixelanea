@@ -66,6 +66,9 @@ export function LeftToolRail() {
           title={copy.frameDuplicateTitle}
         >
           <Copy className="h-5 w-5" strokeWidth={1.5} aria-hidden />
+          <span className="text-center leading-tight">
+            {copy.frameDuplicateToolLabel}
+          </span>
         </button>
       </aside>
 
