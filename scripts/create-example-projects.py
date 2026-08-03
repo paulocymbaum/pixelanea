@@ -131,6 +131,162 @@ def draw_stick_figure(width: int, height: int, leg_frame: int) -> list[int]:
     return pixels
 
 
+# Original palette for the side-view character walk (slot 0 stays transparent).
+CHARACTER_WALK_PALETTE = [
+    "#2E2218",  # 1 outline
+    "#FFD6A8",  # 2 skin
+    "#7A4B2E",  # 3 hair
+    "#3D85C6",  # 4 shirt
+    "#2B5F94",  # 5 shirt shadow
+    "#4F6D4A",  # 6 pants
+    "#354A32",  # 7 pants shadow
+    "#242424",  # 8 shoes
+]
+
+O = 1
+S = 2
+H = 3
+T = 4
+TS = 5
+P = 6
+PS = 7
+SH = 8
+
+
+def stamp_sprite(
+    pixels: list[int],
+    width: int,
+    origin_x: int,
+    origin_y: int,
+    rows: list[str],
+    color_map: dict[str, int],
+) -> None:
+    for row_index, row in enumerate(rows):
+        for col_index, char in enumerate(row):
+            if char == ".":
+                continue
+            color = color_map.get(char)
+            if color is None:
+                continue
+            set_pixel(pixels, width, origin_x + col_index, origin_y + row_index, color)
+
+
+def draw_character_head(pixels: list[int], width: int, ox: int, oy: int) -> None:
+    stamp_sprite(
+        pixels,
+        width,
+        ox,
+        oy,
+        [
+            "..OOO..",
+            ".OSSSO.",
+            ".OSHSS.",
+            ".OSSSO.",
+            "..OOO..",
+        ],
+        {"O": O, "S": S, "H": H},
+    )
+
+
+def draw_character_torso(pixels: list[int], width: int, ox: int, oy: int) -> None:
+    stamp_sprite(
+        pixels,
+        width,
+        ox,
+        oy,
+        [
+            ".OOOO.",
+            "OTTTTO",
+            "OTSTTO",
+            "OTTTTO",
+            ".OOOO.",
+        ],
+        {"O": O, "T": T, "S": TS},
+    )
+
+
+def draw_character_arm(
+    pixels: list[int],
+    width: int,
+    ox: int,
+    oy: int,
+    *,
+    back: bool,
+) -> None:
+    rows = ["O", "S", "S", "O"] if back else ["O", "S", "O"]
+    color_map = {"O": O, "S": S}
+    for row_index, row in enumerate(rows):
+        set_pixel(pixels, width, ox, oy + row_index, color_map[row])
+
+
+def draw_character_leg(
+    pixels: list[int],
+    width: int,
+    ox: int,
+    oy: int,
+    pose: str,
+) -> None:
+    patterns = {
+        "back": [
+            ".O.",
+            "OPO",
+            "OPO",
+            "OSO",
+            ".O.",
+        ],
+        "plant": [
+            ".O.",
+            "OPO",
+            "OPO",
+            "OSO",
+            "OSH",
+            "OSH",
+        ],
+        "pass": [
+            "..O",
+            ".OP",
+            ".OP",
+            ".OS",
+            ".OS",
+        ],
+        "lift": [
+            ".O.",
+            "OP.",
+            "OP.",
+            "OS.",
+            ".O.",
+        ],
+    }
+    stamp_sprite(pixels, width, ox, oy, patterns[pose], {"O": O, "P": P, "S": PS, "H": SH})
+
+
+def draw_character_walk(width: int, height: int, frame_index: int) -> list[int]:
+    pixels = blank_pixels(width, height)
+    ox = 11
+    oy = 5
+
+    leg_poses = [
+        ("plant", "back"),
+        ("plant", "lift"),
+        ("pass", "pass"),
+        ("lift", "plant"),
+        ("back", "plant"),
+        ("lift", "plant"),
+        ("pass", "pass"),
+        ("plant", "lift"),
+    ]
+    left_pose, right_pose = leg_poses[frame_index % 8]
+
+    arm_back = frame_index % 8 in {0, 1, 4, 5}
+    draw_character_arm(pixels, width, ox - 2, oy + 6, back=arm_back)
+    draw_character_leg(pixels, width, ox + 1, oy + 10, left_pose)
+    draw_character_torso(pixels, width, ox, oy + 5)
+    draw_character_head(pixels, width, ox + 1, oy)
+    draw_character_leg(pixels, width, ox + 4, oy + 10, right_pose)
+    draw_character_arm(pixels, width, ox + 6, oy + 6, back=not arm_back)
+    return pixels
+
+
 def draw_bounce_ball(width: int, height: int, frame_index: int, frame_count: int) -> list[int]:
     pixels = blank_pixels(width, height)
     cx = width // 2
@@ -164,6 +320,14 @@ def create_project(
         },
     )
     return project["id"]
+
+
+def put_palette(project_id: str, colors: list[str]) -> None:
+    api(
+        "PUT",
+        f"/api/projects/{project_id}/palette",
+        {"colors": [{"slot": index + 1, "hex": hex_color} for index, hex_color in enumerate(colors)]},
+    )
 
 
 def put_frame(project_id: str, frame_index: int, pixels: Iterable[int]) -> None:
@@ -249,6 +413,23 @@ def build_walk_cycle(path: Path) -> None:
     verify_open(path)
 
 
+def build_character_walk(path: Path) -> None:
+    frame_count = 8
+    project_id = create_project(
+        name="Character Walk",
+        width=32,
+        height=32,
+        frame_count=frame_count,
+        asset_type="character",
+        fps=8,
+    )
+    put_palette(project_id, CHARACTER_WALK_PALETTE)
+    for index in range(frame_count):
+        put_frame(project_id, index, draw_character_walk(32, 32, index))
+    save_project(project_id, path)
+    verify_open(path)
+
+
 def build_pixel_heart(path: Path) -> None:
     project_id = create_project(
         name="Pixel Heart",
@@ -284,6 +465,11 @@ EXAMPLES = [
     ("grass-tile.pixelanea", build_grass_tile, "16×16 sky/grass background tile"),
     ("bounce-ball.pixelanea", build_bounce_ball, "16×16 bouncing ball, 8 frames @ 12 fps"),
     ("walk-cycle.pixelanea", build_walk_cycle, "32×32 stick figure walk, 8 frames @ 8 fps"),
+    (
+        "character-walk.pixelanea",
+        build_character_walk,
+        "32×32 character walk with original palette, 8 frames @ 8 fps",
+    ),
 ]
 
 

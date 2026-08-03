@@ -10,6 +10,7 @@ Use these `.pixelanea` files to test **File → Open** without creating art firs
 | `grass-tile.pixelanea` | 16×16 sky/grass background tile |
 | `bounce-ball.pixelanea` | 16×16 bouncing ball, 8 frames @ 12 fps |
 | `walk-cycle.pixelanea` | 32×32 stick figure walk, 8 frames @ 8 fps |
+| `character-walk.pixelanea` | 32×32 character walk with original palette, 8 frames @ 8 fps |
 
 ## How to open
 
