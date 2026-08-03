@@ -6,13 +6,14 @@ Validate ≥80% save rate in a 5-user workshop dry-run before v1.0.0.
 
 ## Prerequisites
 
-- `./scripts/install-desktop-linux.sh` on each machine
+- `pixelanea_<version>_amd64.deb` installed on each machine (`sudo apt install ./pixelanea_*.deb`)
+- Optional: `sudo apt install zenity` for native File Open/Save dialogs
 - `docs/workshop/teacher-guide.md` printed or projected
 - Template project: `docs/workshop/templates/starter.pixelanea` (copy per student)
 
 ## Session (45 min)
 
-1. **Install** (5 min) — launch `pixelanea`, confirm status bar shows *Ready*
+1. **Install** (5 min) — open **Pixelanea** from the app menu (or run `pixelanea`), confirm status bar shows *Ready*
 2. **Draw** (10 min) — 32×32 character, 3+ colors
 3. **Save** (10 min) — Save As to `~/pixelanea-workshop/{name}.pixelanea`
 4. **Reopen** (5 min) — Open saved file; verify pixels intact

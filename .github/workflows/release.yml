@@ -12,6 +12,9 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TAURI_CLI_VERSION: "2.0.0"
+
 jobs:
   release-linux:
     runs-on: ubuntu-22.04
@@ -63,6 +66,20 @@ jobs:
       - name: Install packaging tools
         run: sudo apt-get update && sudo apt-get install -y dpkg-dev
 
+      - name: Install desktop shell build dependencies
+        run: ./scripts/install-desktop-shell-build-deps.sh
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
       - name: Build .deb package
         run: ./scripts/package-deb.sh
 
@@ -79,3 +96,74 @@ jobs:
             dist/pixelanea_*.deb
             dist/pixelanea-*-linux-*.tar.gz
           generate_release_notes: true
+
+  release-linux-arm64:
+    name: Build arm64 .deb (verify only)
+    runs-on: ubuntu-22.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build/pixelanea-server
+            .cache/assets
+          key: pixelanea-assets-release-${{ steps.assets-hash.outputs.hash }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: ./scripts/deps-cache.sh install
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Install desktop shell build dependencies
+        run: ./scripts/install-desktop-shell-build-deps.sh
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Build arm64 .deb package
+        run: ./scripts/package-deb.sh
+
+      - name: Smoke test arm64 .deb
+        run: ./scripts/test-package-linux.sh --skip-build

@@ -1,3 +1,4 @@
+use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
 use std::thread;
@@ -16,7 +17,8 @@ impl ServerProcess {
         port: u16,
         web_root: &Path,
     ) -> Result<Self, String> {
-        let child = Command::new(binary)
+        let mut command = Command::new(binary);
+        command
             .arg("--host")
             .arg(host)
             .arg("--port")
@@ -25,7 +27,16 @@ impl ServerProcess {
             .arg(web_root)
             .stdin(Stdio::null())
             .stdout(Stdio::null())
-            .stderr(Stdio::null())
+            .stderr(Stdio::null());
+        unsafe {
+            command.pre_exec(|| {
+                // When the shell exits abruptly, terminate the server too (Linux).
+                // SAFETY: prctl runs in the child immediately before exec; no other threads.
+                libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
+                Ok(())
+            });
+        }
+        let child = command
             .spawn()
             .map_err(|error| format!("failed to start pixelanea-server: {error}"))?;
 

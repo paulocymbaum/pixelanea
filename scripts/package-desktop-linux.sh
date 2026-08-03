@@ -27,13 +27,16 @@ STAGING="${ROOT_DIR}/dist/pixelanea-${VERSION}-linux-${ARCH_LABEL}"
 ARCHIVE="${ROOT_DIR}/dist/pixelanea-${VERSION}-linux-${ARCH_LABEL}.tar.gz"
 
 "${ROOT_DIR}/scripts/build-desktop.sh"
+"${ROOT_DIR}/scripts/build-desktop-shell.sh"
 
 rm -rf "${STAGING}"
 mkdir -p "${STAGING}"
 
 stage_linux_desktop_assets "${STAGING}"
-write_linux_desktop_launcher "${STAGING}/pixelanea" self
+stage_linux_desktop_shell_binary "${STAGING}"
+write_linux_desktop_launcher "${STAGING}/pixelanea-browser" self
 write_linux_desktop_launcher "${STAGING}/pixelanea-launch.sh" self
+ln -sf pixelanea-shell "${STAGING}/pixelanea"
 
 cat >"${STAGING}/install.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -48,12 +51,13 @@ DESKTOP_DIR="${HOME}/.local/share/applications"
 mkdir -p "${INSTALL_PREFIX}" "${BIN_DIR}" "${DESKTOP_DIR}"
 
 install -m 755 "${SOURCE_DIR}/pixelanea-server" "${INSTALL_PREFIX}/pixelanea-server"
+install -m 755 "${SOURCE_DIR}/pixelanea-shell" "${INSTALL_PREFIX}/pixelanea-shell"
 rm -rf "${INSTALL_PREFIX}/web"
 cp -a "${SOURCE_DIR}/web" "${INSTALL_PREFIX}/web"
 install -m 644 "${SOURCE_DIR}/logo-glyph.svg" "${INSTALL_PREFIX}/logo-glyph.svg"
-install -m 755 "${SOURCE_DIR}/pixelanea-launch.sh" "${INSTALL_PREFIX}/pixelanea-launch.sh"
+install -m 755 "${SOURCE_DIR}/pixelanea-browser" "${INSTALL_PREFIX}/pixelanea-browser"
 
-ln -sf "${INSTALL_PREFIX}/pixelanea-launch.sh" "${BIN_DIR}/pixelanea"
+ln -sf "${INSTALL_PREFIX}/pixelanea-shell" "${BIN_DIR}/pixelanea"
 
 cat >"${DESKTOP_DIR}/pixelanea.desktop" <<DESKTOP
 [Desktop Entry]
@@ -62,7 +66,7 @@ Type=Application
 Name=Pixelanea
 GenericName=Pixel Art Editor
 Comment=Make pixel art. Keep it local.
-Exec=${INSTALL_PREFIX}/pixelanea-launch.sh
+Exec=${INSTALL_PREFIX}/pixelanea-shell
 Icon=${INSTALL_PREFIX}/logo-glyph.svg
 Terminal=false
 Categories=Graphics;2DGraphics;
@@ -84,15 +88,18 @@ chmod 755 "${STAGING}/install.sh"
 cat >"${STAGING}/README.txt" <<EOF
 Pixelanea ${VERSION} — Linux ${ARCH_LABEL}
 
-Quick start (portable, no install):
+Quick start (native window, portable — no install):
   tar -xzf pixelanea-${VERSION}-linux-${ARCH_LABEL}.tar.gz
   cd pixelanea-${VERSION}-linux-${ARCH_LABEL}
-  ./pixelanea
+  ./pixelanea-shell
+
+Browser fallback:
+  ./pixelanea-browser
 
 Install for current user (~/.local):
   ./install.sh
 
-Requires: Debian/Ubuntu-style Linux with glibc, curl, and a web browser.
+Requires: Debian/Ubuntu-style Linux with glibc, curl, WebKitGTK (libwebkit2gtk-4.1-0), GTK 3.
 Optional: zenity (sudo apt install zenity) for native file Open/Save dialogs.
 EOF
 
@@ -105,7 +112,7 @@ echo "  Folder:  ${STAGING}"
 echo "  Archive: ${ARCHIVE}"
 echo ""
 echo "Portable run:"
-echo "  cd ${STAGING} && ./pixelanea"
+echo "  cd ${STAGING} && ./pixelanea-shell"
 echo ""
 echo "Install to ~/.local:"
 echo "  ${STAGING}/install.sh"

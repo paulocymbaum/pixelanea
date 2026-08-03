@@ -16,7 +16,7 @@ if ! command -v cargo >/dev/null 2>&1; then
 fi
 
 echo "==> Building pixelanea-shell (release)..."
-(cd "${TAURI_DIR}" && cargo tauri build --release)
+(cd "${TAURI_DIR}" && cargo tauri build)
 
 echo ""
 echo "Desktop shell ready:"

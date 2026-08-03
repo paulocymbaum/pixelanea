@@ -36,6 +36,38 @@ stage_linux_desktop_shell_binary() {
   install -m 755 "${shell_binary}" "${bin_dir}/pixelanea-shell"
 }
 
+# MIME + desktop entry for opening .pixelanea bundles from the file manager.
+write_linux_pixelanea_mime() {
+  local mime_dir="$1"
+  mkdir -p "${mime_dir}"
+  cat >"${mime_dir}/pixelanea-pixelanea.xml" <<'MIME'
+<?xml version="1.0" encoding="UTF-8"?>
+<mime-type type="application/x-pixelanea">
+  <comment>Pixelanea project</comment>
+  <glob pattern="*.pixelanea"/>
+  <icon name="pixelanea"/>
+</mime-type>
+MIME
+}
+
+write_linux_pixelanea_open_desktop() {
+  local desktop_path="$1"
+  cat >"${desktop_path}" <<'DESKTOP'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Open Pixelanea Project
+GenericName=Pixel Art Editor
+Comment=Open a Pixelanea project file
+Exec=/usr/bin/pixelanea-shell %f
+Icon=pixelanea
+Terminal=false
+NoDisplay=true
+MimeType=application/x-pixelanea;
+DESKTOP
+  chmod 644 "${desktop_path}"
+}
+
 # install_dir_mode:
 #   system — fixed /usr/share/pixelanea (.deb)
 #   self   — directory containing the launcher script (portable / ~/.local)

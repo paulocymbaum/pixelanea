@@ -37,6 +37,16 @@ fn install_paths_from_dir(install_dir: &Path) -> InstallPaths {
     }
 }
 
+fn install_dir_from_colocated_assets(candidate: &Path) -> Option<PathBuf> {
+    let server = candidate.join("pixelanea-server");
+    let web_index = candidate.join("web/index.html");
+    if server.is_file() && web_index.is_file() {
+        Some(candidate.to_path_buf())
+    } else {
+        None
+    }
+}
+
 fn resolve_install_dir() -> Result<PathBuf, String> {
     if let Ok(root) = std::env::var("PIXELANEA_ROOT") {
         let path = PathBuf::from(root);
@@ -50,6 +60,9 @@ fn resolve_install_dir() -> Result<PathBuf, String> {
         if let Some(parent) = exe.parent() {
             if parent == Path::new("/usr/bin") || parent == Path::new("/usr/local/bin") {
                 return Ok(PathBuf::from(DEFAULT_SYSTEM_INSTALL_DIR));
+            }
+            if let Some(dir) = install_dir_from_colocated_assets(parent) {
+                return Ok(dir);
             }
         }
     }

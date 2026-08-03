@@ -26,7 +26,7 @@ Install these once per development machine. Versions listed are minimum tested t
 | **C++ compiler** | C++17+ | Backend | GCC 11+, Clang 14+, or MSVC 2022 |
 | **Git** | any recent | vcpkg, submodules | system package manager |
 | **vcpkg** | latest | C++ libraries | clone + `VCPKG_ROOT` env var |
-| **Rust** | ≥ 1.78 | Desktop shell (`apps/desktop/`) | [rustup.rs](https://rustup.rs/) |
+| **Rust** | ≥ 1.78 (stable) | Desktop shell (`apps/desktop/`) | [rustup.rs](https://rustup.rs/) — pinned via `apps/desktop/src-tauri/rust-toolchain.toml` |
 | **pkg-config** | any | some native libs (optional) | `apt install pkg-config` |
 
 ### Optional (recommended)

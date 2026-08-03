@@ -1,18 +1,24 @@
+mod argv;
 mod paths;
 mod port;
 mod server;
 
+use std::path::{Path, PathBuf};
+use std::process::{Command, Stdio};
 use std::sync::Mutex;
 
+use argv::extract_bundle_path_from_args;
 use paths::{devtools_requested, resolve_paths_flexible, InstallPaths};
 use port::{app_url, find_free_port, is_port_listening};
 use server::ServerProcess;
-use tauri::webview::WebviewWindowBuilder;
+use tauri::webview::{WebviewWindow, WebviewWindowBuilder};
 use tauri::{AppHandle, Manager, Url, WebviewUrl};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult};
 
 struct ShellState {
     server: Mutex<Option<ServerProcess>>,
+    host: String,
+    port: u16,
 }
 
 enum PortDecision {
@@ -35,11 +41,11 @@ fn ask_port_in_use(app: &AppHandle, host: &str, port: u16) -> PortDecision {
         .title("Pixelanea")
         .kind(MessageDialogKind::Warning)
         .buttons(MessageDialogButtons::YesNoCancel)
-        .blocking_show();
+        .blocking_show_with_result();
 
     match choice {
-        Some(true) => PortDecision::UseExisting,
-        Some(false) => match find_free_port(host, port.saturating_add(1)) {
+        MessageDialogResult::Yes => PortDecision::UseExisting,
+        MessageDialogResult::No => match find_free_port(host, port.saturating_add(1)) {
             Some(alt) => PortDecision::AlternatePort(alt),
             None => {
                 app.dialog()
@@ -50,7 +56,8 @@ fn ask_port_in_use(app: &AppHandle, host: &str, port: u16) -> PortDecision {
                 PortDecision::Cancel
             }
         },
-        None => PortDecision::Cancel,
+        MessageDialogResult::Cancel | MessageDialogResult::Ok => PortDecision::Cancel,
+        MessageDialogResult::Custom(_) => PortDecision::Cancel,
     }
 }
 
@@ -81,9 +88,88 @@ fn start_server_if_needed(
     Ok(Some(process))
 }
 
-fn open_main_window(app: &AppHandle, host: &str, port: u16) -> Result<(), String> {
-    let url = app_url(host, port);
-    let parsed = Url::parse(&url).map_err(|error| format!("invalid app url {url}: {error}"))?;
+fn app_url_with_open(host: &str, port: u16, open_path: Option<&Path>) -> Result<Url, String> {
+    let base = app_url(host, port);
+    let mut parsed =
+        Url::parse(&base).map_err(|error| format!("invalid app url {base}: {error}"))?;
+
+    if let Some(path) = open_path {
+        parsed
+            .query_pairs_mut()
+            .append_pair("open", path.to_string_lossy().as_ref());
+    }
+
+    Ok(parsed)
+}
+
+fn zenity_available() -> bool {
+    Command::new("zenity")
+        .arg("--version")
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .status()
+        .map(|status| status.success())
+        .unwrap_or(false)
+}
+
+fn warn_zenity_missing(app: &AppHandle) {
+    if zenity_available() {
+        return;
+    }
+
+    app.dialog()
+        .message(
+            "zenity is not installed — File → Open and Save As will ask for a path instead of a native picker.\n\n\
+             Install with: sudo apt install zenity",
+        )
+        .title("Pixelanea")
+        .kind(MessageDialogKind::Info)
+        .blocking_show();
+}
+
+fn focus_main_window(app: &AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.unminimize();
+        let _ = window.show();
+        let _ = window.set_focus();
+    }
+}
+
+fn eval_open_project(window: &WebviewWindow, path: &Path) -> Result<(), String> {
+    let path_str = path.to_string_lossy();
+    let path_json = serde_json::to_string(&path_str)
+        .map_err(|error| format!("failed to encode open path: {error}"))?;
+    let script = format!(
+        "window.__pixelaneaOpenProject && window.__pixelaneaOpenProject({path_json})"
+    );
+    window
+        .eval(&script)
+        .map_err(|error| format!("failed to open project in webview: {error}"))?;
+    Ok(())
+}
+
+fn open_bundle_in_running_instance(app: &AppHandle, path: &Path) {
+    focus_main_window(app);
+
+    if let Some(window) = app.get_webview_window("main") {
+        if eval_open_project(&window, path).is_ok() {
+            return;
+        }
+
+        let state = app.state::<ShellState>();
+        if let Ok(url) = app_url_with_open(&state.host, state.port, Some(path)) {
+            let _ = window.navigate(url);
+        }
+    }
+}
+
+fn open_main_window(
+    app: &AppHandle,
+    host: &str,
+    port: u16,
+    open_path: Option<&Path>,
+) -> Result<(), String> {
+    let parsed = app_url_with_open(host, port, open_path)?;
 
     WebviewWindowBuilder::new(app, "main", WebviewUrl::External(parsed))
         .title("Pixelanea")
@@ -100,9 +186,28 @@ fn open_main_window(app: &AppHandle, host: &str, port: u16) -> Result<(), String
     Ok(())
 }
 
+fn initial_bundle_path() -> Option<PathBuf> {
+    let args: Vec<String> = std::env::args().collect();
+    let cwd = std::env::current_dir().ok();
+    extract_bundle_path_from_args(&args, cwd.as_deref())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let mut builder = tauri::Builder::default();
+
+    #[cfg(desktop)]
+    {
+        builder = builder.plugin(tauri_plugin_single_instance::init(|app, args, cwd| {
+            if let Some(path) = extract_bundle_path_from_args(&args, Some(Path::new(&cwd))) {
+                open_bundle_in_running_instance(app, &path);
+            } else {
+                focus_main_window(app);
+            }
+        }));
+    }
+
+    builder
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::default()
@@ -136,11 +241,23 @@ pub fn run() {
                     error
                 })?;
 
+            let startup_open = initial_bundle_path();
+
             app.manage(ShellState {
                 server: Mutex::new(server),
+                host: host.clone(),
+                port,
             });
 
-            open_main_window(app.handle(), &host, port).map_err(|error| {
+            warn_zenity_missing(app.handle());
+
+            open_main_window(
+                app.handle(),
+                &host,
+                port,
+                startup_open.as_deref(),
+            )
+            .map_err(|error| {
                 app.dialog()
                     .message(error.clone())
                     .title("Pixelanea")
@@ -150,9 +267,13 @@ pub fn run() {
             })?;
 
             log::info!(
-                "Pixelanea shell ready at {} (spawned_server={})",
+                "Pixelanea shell ready at {} (spawned_server={}, startup_open={})",
                 app_url(&host, port),
-                !listen_already
+                !listen_already,
+                startup_open
+                    .as_ref()
+                    .map(|path| path.display().to_string())
+                    .unwrap_or_else(|| "none".to_string())
             );
 
             Ok(())

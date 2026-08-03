@@ -53,7 +53,7 @@ fi
 
 if [[ "${RELEASE}" == true ]]; then
   echo "==> Building release desktop shell..."
-  (cd "${TAURI_DIR}" && cargo tauri build --release)
+  (cd "${TAURI_DIR}" && cargo tauri build)
   echo "==> Starting Pixelanea shell (release)..."
   exec "${BINARY}" "${DEVTOOLS_ARGS[@]}"
 fi

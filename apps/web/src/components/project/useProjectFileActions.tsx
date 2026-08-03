@@ -270,10 +270,13 @@ export function useProjectFileActions({
   );
 
   const executeOpen = useCallback(
-    async (path: string) => {
+    async (path: string, options?: { showDialog?: boolean }) => {
+      const showDialog = options?.showDialog ?? true;
       setIsSubmitting(true);
       setDialogError(null);
-      setOpenDialogOpen(true);
+      if (showDialog) {
+        setOpenDialogOpen(true);
+      }
 
       // Loading a project resets the sync queue, so land any pending edits of
       // the current project before the switch instead of dropping them.
@@ -286,7 +289,12 @@ export function useProjectFileActions({
       const opened = await openProjectFromBundle(path);
       if (!opened.ok) {
         setIsSubmitting(false);
-        setDialogError(opened.message || errors.openProjectFailed);
+        const message = opened.message || errors.openProjectFailed;
+        if (showDialog) {
+          setDialogError(message);
+        } else {
+          showToast(message);
+        }
         return;
       }
 
@@ -296,14 +304,29 @@ export function useProjectFileActions({
       setIsSubmitting(false);
 
       if (!loaded.ok) {
-        setDialogError(loaded.message);
+        if (showDialog) {
+          setDialogError(loaded.message);
+        } else {
+          showToast(loaded.message);
+        }
         return;
       }
 
-      setOpenDialogOpen(false);
+      if (showDialog) {
+        setOpenDialogOpen(false);
+      }
       onProjectOpened?.();
     },
-    [bundlePath, onProjectOpened, projectId],
+    [bundlePath, onProjectOpened, projectId, showToast],
+  );
+
+  const openProjectAtPath = useCallback(
+    async (path: string) => {
+      await requestGuardedNavigation(() => {
+        void executeOpen(path, { showDialog: false });
+      });
+    },
+    [executeOpen, requestGuardedNavigation],
   );
 
   const handleOpenRequest = useCallback(
@@ -438,6 +461,7 @@ export function useProjectFileActions({
   return {
     onNewProject: handleNewProjectRequest,
     onOpenProject: handleOpenProjectRequest,
+    openProjectAtPath,
     onSave: () => void handleSave(),
     onSaveAs: () => {
       void pickAndSaveAs();

@@ -14,14 +14,17 @@ Pixelanea is a free pixel art editor that runs entirely on your computer. Your p
    sudo apt install ./pixelanea_*.deb
    ```
    Or double-click the `.deb` file and follow the graphical installer.
+   The installer pulls in **WebKitGTK** and **GTK 3** runtime libraries (`libwebkit2gtk-4.1-0`, `libgtk-3-0`) for the native app window.
 3. Launch **Pixelanea** from your application menu, or run `pixelanea` in a terminal.
-4. Your browser opens http://127.0.0.1:8787 — draw, save, and close the terminal when finished.
+4. A **native Pixelanea window** opens (no browser tabs or address bar). Draw, save, and close the window when finished.
 
-Optional: `sudo apt install zenity` enables native **File → Open** and **Save As** dialogs.
+**Optional:** `sudo apt install zenity` enables native **File → Open** and **Save As** dialogs in the editor.
+
+**Browser fallback:** If the native window does not start (missing WebKitGTK, headless session, etc.), run `pixelanea-browser` — it starts the local server and opens your default browser at http://127.0.0.1:8787.
 
 ### Portable archive (no root)
 
-Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder. For a user-level install: `./install.sh` (adds `~/.local/bin/pixelanea`).
+Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder (browser-based launcher). For a user-level install: `./install.sh` (adds `~/.local/bin/pixelanea`). The `.deb` install path above is preferred for workshops because it ships the native `pixelanea-shell` window.
 
 ## Getting started
 
@@ -136,7 +139,7 @@ On desktop builds, **File → Open** and **File → Save As** use the system fil
 sudo apt install zenity
 ```
 
-The `pixelanea` launcher prints a hint to the terminal when `zenity` is missing.
+The native app window shows a notice on first launch when `zenity` is missing. The `pixelanea-browser` fallback prints the same hint to the terminal.
 
 ### Save
 

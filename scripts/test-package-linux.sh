@@ -68,6 +68,8 @@ REQUIRED_PATHS=(
   "./usr/share/pixelanea/web/index.html"
   "./usr/share/pixelanea/logo-glyph.svg"
   "./usr/share/applications/pixelanea.desktop"
+  "./usr/share/applications/pixelanea-open.desktop"
+  "./usr/share/mime/packages/pixelanea-pixelanea.xml"
   "./usr/share/pixmaps/pixelanea.svg"
 )
 
@@ -119,6 +121,16 @@ if ! grep -q 'Exec=/usr/bin/pixelanea-shell' <<<"$(dpkg-deb --fsys-tarfile "${DE
   exit 1
 fi
 
+if ! grep -q 'application/x-pixelanea' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/share/mime/packages/pixelanea-pixelanea.xml 2>/dev/null)"; then
+  echo "ERROR: MIME package missing application/x-pixelanea" >&2
+  exit 1
+fi
+
+if ! grep -q 'pixelanea-shell %f' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/share/applications/pixelanea-open.desktop 2>/dev/null)"; then
+  echo "ERROR: pixelanea-open.desktop must pass file path to shell" >&2
+  exit 1
+fi
+
 echo "==> Package structure OK"
 
 if [[ "${RUN_DOCKER}" == true ]]; then
@@ -135,6 +147,7 @@ if [[ "${RUN_DOCKER}" == true ]]; then
         apt-get update -qq
         apt-get install -y -qq ./pkg/pixelanea.deb
         test -x /usr/bin/pixelanea-shell
+        command -v pixelanea-shell >/dev/null
         test -x /usr/bin/pixelanea-browser
         test -x /usr/share/pixelanea/pixelanea-server
         test -f /usr/share/pixelanea/web/index.html

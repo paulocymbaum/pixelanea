@@ -7,12 +7,14 @@ A 45–60 minute introduction to pixel art for classrooms, coding clubs, and jam
 ### Install Pixelanea (lab prep — ≤5 steps)
 
 1. Copy `pixelanea_<version>_amd64.deb` to each machine (USB, shared drive, or lab image).
-2. Install: `sudo apt install ./pixelanea_*.deb` (or double-click the `.deb` in the file manager).
+2. Install: `sudo apt install ./pixelanea_*.deb` (or double-click the `.deb` in the file manager). WebKitGTK and GTK 3 are installed automatically as dependencies.
 3. Optional but recommended: `sudo apt install zenity` for native File Open/Save dialogs.
 4. Launch **Pixelanea** from the application menu, or run `pixelanea` in a terminal.
-5. Confirm the editor opens at http://127.0.0.1:8787 and `/api/health` returns OK.
+5. Confirm a **native Pixelanea window** opens (not a browser tab). Quick check: `curl -sf http://127.0.0.1:8787/api/health` returns OK.
 
-> **Developers only:** from a git checkout use `pnpm package:deb` to build the `.deb`, or `./scripts/install-desktop-linux.sh` for a user-level install without root.
+If the native window fails on a machine, use `pixelanea-browser` as a fallback (opens the default browser to the same local URL).
+
+> **Developers only:** from a git checkout use `pnpm package:deb` to build the `.deb` (requires Rust stable + WebKitGTK dev packages — see [DEPENDENCIES.md](../../DEPENDENCIES.md)), or `./scripts/install-desktop-linux.sh` for a user-level browser launcher without root.
 
 ### Room setup
 
@@ -73,9 +75,9 @@ Students can open this file instead of creating from scratch to save time.
 
 ## If the file picker doesn't open
 
-On some browser-only setups the native file picker may not appear. Pixelanea then shows a manual path field. Tell students to type the **full path** ending in `.pixelanea` — write a template on the board (for example `/home/student/Desktop/my-art.pixelanea`) or paste from your example file. The dialog explains that the picker didn't open; the hint under the field reminds them to ask you if they're unsure.
+On some setups the native file picker may not appear (zenity missing, or browser fallback via `pixelanea-browser`). Pixelanea then shows a manual path field. Tell students to type the **full path** ending in `.pixelanea` — write a template on the board (for example `/home/student/Desktop/my-art.pixelanea`) or paste from your example file. The dialog explains that the picker didn't open; the hint under the field reminds them to ask you if they're unsure.
 
-On Linux desktop builds, install `zenity` (`sudo apt install zenity`) and restart Pixelanea so **File → Open** and **Save As** use the native dialog.
+On Linux desktop builds, install `zenity` (`sudo apt install zenity`) and restart Pixelanea so **File → Open** and **Save As** use the native dialog. The `.deb` install path uses a native app window by default; zenity is only for file-picker dialogs, not for launching the editor.
 
 ## Native file picker QA checklist (desktop labs)
 

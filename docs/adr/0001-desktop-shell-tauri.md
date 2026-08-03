@@ -78,6 +78,24 @@ pixelanea-browser bash fallback launcher (xdg-open path)
 - Remote-origin WebView requires explicit CSP / navigation guards (implemented in shell).
 - Windows/macOS shells are out of scope for Batch 1; Tauri remains the likely cross-platform path later.
 
+## Windows parity (deferred — B3-03)
+
+Tauri 2 supports Windows, but Pixelanea has **not** shipped a Windows desktop package. A reasonable first Windows slice (estimate only):
+
+| Work item | Effort | Notes |
+|-----------|--------|-------|
+| WebView2 runtime + MSVC build in CI | 2–3 days | Tauri Windows prerequisites; GitHub Actions `windows-latest` |
+| Path resolution (`PIXELANEA_ROOT`, install dir beside exe) | 1 day | Mirror `paths.rs` logic for `%ProgramFiles%` / portable layout |
+| `pixelanea-server` spawn + health poll | 0.5 day | Same as Linux; different default paths |
+| Single-instance (`tauri-plugin-single-instance`) | 0.5 day | Plugin supports Windows natively |
+| File associations + `Exec` `.pixelanea` | 1–2 days | Registry ProgId + installer (WiX/NSIS/cargo-bundle) |
+| File dialogs | 0 days if keeping server pickers | Windows would need a **non-zenity** dialog provider (PowerShell / COM / separate spike) — **not included** in shell-only estimate |
+| Installer signing + smoke tests | 2–3 days | Workshop trust, SmartScreen |
+
+**Rough total:** ~1.5–2 weeks engineering + CI for a **minimal** signed Windows installer without native Save/Open dialog parity on server.
+
+**Recommendation:** Land Linux `.deb` + MIME association first (Batch 3). Start Windows when product requests workshop labs on Windows 10/11; reuse Tauri shell from Batch 1–3 rather than a second stack.
+
 ## References
 
 - Backlog: `.cursor/changelog/desktop-shell/20260803T041600_product-refinement/loop-backlog.md` (B1-01 … B1-07)

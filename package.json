@@ -18,6 +18,7 @@
     "package:deb": "./scripts/package-deb.sh",
     "package:desktop": "./scripts/package-desktop-linux.sh",
     "test:package:linux": "./scripts/test-package-linux.sh",
+    "test:desktop-shell": "./scripts/test-desktop-shell.sh",
     "lint": "pnpm --filter @pixelanea/web lint",
     "typecheck": "pnpm --filter @pixelanea/web exec tsc --noEmit",
     "test:unit": "pnpm --filter @pixelanea/web test",

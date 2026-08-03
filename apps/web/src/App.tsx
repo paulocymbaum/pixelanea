@@ -4,6 +4,11 @@ import { useProjectFileActions } from "@/components/project/useProjectFileAction
 import { UnsavedChangesDialog } from "@/components/project/UnsavedChangesDialog";
 import { applyHealthCheckResult } from "@/lib/apiHealth";
 import {
+  clearStartupOpenPathFromUrl,
+  readStartupOpenPath,
+  type PixelaneaShellWindow,
+} from "@/lib/startupOpenPath";
+import {
   getEditorNavigationGuardState,
   needsNavigationGuard,
 } from "@/lib/unsavedGuard";
@@ -41,6 +46,7 @@ export function App() {
     onNewProject: goToNewProject,
     onProjectOpened: handleProjectOpened,
   });
+  const startupOpenHandledRef = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -54,6 +60,30 @@ export function App() {
       cancelled = true;
     };
   }, [setApiStatus]);
+
+  useEffect(() => {
+    const shellWindow = window as PixelaneaShellWindow;
+    shellWindow.__pixelaneaOpenProject = (path: string) => {
+      void projectFileActions.openProjectAtPath(path);
+    };
+
+    return () => {
+      delete shellWindow.__pixelaneaOpenProject;
+    };
+  }, [projectFileActions.openProjectAtPath]);
+
+  useEffect(() => {
+    if (startupOpenHandledRef.current) {
+      return;
+    }
+    const startupPath = readStartupOpenPath();
+    if (!startupPath) {
+      return;
+    }
+    startupOpenHandledRef.current = true;
+    clearStartupOpenPathFromUrl();
+    void projectFileActions.openProjectAtPath(startupPath);
+  }, [projectFileActions.openProjectAtPath]);
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {

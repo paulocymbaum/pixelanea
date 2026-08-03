@@ -28,16 +28,18 @@ Free, open-source, local-only pixel art editor. Draw on a grid, pixelate photos,
 
 ## Desktop install (recommended)
 
-For workshops and daily use, install the local desktop launcher (single process — no separate dev server):
+**End users (workshops):** install the `.deb` from [Releases](https://github.com/pixelanea/pixelanea/releases) — it ships `pixelanea-shell`, a native window backed by WebKitGTK (no browser chrome). Launch **Pixelanea** from the app menu or run `pixelanea`. Optional: `sudo apt install zenity` for native File Open/Save dialogs. Fallback: `pixelanea-browser` opens the editor in your default browser.
+
+**Developers (browser launcher, no Rust required):**
 
 ```bash
 ./scripts/install-desktop-linux.sh
 pixelanea
 ```
 
-See [docs/user-guide.md](./docs/user-guide.md) for details.
+**Developers (native shell):** install Rust stable + WebKitGTK dev packages ([DEPENDENCIES.md](./DEPENDENCIES.md)), then `pnpm build:desktop-shell` or `pnpm package:deb` for a `.deb` in `dist/`. `pnpm package:desktop` builds a portable `.tar.gz` (browser launcher). Build artifacts are gitignored — never commit `dist/`.
 
-**Developers:** `pnpm package:deb` builds a `.deb` in `dist/`; `pnpm package:desktop` builds a portable `.tar.gz`. These paths are gitignored — never commit build artifacts.
+See [docs/user-guide.md](./docs/user-guide.md) and [docs/workshop/teacher-guide.md](./docs/workshop/teacher-guide.md) for install details.
 
 ## Developer quick start
 
@@ -51,9 +53,10 @@ pnpm dev
 
 | Service | URL |
 |---------|-----|
-| Web UI (dev) | http://localhost:5173 |
+| Web UI (developer) | http://localhost:5173 |
 | API health | http://127.0.0.1:8787/api/health |
-| Desktop app | http://127.0.0.1:8787 (after `install-desktop-linux.sh`) |
+| Desktop app (browser launcher) | http://127.0.0.1:8787 (after `install-desktop-linux.sh`) |
+| Desktop app (native shell) | `pixelanea-shell` / app menu after `.deb` install |
 
 **Sample projects** for testing File → Open: [`examples/projects/`](./examples/projects/) (blank canvas, sprites, animations).
 
