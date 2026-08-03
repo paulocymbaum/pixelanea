@@ -62,7 +62,8 @@ if [[ "${deb_size}" -lt 100000 ]]; then
 fi
 
 REQUIRED_PATHS=(
-  "./usr/bin/pixelanea"
+  "./usr/bin/pixelanea-shell"
+  "./usr/bin/pixelanea-browser"
   "./usr/share/pixelanea/pixelanea-server"
   "./usr/share/pixelanea/web/index.html"
   "./usr/share/pixelanea/logo-glyph.svg"
@@ -103,13 +104,18 @@ for maint_script in postinst postrm; do
   fi
 done
 
-if grep -q 'fuser -k' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/bin/pixelanea 2>/dev/null)"; then
-  echo "ERROR: launcher must not use silent fuser -k" >&2
+if grep -q 'fuser -k' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/bin/pixelanea-browser 2>/dev/null)"; then
+  echo "ERROR: browser launcher must not use silent fuser -k" >&2
   exit 1
 fi
 
-if ! grep -q 'handle_port_in_use' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/bin/pixelanea 2>/dev/null)"; then
-  echo "ERROR: launcher missing port-in-use policy" >&2
+if ! grep -q 'handle_port_in_use' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/bin/pixelanea-browser 2>/dev/null)"; then
+  echo "ERROR: browser launcher missing port-in-use policy" >&2
+  exit 1
+fi
+
+if ! grep -q 'Exec=/usr/bin/pixelanea-shell' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/share/applications/pixelanea.desktop 2>/dev/null)"; then
+  echo "ERROR: .desktop must launch pixelanea-shell" >&2
   exit 1
 fi
 
@@ -128,10 +134,11 @@ if [[ "${RUN_DOCKER}" == true ]]; then
       bash -euxo pipefail -c '
         apt-get update -qq
         apt-get install -y -qq ./pkg/pixelanea.deb
-        test -x /usr/bin/pixelanea
+        test -x /usr/bin/pixelanea-shell
+        test -x /usr/bin/pixelanea-browser
         test -x /usr/share/pixelanea/pixelanea-server
         test -f /usr/share/pixelanea/web/index.html
-        ! grep -q "fuser -k" /usr/bin/pixelanea
+        ! grep -q "fuser -k" /usr/bin/pixelanea-browser
       '; then
       echo "==> Docker install smoke test passed"
     else

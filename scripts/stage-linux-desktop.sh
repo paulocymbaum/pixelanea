@@ -4,7 +4,8 @@
 # Source from other scripts:
 #   source "${ROOT_DIR}/scripts/stage-linux-desktop.sh"
 #   stage_linux_desktop_assets "${TARGET_DIR}"
-#   write_linux_desktop_launcher "${LAUNCHER_PATH}" system|self
+#   stage_linux_desktop_shell_binary "${BIN_DIR}"
+#   write_linux_desktop_launcher "${LAUNCHER_PATH}" system|self   # browser fallback
 #
 # Or invoke directly:
 #   ./scripts/stage-linux-desktop.sh stage <target_dir>
@@ -22,9 +23,23 @@ stage_linux_desktop_assets() {
   install -m 644 "${_STAGE_ROOT_DIR}/brand/logo-glyph.svg" "${target_dir}/logo-glyph.svg"
 }
 
+# Copy the release Tauri shell binary into a bin directory (e.g. usr/bin).
+stage_linux_desktop_shell_binary() {
+  local bin_dir="$1"
+  local shell_binary="${_STAGE_ROOT_DIR}/apps/desktop/src-tauri/target/release/pixelanea-shell"
+  if [[ ! -x "${shell_binary}" ]]; then
+    echo "stage_linux_desktop_shell_binary: missing ${shell_binary}" >&2
+    echo "Run: ./scripts/build-desktop-shell.sh" >&2
+    return 1
+  fi
+  mkdir -p "${bin_dir}"
+  install -m 755 "${shell_binary}" "${bin_dir}/pixelanea-shell"
+}
+
 # install_dir_mode:
 #   system — fixed /usr/share/pixelanea (.deb)
 #   self   — directory containing the launcher script (portable / ~/.local)
+# Browser fallback launcher (xdg-open). Primary desktop entry is pixelanea-shell.
 write_linux_desktop_launcher() {
   local launcher_path="$1"
   local install_dir_mode="$2"

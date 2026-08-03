@@ -42,6 +42,7 @@ DEB_FILE="${ROOT_DIR}/dist/${PKG_NAME}_${VERSION}_${DEB_ARCH}.deb"
 APP_DIR="usr/share/pixelanea"
 
 "${ROOT_DIR}/scripts/build-desktop.sh"
+"${ROOT_DIR}/scripts/build-desktop-shell.sh"
 
 rm -rf "${PKG_ROOT}"
 mkdir -p "${PKG_ROOT}/DEBIAN"
@@ -51,8 +52,10 @@ mkdir -p "${PKG_ROOT}/usr/share/applications"
 mkdir -p "${PKG_ROOT}/usr/share/pixmaps"
 
 stage_linux_desktop_assets "${PKG_ROOT}/${APP_DIR}"
+stage_linux_desktop_shell_binary "${PKG_ROOT}/usr/bin"
 install -m 644 "${ROOT_DIR}/brand/logo-glyph.svg" "${PKG_ROOT}/usr/share/pixmaps/pixelanea.svg"
-write_linux_desktop_launcher "${PKG_ROOT}/usr/bin/pixelanea" system
+write_linux_desktop_launcher "${PKG_ROOT}/usr/bin/pixelanea-browser" system
+ln -sf pixelanea-shell "${PKG_ROOT}/usr/bin/pixelanea"
 
 cat >"${PKG_ROOT}/usr/share/applications/pixelanea.desktop" <<EOF
 [Desktop Entry]
@@ -61,7 +64,7 @@ Type=Application
 Name=Pixelanea
 GenericName=Pixel Art Editor
 Comment=Make pixel art. Keep it local.
-Exec=/usr/bin/pixelanea
+Exec=/usr/bin/pixelanea-shell
 Icon=pixelanea
 Terminal=false
 Categories=Graphics;2DGraphics;
@@ -75,7 +78,7 @@ Version: ${VERSION}
 Section: graphics
 Priority: optional
 Architecture: ${DEB_ARCH}
-Depends: libc6 (>= 2.35), curl
+Depends: libc6 (>= 2.35), curl, libwebkit2gtk-4.1-0, libgtk-3-0
 Recommends: zenity, xdg-utils
 Maintainer: Pixelanea contributors <pixelanea@localhost>
 Homepage: https://github.com/pixelanea/pixelanea
@@ -116,4 +119,4 @@ echo "Install:"
 echo "  sudo apt install ./${DEB_FILE##*/}"
 echo ""
 echo "Or double-click the .deb file in your file manager."
-echo "After install, run: pixelanea  (or open from the application menu)"
+echo "After install, run: pixelanea-shell  (or open from the application menu)"

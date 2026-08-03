@@ -26,6 +26,7 @@ Install these once per development machine. Versions listed are minimum tested t
 | **C++ compiler** | C++17+ | Backend | GCC 11+, Clang 14+, or MSVC 2022 |
 | **Git** | any recent | vcpkg, submodules | system package manager |
 | **vcpkg** | latest | C++ libraries | clone + `VCPKG_ROOT` env var |
+| **Rust** | ≥ 1.78 | Desktop shell (`apps/desktop/`) | [rustup.rs](https://rustup.rs/) |
 | **pkg-config** | any | some native libs (optional) | `apt install pkg-config` |
 
 ### Optional (recommended)
@@ -413,6 +414,31 @@ Use this as the canonical version target when scaffolding. Adjust as the project
 
 ## Platform-specific notes
 
+### Linux desktop shell (Tauri / WebKitGTK)
+
+Required to **build** and **run** `pixelanea-shell` on Ubuntu 22.04 / Debian 12:
+
+```bash
+# Runtime (installed with .deb or for local runs)
+sudo apt install libwebkit2gtk-4.1-0 libgtk-3-0
+
+# Build-only (dev / CI packaging)
+sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev libayatana-appindicator3-dev \
+  librsvg2-dev patchelf
+
+# Tauri CLI (once per machine)
+cargo install tauri-cli --version "2.0.0" --locked
+```
+
+Run the native shell after building server + web:
+
+```bash
+./scripts/run-desktop-shell.sh          # dev (cargo tauri dev)
+./scripts/run-desktop-shell.sh --release
+```
+
+Browser fallback (unchanged): `./scripts/run-desktop.sh`
+
 ### Linux
 
 ```bash
@@ -525,7 +551,7 @@ Example GitHub Actions cache steps:
 
 | Addition | Package / library | Trigger |
 |----------|-------------------|---------|
-| Desktop shell | Tauri 2.x (`@tauri-apps/api`) | Native window + single installer |
+| Desktop shell | Tauri 2.x (`apps/desktop/`) | **Implemented** — native window + `pixelanea-shell` |
 | E2E tests | Playwright | Full editor flow automation |
 | GIF export | `gifenc` (C) or server-side encoder | Animation export feature |
 | WASM pixelation | Emscripten + stb in browser | Offline mode without C++ server |

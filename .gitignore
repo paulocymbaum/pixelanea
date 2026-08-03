@@ -6,6 +6,7 @@ node_modules/
 dist/
 server/build/
 apps/web/dist/
+apps/desktop/src-tauri/target/
 apps/web/node_modules/.vite/
 apps/web/node_modules/.tmp/
 
