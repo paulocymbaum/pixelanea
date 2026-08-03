@@ -187,19 +187,59 @@ export async function selectPaletteColor(page: Page, colorNumber: number): Promi
 
 export async function selectFrame(page: Page, frameNumber: number): Promise<void> {
   // Copy-from-frame menu overlaps the thumbnail corner in the frame strip.
-  await page
-    .getByRole("button", { name: `Frame ${frameNumber}` })
-    .click({ force: true });
+  const frameButton = page.getByRole("button", {
+    name: `Frame ${frameNumber}`,
+    exact: true,
+  });
+  await frameButton.scrollIntoViewIfNeeded();
+  await frameButton.click({ position: { x: 12, y: 30 } });
+  await expect(page.getByLabel(new RegExp(`^Frame ${frameNumber} of `))).toBeVisible({
+    timeout: 10_000,
+  });
 }
 
-export async function waitForFramePut(page: Page): Promise<void> {
+/** Wait until reloadAllFrames finishes after duplicate (last frame GET). Register before duplicate. */
+export async function waitForFramesReload(page: Page, lastFrameIndex: number): Promise<void> {
   await page.waitForResponse(
     (response) =>
-      response.request().method() === "PUT" &&
-      /\/api\/projects\/[^/]+\/frames\/\d+/.test(response.url()) &&
+      response.request().method() === "GET" &&
+      new RegExp(`/api/projects/[^/]+/frames/${lastFrameIndex}$`).test(response.url()) &&
       response.ok(),
     { timeout: 30_000 },
   );
+}
+
+/** True when the request persists frame pixels (binary PUT or cell PATCH). */
+export function isFrameSyncRequest(url: string, method: string): boolean {
+  if (method === "PUT" && /\/api\/projects\/[^/]+\/frames\/\d+$/.test(url)) {
+    return true;
+  }
+  if (method === "PATCH" && /\/api\/projects\/[^/]+\/frames\/\d+\/cells$/.test(url)) {
+    return true;
+  }
+  return false;
+}
+
+/** Wait for the next successful frame sync (PUT binary or PATCH cells). */
+export async function waitForFrameSync(page: Page): Promise<void> {
+  await page.waitForResponse(
+    (response) =>
+      isFrameSyncRequest(response.url(), response.request().method()) &&
+      response.ok(),
+    { timeout: 30_000 },
+  );
+}
+
+/** Wait for N successful frame sync responses (order not guaranteed). */
+export async function waitForFrameSyncResponses(page: Page, count: number): Promise<void> {
+  for (let index = 0; index < count; index += 1) {
+    await waitForFrameSync(page);
+  }
+}
+
+/** @deprecated Prefer waitForFrameSync — editor may PATCH cells instead of PUT binary. */
+export async function waitForFramePut(page: Page): Promise<void> {
+  await waitForFrameSync(page);
 }
 
 /** Count non-transparent pixels in a frame via the API (reliable after round-trip). */
@@ -344,7 +384,10 @@ export async function completeFallbackProjectPathIfShown(
   } catch {
     return;
   }
-  await dialog.getByLabel("File path").fill(options.path);
+  const pathInput = dialog.getByLabel("File path");
+  await expect(pathInput).not.toHaveAttribute("aria-busy", "true", { timeout: 30_000 });
+  await expect(pathInput).toBeEnabled({ timeout: 5_000 });
+  await pathInput.fill(options.path);
   await dialog.getByRole("button", { name: submitLabel, exact: true }).click();
 }
 

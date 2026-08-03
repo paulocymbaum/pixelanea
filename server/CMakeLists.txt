@@ -194,7 +194,16 @@ target_link_libraries(
 set(PIXELANEA_SERVER_SOURCES
   src/main.cpp
   src/api/api_server.cpp
+  src/api/api_http_helpers.cpp
+  src/api/api_json_serializers.cpp
+  src/api/api_request_parsers.cpp
   src/api/base64.cpp
+  src/api/health_handlers.cpp
+  src/api/project_handlers.cpp
+  src/api/palette_handlers.cpp
+  src/api/frame_handlers.cpp
+  src/api/import_handlers.cpp
+  src/api/export_handlers.cpp
   src/api/file_dialog_handlers.cpp
   src/api/zenity_file_dialog_provider.cpp
   src/api/web_static.cpp
@@ -241,7 +250,16 @@ if(BUILD_TESTING)
     tests/gif_encoder_test.cpp
     tests/file_dialog_test.cpp
     src/api/api_server.cpp
+    src/api/api_http_helpers.cpp
+    src/api/api_json_serializers.cpp
+    src/api/api_request_parsers.cpp
     src/api/base64.cpp
+    src/api/health_handlers.cpp
+    src/api/project_handlers.cpp
+    src/api/palette_handlers.cpp
+    src/api/frame_handlers.cpp
+    src/api/import_handlers.cpp
+    src/api/export_handlers.cpp
     src/logging/http_request_log.cpp
     src/api/file_dialog_handlers.cpp
   )

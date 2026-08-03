@@ -9,6 +9,9 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=stage-linux-desktop.sh
+source "${ROOT_DIR}/scripts/stage-linux-desktop.sh"
+
 VERSION="$(tr -d '[:space:]' < "${ROOT_DIR}/VERSION")"
 ARCH="$(uname -m)"
 case "${ARCH}" in
@@ -26,72 +29,11 @@ ARCHIVE="${ROOT_DIR}/dist/pixelanea-${VERSION}-linux-${ARCH_LABEL}.tar.gz"
 "${ROOT_DIR}/scripts/build-desktop.sh"
 
 rm -rf "${STAGING}"
-mkdir -p "${STAGING}/web"
+mkdir -p "${STAGING}"
 
-install -m 755 "${ROOT_DIR}/server/build/pixelanea-server" "${STAGING}/pixelanea-server"
-cp -a "${ROOT_DIR}/apps/web/dist/." "${STAGING}/web/"
-install -m 644 "${ROOT_DIR}/brand/logo-glyph.svg" "${STAGING}/logo-glyph.svg"
-
-cat >"${STAGING}/pixelanea" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOST="127.0.0.1"
-PORT="8787"
-APP_URL="http://${HOST}:${PORT}"
-BINARY="${INSTALL_DIR}/pixelanea-server"
-WEB_ROOT="${INSTALL_DIR}/web"
-
-port_in_use() {
-  if command -v ss >/dev/null 2>&1; then
-    ss -tln "sport = :${PORT}" 2>/dev/null | grep -q LISTEN
-    return
-  fi
-  fuser "${PORT}/tcp" >/dev/null 2>&1
-}
-
-if port_in_use; then
-  if command -v fuser >/dev/null 2>&1; then
-    fuser -k "${PORT}/tcp" 2>/dev/null || true
-    sleep 0.5
-  fi
-fi
-
-if ! command -v zenity >/dev/null 2>&1; then
-  echo "Note: install zenity for native Open/Save dialogs (e.g. sudo apt install zenity)." >&2
-  echo "Without zenity, use the path dialog in the app to open or save .pixelanea files." >&2
-fi
-
-"${BINARY}" --host "${HOST}" --port "${PORT}" --web-root "${WEB_ROOT}" &
-SERVER_PID=$!
-
-cleanup() {
-  kill "${SERVER_PID}" 2>/dev/null || true
-}
-trap cleanup EXIT INT TERM
-
-if command -v curl >/dev/null 2>&1; then
-  for _ in $(seq 1 50); do
-    if curl -sf "${APP_URL}/api/health" >/dev/null 2>&1; then
-      break
-    fi
-    sleep 0.2
-  done
-else
-  sleep 2
-fi
-
-if command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "${APP_URL}" >/dev/null 2>&1 &
-elif command -v sensible-browser >/dev/null 2>&1; then
-  sensible-browser "${APP_URL}" >/dev/null 2>&1 &
-else
-  echo "Pixelanea is running at ${APP_URL}"
-fi
-
-wait "${SERVER_PID}"
-EOF
-chmod 755 "${STAGING}/pixelanea"
+stage_linux_desktop_assets "${STAGING}"
+write_linux_desktop_launcher "${STAGING}/pixelanea" self
+write_linux_desktop_launcher "${STAGING}/pixelanea-launch.sh" self
 
 cat >"${STAGING}/install.sh" <<'EOF'
 #!/usr/bin/env bash
@@ -109,59 +51,7 @@ install -m 755 "${SOURCE_DIR}/pixelanea-server" "${INSTALL_PREFIX}/pixelanea-ser
 rm -rf "${INSTALL_PREFIX}/web"
 cp -a "${SOURCE_DIR}/web" "${INSTALL_PREFIX}/web"
 install -m 644 "${SOURCE_DIR}/logo-glyph.svg" "${INSTALL_PREFIX}/logo-glyph.svg"
-
-cat >"${INSTALL_PREFIX}/pixelanea-launch.sh" <<'LAUNCHER'
-#!/usr/bin/env bash
-set -euo pipefail
-INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOST="127.0.0.1"
-PORT="8787"
-APP_URL="http://${HOST}:${PORT}"
-BINARY="${INSTALL_DIR}/pixelanea-server"
-WEB_ROOT="${INSTALL_DIR}/web"
-
-port_in_use() {
-  if command -v ss >/dev/null 2>&1; then
-    ss -tln "sport = :${PORT}" 2>/dev/null | grep -q LISTEN
-    return
-  fi
-  fuser "${PORT}/tcp" >/dev/null 2>&1
-}
-
-if port_in_use; then
-  if command -v fuser >/dev/null 2>&1; then
-    fuser -k "${PORT}/tcp" 2>/dev/null || true
-    sleep 0.5
-  fi
-fi
-
-if ! command -v zenity >/dev/null 2>&1; then
-  echo "Note: install zenity for native Open/Save dialogs (e.g. sudo apt install zenity)." >&2
-  echo "Without zenity, use the path dialog in the app to open or save .pixelanea files." >&2
-fi
-
-"${BINARY}" --host "${HOST}" --port "${PORT}" --web-root "${WEB_ROOT}" &
-SERVER_PID=$!
-trap 'kill "${SERVER_PID}" 2>/dev/null || true' EXIT INT TERM
-
-if command -v curl >/dev/null 2>&1; then
-  for _ in $(seq 1 50); do
-    curl -sf "${APP_URL}/api/health" >/dev/null 2>&1 && break
-    sleep 0.2
-  done
-else
-  sleep 2
-fi
-
-if command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "${APP_URL}" >/dev/null 2>&1 &
-elif command -v sensible-browser >/dev/null 2>&1; then
-  sensible-browser "${APP_URL}" >/dev/null 2>&1 &
-fi
-
-wait "${SERVER_PID}"
-LAUNCHER
-chmod 755 "${INSTALL_PREFIX}/pixelanea-launch.sh"
+install -m 755 "${SOURCE_DIR}/pixelanea-launch.sh" "${INSTALL_PREFIX}/pixelanea-launch.sh"
 
 ln -sf "${INSTALL_PREFIX}/pixelanea-launch.sh" "${BIN_DIR}/pixelanea"
 

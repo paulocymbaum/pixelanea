@@ -37,6 +37,8 @@ pixelanea
 
 See [docs/user-guide.md](./docs/user-guide.md) for details.
 
+**Developers:** `pnpm package:deb` builds a `.deb` in `dist/`; `pnpm package:desktop` builds a portable `.tar.gz`. These paths are gitignored — never commit build artifacts.
+
 ## Developer quick start
 
 **Prerequisites:** Node 20+, pnpm 9+, CMake, C++17 compiler, vcpkg — see [DEPENDENCIES.md](./DEPENDENCIES.md).

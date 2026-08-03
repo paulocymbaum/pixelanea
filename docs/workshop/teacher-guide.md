@@ -4,11 +4,15 @@ A 45–60 minute introduction to pixel art for classrooms, coding clubs, and jam
 
 ## Before the session
 
-### Install Pixelanea
+### Install Pixelanea (lab prep — ≤5 steps)
 
-1. Follow [DEPENDENCIES.md](../../DEPENDENCIES.md) on each machine (or prepare a USB with a pre-built release when available).
-2. Verify the app starts: `./scripts/dev.sh` → open http://localhost:5173.
-3. Confirm `/api/health` returns OK.
+1. Copy `pixelanea_<version>_amd64.deb` to each machine (USB, shared drive, or lab image).
+2. Install: `sudo apt install ./pixelanea_*.deb` (or double-click the `.deb` in the file manager).
+3. Optional but recommended: `sudo apt install zenity` for native File Open/Save dialogs.
+4. Launch **Pixelanea** from the application menu, or run `pixelanea` in a terminal.
+5. Confirm the editor opens at http://127.0.0.1:8787 and `/api/health` returns OK.
+
+> **Developers only:** from a git checkout use `pnpm package:deb` to build the `.deb`, or `./scripts/install-desktop-linux.sh` for a user-level install without root.
 
 ### Room setup
 
@@ -64,7 +68,7 @@ Students can open this file instead of creating from scratch to save time.
 | How do I get my color back? | Eyedropper (`I`), then paint |
 | Why can't I paint this color? | Palette is locked — unlock or pick from swatches |
 | Where is my file? | Use the path shown in the save toast; remind them to copy the `.pixelanea` file |
-| Red banner at top | Click **Retry** or restart the app (`./scripts/dev.sh`) |
+| Red banner at top | Click **Retry** or restart Pixelanea from the app menu / `pixelanea` |
 | File picker didn't open | A manual path dialog appears instead. Students type the full path ending in `.pixelanea` — provide a template path on the board (e.g. `/home/student/Desktop/my-art.pixelanea`) or help them paste from the teacher's example |
 
 ## If the file picker doesn't open

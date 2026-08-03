@@ -3,25 +3,10 @@ import {
   countPaintedPixels,
   createBlankProject,
   getFramePixels,
+  isFrameSyncRequest,
   paintFrame2Mark,
   paintStroke,
 } from "./helpers";
-
-function isFramePut(url: string, method: string): boolean {
-  return method === "PUT" && /\/api\/projects\/[^/]+\/frames\/\d+/.test(url);
-}
-
-async function waitForFramePutResponses(
-  page: import("@playwright/test").Page,
-  count: number,
-): Promise<void> {
-  for (let index = 0; index < count; index += 1) {
-    await page.waitForResponse(
-      (response) => isFramePut(response.url(), response.request().method()) && response.ok(),
-      { timeout: 30_000 },
-    );
-  }
-}
 
 test.describe("@race @sync", () => {
   test("RACE-002: undo during delayed frame PUT route mock (QA-001:RACE-002)", async ({
@@ -35,8 +20,8 @@ test.describe("@race @sync", () => {
     });
     let heldFirstPut = false;
 
-    await page.route("**/api/projects/*/frames/*", async (route) => {
-      if (!isFramePut(route.request().url(), route.request().method())) {
+    await page.route("**/api/projects/*/frames/**", async (route) => {
+      if (!isFrameSyncRequest(route.request().url(), route.request().method())) {
         await route.continue();
         return;
       }
@@ -49,6 +34,21 @@ test.describe("@race @sync", () => {
       await route.continue();
     });
 
+    const syncResponses = Promise.all([
+      page.waitForResponse(
+        (response) =>
+          isFrameSyncRequest(response.url(), response.request().method()) &&
+          response.ok(),
+        { timeout: 30_000 },
+      ),
+      page.waitForResponse(
+        (response) =>
+          isFrameSyncRequest(response.url(), response.request().method()) &&
+          response.ok(),
+        { timeout: 30_000 },
+      ),
+    ]);
+
     await paintStroke(page);
     await expect(page.getByRole("button", { name: "Undo" })).toBeEnabled({
       timeout: 10_000,
@@ -58,9 +58,8 @@ test.describe("@race @sync", () => {
     await page.getByRole("button", { name: "Undo" }).click();
     await page.waitForTimeout(1_200);
 
-    const putsAfterRelease = waitForFramePutResponses(page, 2);
     releaseFirstPut?.();
-    await putsAfterRelease;
+    await syncResponses;
     await expect(page.getByRole("status")).toContainText("All changes saved", {
       timeout: 15_000,
     });
@@ -79,8 +78,8 @@ test.describe("@race @sync", () => {
     });
     let putCount = 0;
 
-    await page.route("**/api/projects/*/frames/*", async (route) => {
-      if (!isFramePut(route.request().url(), route.request().method())) {
+    await page.route("**/api/projects/*/frames/**", async (route) => {
+      if (!isFrameSyncRequest(route.request().url(), route.request().method())) {
         await route.continue();
         return;
       }
@@ -93,14 +92,25 @@ test.describe("@race @sync", () => {
       await route.continue();
     });
 
+    // Register listener before paints; only the held request completes after release
+    // (second edit may coalesce into the in-flight PATCH).
+    const syncAfterRelease = page.waitForResponse(
+      (response) =>
+        isFrameSyncRequest(response.url(), response.request().method()) &&
+        response.ok(),
+      { timeout: 30_000 },
+    );
+
     await paintStroke(page);
     await page.waitForTimeout(600);
     await paintFrame2Mark(page);
     await page.waitForTimeout(600);
 
-    const putsAfterRelease = waitForFramePutResponses(page, 2);
     releaseFirstPut?.();
-    await putsAfterRelease;
+    await syncAfterRelease;
+    await expect(page.getByRole("status")).toContainText("All changes saved", {
+      timeout: 15_000,
+    });
 
     const paintedCount = await countPaintedPixels(page, projectId, 0);
     expect(paintedCount).toBeGreaterThan(0);
