@@ -303,6 +303,18 @@ cmake --build server/build
 ./server/build/pixelanea-server
 ```
 
+### Desktop packaging (local only)
+
+Release artifacts go under `dist/` (gitignored). Never commit packaged binaries, `.deb` files, or web bundles.
+
+```bash
+pnpm package:deb       # dist/pixelanea_<version>_<arch>.deb
+pnpm package:desktop   # dist/pixelanea-<version>-linux-<arch>.tar.gz
+pnpm test:package:linux
+```
+
+Tagged releases (`v*`) publish Linux artifacts via [`.github/workflows/release.yml`](.github/workflows/release.yml).
+
 ---
 
 ## How to manage dependencies

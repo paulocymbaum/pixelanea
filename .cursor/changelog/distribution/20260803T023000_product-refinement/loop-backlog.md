@@ -106,6 +106,8 @@ Pixelanea already ships a **partial Linux desktop story**: `scripts/build-deskto
 
 ### Batch 1 — Linux workshop install (must ship)
 
+**Status:** 🔄 **In progress** (2026-08-03)
+
 | ID | Task | Scope | Rationale | Depends on |
 |----|------|-------|-----------|------------|
 | B1-01 | Extract shared Linux staging helper `scripts/stage-linux-desktop.sh` from `package-desktop-linux.sh` | backend | DRY between tar.gz and `.deb` | — |

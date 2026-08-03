@@ -29,6 +29,19 @@ API_ARCHIVE="api-client.tar.gz"
 WEB_ARCHIVE="web-dist.tar.gz"
 SERVER_ARCHIVE="server-binaries.tar.gz"
 
+resolve_cmake_bin() {
+  if command -v cmake >/dev/null 2>&1; then
+    command -v cmake
+    return 0
+  fi
+  if [[ -x "${ROOT_DIR}/.venv-build/bin/cmake" ]]; then
+    echo "${ROOT_DIR}/.venv-build/bin/cmake"
+    return 0
+  fi
+  echo "cmake not found. Install cmake or create ${ROOT_DIR}/.venv-build." >&2
+  return 1
+}
+
 assets_hash() {
   python3 "${ROOT_DIR}/scripts/assets-hash.py" --build-type "${BUILD_TYPE}"
 }
@@ -254,7 +267,8 @@ cmd_ensure_web() {
 }
 
 configure_server_if_needed() {
-  local cmake_bin="cmake"
+  local cmake_bin
+  cmake_bin="$(resolve_cmake_bin)"
   if [[ ! -f "${ROOT_DIR}/server/build/CMakeCache.txt" ]]; then
     local -a args=(
       -S "${ROOT_DIR}/server"
@@ -305,7 +319,7 @@ cmd_ensure_server() {
   echo "==> Building server binaries (${hash}, ${BUILD_TYPE})"
   "${ROOT_DIR}/scripts/deps-cache.sh" restore-backend || true
   configure_server_if_needed
-  cmake --build "${ROOT_DIR}/server/build"
+  "$(resolve_cmake_bin)" --build "${ROOT_DIR}/server/build"
   "${ROOT_DIR}/scripts/deps-cache.sh" save-backend
   write_marker "${SERVER_MARKER}" "${hash}"
   tar -czf "${cache_dir}/${SERVER_ARCHIVE}" \
