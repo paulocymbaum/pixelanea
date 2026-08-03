@@ -1,17 +1,45 @@
-import { useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { CellCoord } from "@/canvas/coordinates";
+import { bindSelectionModifierKeys } from "@/canvas/selectionModifiers";
 import { useEditorStore } from "@/state/editorStore";
 import { buildToolContextFromStore } from "./context";
 import { getTool } from "./registry";
+import { getSelectAnchor, previewSelectionFromPointer } from "./selectTool";
 import { StrokeSession } from "./strokeSession";
 
 const STROKE_TOOLS = new Set(["paint", "eraser"]);
+const SELECT_TOOL = "select";
+
+function handlePastePointer(
+  phase: "onPointerDown" | "onPointerMove" | "onPointerUp",
+  cell: import("@/canvas/coordinates").CellCoord,
+) {
+  const state = useEditorStore.getState();
+  if (!state.pastePreview) {
+    return false;
+  }
+
+  if (phase === "onPointerMove") {
+    state.movePastePreview(cell.x, cell.y);
+    return true;
+  }
+
+  if (phase === "onPointerDown") {
+    state.movePastePreview(cell.x, cell.y);
+    state.commitPaste();
+    return true;
+  }
+
+  return true;
+}
 
 export function useToolInput() {
   const activeTool = useEditorStore((s) => s.activeTool);
   const lastCellRef = useRef<CellCoord | null>(null);
   const strokeRef = useRef(new StrokeSession());
   const strokeToolRef = useRef<string | null>(null);
+
+  useEffect(() => bindSelectionModifierKeys(), []);
 
   const handleStrokePointerDown = useCallback(
     (cell: CellCoord) => {
@@ -68,6 +96,11 @@ export function useToolInput() {
       event: PointerEvent,
       cell: CellCoord,
     ) => {
+      if (useEditorStore.getState().pastePreview) {
+        handlePastePointer(phase, cell);
+        return;
+      }
+
       if (STROKE_TOOLS.has(activeTool)) {
         if (phase === "onPointerDown") {
           lastCellRef.current = cell;
@@ -91,6 +124,42 @@ export function useToolInput() {
         if (phase === "onPointerUp") {
           lastCellRef.current = null;
           handleStrokePointerUp();
+        }
+        return;
+      }
+
+      if (activeTool === SELECT_TOOL) {
+        const ctx = buildToolContextFromStore();
+        const tool = getTool(activeTool);
+
+        if (phase === "onPointerDown") {
+          lastCellRef.current = cell;
+          tool.onPointerDown?.(event, cell, ctx);
+          return;
+        }
+
+        if (phase === "onPointerMove") {
+          if ((event.buttons & 1) === 0) {
+            return;
+          }
+          const anchor = getSelectAnchor();
+          if (!anchor) {
+            return;
+          }
+          const last = lastCellRef.current;
+          if (last && last.x === cell.x && last.y === cell.y) {
+            return;
+          }
+          lastCellRef.current = cell;
+          ctx.setSelectionPreview(
+            previewSelectionFromPointer(anchor, cell, event),
+          );
+          return;
+        }
+
+        if (phase === "onPointerUp") {
+          lastCellRef.current = null;
+          tool.onPointerUp?.(event, cell, ctx);
         }
         return;
       }

@@ -22,6 +22,8 @@ describe("StatusBar", () => {
       paletteSyncStatus: "idle",
       frameSyncError: null,
       paletteSyncError: null,
+      pastePreview: null,
+      activeTool: "paint",
     });
   });
 
@@ -89,6 +91,40 @@ describe("StatusBar", () => {
   it("shows dash when no hover cell", () => {
     render(<StatusBar />);
     expect(screen.getByText(copy.hoverCellNone)).toBeInTheDocument();
+  });
+
+  it("shows paste mode hint when paste preview is active", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: null });
+    useEditorStore.setState({
+      pastePreview: {
+        originX: 0,
+        originY: 0,
+        clipboard: { width: 1, height: 1, pixels: new Uint8Array([1]) },
+      },
+    });
+    render(<StatusBar />);
+    expect(
+      screen.getByText(`${copy.statusSaved} · ${copy.pasteModeHint}`),
+    ).toBeInTheDocument();
+  });
+
+  it("shows select tool hint when select tool is active", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: null });
+    useEditorStore.setState({ activeTool: "select" });
+    render(<StatusBar />);
+    expect(screen.getByText(`${copy.statusSaved} · ${copy.selectToolHint}`)).toBeInTheDocument();
+  });
+
+  it("shows active frame when project has multiple frames", () => {
+    useEditorStore.setState({ frameCount: 8, activeFrameIndex: 2 });
+    render(<StatusBar />);
+    expect(screen.getByText(copy.frameStatus(2, 8))).toBeInTheDocument();
+  });
+
+  it("hides frame status for single-frame projects", () => {
+    useEditorStore.setState({ frameCount: 1, activeFrameIndex: 0 });
+    render(<StatusBar />);
+    expect(screen.queryByText(copy.frameStatus(0, 1))).not.toBeInTheDocument();
   });
 
   it("shows hex and palette index when technical info enabled", () => {

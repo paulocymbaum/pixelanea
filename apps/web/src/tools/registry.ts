@@ -4,6 +4,7 @@ import { fillTool } from "./fillTool";
 import { handTool } from "./handTool";
 import { lineTool } from "./lineTool";
 import { paintTool } from "./paintTool";
+import { selectTool } from "./selectTool";
 import type { Tool } from "./types";
 
 const toolRegistry = {
@@ -12,6 +13,7 @@ const toolRegistry = {
   eyedropper: eyedropperTool,
   fill: fillTool,
   line: lineTool,
+  select: selectTool,
   hand: handTool,
 } satisfies Record<string, Tool>;
 

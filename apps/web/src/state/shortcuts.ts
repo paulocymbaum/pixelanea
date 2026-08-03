@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 import {
   type PalettePanelSection,
@@ -13,6 +14,7 @@ const TOOL_SHORTCUTS: Record<string, ToolId> = {
   i: "eyedropper",
   g: "fill",
   l: "line",
+  m: "select",
   h: "hand",
 };
 
@@ -63,9 +65,16 @@ function isEditableTarget(target: EventTarget | null): boolean {
 export function useEditorShortcuts() {
   const undo = useEditorStore((s) => s.undo);
   const redo = useEditorStore((s) => s.redo);
+  const copySelection = useEditorStore((s) => s.copySelection);
+  const cutSelection = useEditorStore((s) => s.cutSelection);
+  const startPastePreview = useEditorStore((s) => s.startPastePreview);
+  const commitPaste = useEditorStore((s) => s.commitPaste);
+  const cancelPaste = useEditorStore((s) => s.cancelPaste);
+  const nudgePastePreview = useEditorStore((s) => s.nudgePastePreview);
   const setActiveColorIndex = useEditorStore((s) => s.setActiveColorIndex);
   const setActiveTool = useEditorStore((s) => s.setActiveTool);
   const paletteLength = useEditorStore((s) => s.paletteColors.length);
+  const showToast = useUiStore((s) => s.showToast);
   const setPalettePanelSection = useSessionStore(
     (s) => s.setPalettePanelSection,
   );
@@ -82,10 +91,18 @@ export function useEditorShortcuts() {
       const key = event.key.toLowerCase();
       const mod = event.metaKey || event.ctrlKey;
 
-      if (event.key === "Escape" && shortcutsOverlayOpen) {
-        event.preventDefault();
-        setShortcutsOverlayOpen(false);
-        return;
+      if (event.key === "Escape") {
+        if (useEditorStore.getState().pastePreview) {
+          event.preventDefault();
+          cancelPaste();
+          return;
+        }
+
+        if (shortcutsOverlayOpen) {
+          event.preventDefault();
+          setShortcutsOverlayOpen(false);
+          return;
+        }
       }
 
       if (event.key === "?" || (event.shiftKey && event.key === "/")) {
@@ -98,6 +115,55 @@ export function useEditorShortcuts() {
         event.preventDefault();
         undo();
         return;
+      }
+
+      if (mod && key === "c") {
+        event.preventDefault();
+        if (copySelection()) {
+          showToast(copy.selectionCopied);
+        }
+        return;
+      }
+
+      if (mod && key === "x") {
+        event.preventDefault();
+        if (cutSelection()) {
+          showToast(copy.selectionCut);
+        }
+        return;
+      }
+
+      if (mod && key === "v") {
+        event.preventDefault();
+        startPastePreview();
+        return;
+      }
+
+      if (event.key === "Enter" && useEditorStore.getState().pastePreview) {
+        event.preventDefault();
+        commitPaste();
+        return;
+      }
+
+      if (useEditorStore.getState().pastePreview && !mod && !event.altKey) {
+        switch (event.key) {
+          case "ArrowUp":
+            event.preventDefault();
+            nudgePastePreview(0, -1);
+            return;
+          case "ArrowDown":
+            event.preventDefault();
+            nudgePastePreview(0, 1);
+            return;
+          case "ArrowLeft":
+            event.preventDefault();
+            nudgePastePreview(-1, 0);
+            return;
+          case "ArrowRight":
+            event.preventDefault();
+            nudgePastePreview(1, 0);
+            return;
+        }
       }
 
       if (mod && ((key === "z" && event.shiftKey) || key === "y")) {
@@ -157,6 +223,13 @@ export function useEditorShortcuts() {
   }, [
     undo,
     redo,
+    copySelection,
+    cutSelection,
+    startPastePreview,
+    commitPaste,
+    cancelPaste,
+    nudgePastePreview,
+    showToast,
     setActiveColorIndex,
     setActiveTool,
     paletteLength,

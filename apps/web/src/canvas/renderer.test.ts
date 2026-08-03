@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
-import { ONION_SKIN_OPACITY, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
+import { ONION_SKIN_OPACITY, PASTE_PREVIEW_OPACITY, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
 
 function createMockContext() {
   const alphaLog: number[] = [];
@@ -73,6 +73,29 @@ describe("renderGrid onion skin", () => {
 
     expect(onionAlphaIndex).toBeGreaterThanOrEqual(0);
     expect(currentAlphaIndex).toBeGreaterThan(onionAlphaIndex);
+  });
+
+  it("uses palette colors for onion skin pixels", () => {
+    const { ctx, fillStyles } = createMockContext();
+    const palette = ["#000000", "#ff0000"];
+    const onionPixels = new Uint8Array([1, TRANSPARENT_INDEX]);
+    const currentPixels = new Uint8Array([TRANSPARENT_INDEX, 1]);
+
+    renderGrid({
+      ctx,
+      cssWidth: 64,
+      cssHeight: 64,
+      gridWidth: 2,
+      gridHeight: 1,
+      pixels: currentPixels,
+      paletteColors: palette,
+      viewport: { zoom: 16, panX: 0, panY: 0 },
+      tokens,
+      onionSkinPixels: onionPixels,
+      onionSkinOpacity: ONION_SKIN_OPACITY,
+    });
+
+    expect(fillStyles).toContain("#ff0000");
   });
 
   it("skips onion layer when onionSkinPixels is omitted", () => {
@@ -214,6 +237,39 @@ describe("repaintGridCells stroke overlay", () => {
 
     expect(fillStyles).toContain("#00ff00");
     expect(fillStyles).not.toContain("#ff0000");
+  });
+});
+
+describe("renderGrid paste preview", () => {
+  const tokens = {
+    checkerA: "#ccc",
+    checkerB: "#fff",
+    gridLine: "rgba(0,0,0,0.08)",
+  };
+
+  it("draws clipboard pixels at preview opacity above committed pixels", () => {
+    const { ctx, fillRectCalls } = createMockContext();
+    const palette = ["#000000", "#ff0000"];
+    const pixels = new Uint8Array([TRANSPARENT_INDEX, TRANSPARENT_INDEX]);
+
+    renderGrid({
+      ctx,
+      cssWidth: 64,
+      cssHeight: 64,
+      gridWidth: 2,
+      gridHeight: 1,
+      pixels,
+      paletteColors: palette,
+      viewport: { zoom: 16, panX: 0, panY: 0 },
+      tokens,
+      pastePreview: {
+        originX: 1,
+        originY: 0,
+        clipboard: { width: 1, height: 1, pixels: new Uint8Array([1]) },
+      },
+    });
+
+    expect(fillRectCalls).toContain(PASTE_PREVIEW_OPACITY);
   });
 });
 

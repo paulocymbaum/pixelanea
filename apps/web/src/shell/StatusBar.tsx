@@ -1,7 +1,13 @@
 import { copy } from "@/content/copy";
 import { useDerivedProjectStatus, type ProjectStatus } from "@/lib/projectStatus";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
-import { useEditorStore, useHoverCell } from "@/state/editorStore";
+import {
+  useActiveFrameIndex,
+  useActiveTool,
+  useEditorStore,
+  useFrameCount,
+  useHoverCell,
+} from "@/state/editorStore";
 import { useApiStatus, useUiStore } from "@/state/uiStore";
 
 function primaryStatusText(
@@ -33,6 +39,10 @@ export function StatusBar() {
   const projectStatus = useDerivedProjectStatus();
   const { version } = useApiStatus();
   const hoverCell = useHoverCell();
+  const activeTool = useActiveTool();
+  const pastePreview = useEditorStore((s) => s.pastePreview);
+  const frameIndex = useActiveFrameIndex();
+  const frameCount = useFrameCount();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
   const paletteColors = useEditorStore((s) => s.paletteColors);
   const pixels = useEditorStore((s) => s.pixels);
@@ -43,6 +53,17 @@ export function StatusBar() {
     showTechnicalInfo,
     version,
   );
+
+  const toolHint = pastePreview
+    ? copy.pasteModeHint
+    : activeTool === "select"
+      ? copy.selectToolHint
+      : null;
+  const statusMessage = toolHint
+    ? message
+      ? `${message} · ${toolHint}`
+      : toolHint
+    : message;
 
   const emphasize = projectStatus.kind === "error";
 
@@ -71,8 +92,15 @@ export function StatusBar() {
       className="flex h-8 shrink-0 items-center justify-between gap-4 border-t border-border bg-surface px-4 font-sans text-sm text-secondary"
       role="status"
     >
-      <span className={emphasize ? "text-danger" : undefined}>{message}</span>
-      <span aria-label="Hovered cell">{cellLabel}</span>
+      <span className={emphasize ? "text-danger" : undefined}>{statusMessage}</span>
+      <div className="flex items-center gap-4">
+        {frameCount > 1 ? (
+          <span aria-label={copy.frameStatus(frameIndex, frameCount)}>
+            {copy.frameStatus(frameIndex, frameCount)}
+          </span>
+        ) : null}
+        <span aria-label="Hovered cell">{cellLabel}</span>
+      </div>
     </footer>
   );
 }

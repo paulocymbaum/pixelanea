@@ -1,4 +1,5 @@
 import type { CellCoord } from "@/canvas/coordinates";
+import type { SelectionRect } from "@/canvas/selectionGeometry";
 import type { ToolId } from "@/tools/registry";
 import type { Command } from "@/state/commands/types";
 import type { CellChange } from "@/state/commands/paintCells";
@@ -18,6 +19,8 @@ export type ToolContext = {
   endStroke: () => void;
   setActiveColorIndex: (index: number) => void;
   setActiveTool: (tool: ToolId) => void;
+  setSelection: (selection: SelectionRect | null) => void;
+  setSelectionPreview: (selection: SelectionRect | null) => void;
 };
 
 export interface Tool {

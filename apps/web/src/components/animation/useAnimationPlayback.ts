@@ -63,9 +63,14 @@ export function usePlaybackLoop(
 
       const intervalMs = 1000 / useEditorStore.getState().animationFps;
       if (timestamp - lastTickRef.current >= intervalMs) {
+        lastTickRef.current = timestamp;
         const advanced = advancePlaybackFrame();
-        if (advanced) {
-          lastTickRef.current = timestamp;
+        if (!advanced && !useEditorStore.getState().isPlaying) {
+          return;
+        }
+        if (!advanced) {
+          useEditorStore.getState().setPlaying(false);
+          return;
         }
       }
 
@@ -108,5 +113,6 @@ export async function startPlaybackWithPrefetch(
   }
 
   await prefetch();
+  useEditorStore.getState().preparePlaybackStart();
   return { lastTick: performance.now() };
 }

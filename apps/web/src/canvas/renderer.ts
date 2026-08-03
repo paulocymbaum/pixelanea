@@ -11,6 +11,8 @@ import {
   GRID_LINE_MIN_ZOOM,
   type Viewport,
 } from "./coordinates";
+import type { SelectionRect } from "./selectionGeometry";
+import type { PastePreview } from "@/state/editorStorePaste";
 import { DEFAULT_PALETTE_COLORS } from "./palette";
 
 export type CanvasTokens = {
@@ -20,6 +22,16 @@ export type CanvasTokens = {
 };
 
 export const ONION_SKIN_OPACITY = 0.3;
+export const PASTE_PREVIEW_OPACITY = 0.5;
+export const MIN_ONION_SKIN_OPACITY = 0.05;
+export const MAX_ONION_SKIN_OPACITY = 1;
+
+export function clampOnionSkinOpacity(opacity: number): number {
+  return Math.max(
+    MIN_ONION_SKIN_OPACITY,
+    Math.min(MAX_ONION_SKIN_OPACITY, opacity),
+  );
+}
 
 export type RenderGridOptions = {
   ctx: CanvasRenderingContext2D;
@@ -35,6 +47,10 @@ export type RenderGridOptions = {
   onionSkinOpacity?: number;
   colorFilters?: ColorFilterSettings;
   showLightingMarkers?: boolean;
+  selection?: SelectionRect | null;
+  selectionPreview?: SelectionRect | null;
+  selectionDashOffset?: number;
+  pastePreview?: PastePreview | null;
 };
 
 export type RepaintGridCellsOptions = {
@@ -383,6 +399,91 @@ function drawLightingMarkers(
   ctx.lineWidth = previousLineWidth;
 }
 
+function strokeSelectionPath(
+  ctx: CanvasRenderingContext2D,
+  dashOffset: number,
+  stroke: () => void,
+): void {
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.9)";
+  ctx.lineDashOffset = -dashOffset;
+  stroke();
+
+  ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+  ctx.lineDashOffset = 4 - dashOffset;
+  stroke();
+}
+
+export function drawSelectionOutline(
+  ctx: CanvasRenderingContext2D,
+  selection: SelectionRect,
+  viewport: Viewport,
+  dashOffset: number,
+): void {
+  const cellSize = viewport.zoom;
+  const left = viewport.panX + selection.x * cellSize;
+  const top = viewport.panY + selection.y * cellSize;
+  const width = selection.width * cellSize;
+  const height = selection.height * cellSize;
+
+  const previousDash = ctx.getLineDash();
+  const previousOffset = ctx.lineDashOffset;
+  const previousLineWidth = ctx.lineWidth;
+
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+
+  if (selection.shape === "ellipse") {
+    const centerX = left + width / 2;
+    const centerY = top + height / 2;
+    const radiusX = width / 2;
+    const radiusY = height / 2;
+
+    strokeSelectionPath(ctx, dashOffset, () => {
+      ctx.beginPath();
+      ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    });
+  } else {
+    strokeSelectionPath(ctx, dashOffset, () => {
+      ctx.strokeRect(left, top, width, height);
+    });
+  }
+
+  ctx.setLineDash(previousDash);
+  ctx.lineDashOffset = previousOffset;
+  ctx.lineWidth = previousLineWidth;
+}
+
+export function drawPastePreview(
+  ctx: CanvasRenderingContext2D,
+  pastePreview: PastePreview,
+  paletteColors: readonly string[],
+  viewport: Viewport,
+  opacity = PASTE_PREVIEW_OPACITY,
+): void {
+  const { originX, originY, clipboard } = pastePreview;
+  const { width, height, pixels } = clipboard;
+
+  for (let ly = 0; ly < height; ly++) {
+    for (let lx = 0; lx < width; lx++) {
+      const index = pixels[ly * width + lx] ?? TRANSPARENT_INDEX;
+      if (index === TRANSPARENT_INDEX) {
+        continue;
+      }
+
+      drawPixelCell(
+        ctx,
+        originX + lx,
+        originY + ly,
+        index,
+        paletteColors,
+        viewport,
+        opacity,
+      );
+    }
+  }
+}
+
 export function renderGrid({
   ctx,
   cssWidth,
@@ -397,6 +498,10 @@ export function renderGrid({
   onionSkinOpacity = ONION_SKIN_OPACITY,
   colorFilters,
   showLightingMarkers = false,
+  selection = null,
+  selectionPreview = null,
+  selectionDashOffset = 0,
+  pastePreview = null,
 }: RenderGridOptions): void {
   ctx.clearRect(0, 0, cssWidth, cssHeight);
 
@@ -443,6 +548,20 @@ export function renderGrid({
   }
 
   drawGridLines(ctx, gridWidth, gridHeight, viewport, tokens);
+
+  if (pastePreview) {
+    drawPastePreview(ctx, pastePreview, paletteColors, viewport);
+  }
+
+  const activeSelection = selectionPreview ?? selection;
+  if (activeSelection) {
+    drawSelectionOutline(
+      ctx,
+      activeSelection,
+      viewport,
+      selectionDashOffset,
+    );
+  }
 }
 
 /** Repaint only affected cells during an active stroke (no full-canvas clear). */

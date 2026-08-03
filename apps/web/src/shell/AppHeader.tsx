@@ -2,12 +2,7 @@ import { useCallback } from "react";
 import { basename } from "@/components/project/pathUtils";
 import { copy } from "@/content/copy";
 import { useDerivedProjectStatus } from "@/lib/projectStatus";
-import {
-  useActiveFrameIndex,
-  useBundlePath,
-  useFrameCount,
-  useProjectName,
-} from "@/state/editorStore";
+import { useBundlePath, useProjectName } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { Button } from "@/components/ui";
 import { OffPaletteExportDialog } from "@/components/project/OffPaletteExportDialog";
@@ -31,8 +26,6 @@ export function AppHeader({
 }: AppHeaderProps) {
   const projectName = useProjectName();
   const bundlePath = useBundlePath();
-  const frameIndex = useActiveFrameIndex();
-  const frameCount = useFrameCount();
   const projectStatus = useDerivedProjectStatus();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
   const setShowTechnicalInfo = useUiStore((s) => s.setShowTechnicalInfo);
@@ -95,8 +88,8 @@ export function AppHeader({
           />
         </nav>
 
-        <div className="flex-1 text-center text-md text-primary">
-          <div>{projectName}</div>
+        <div className="min-w-0 flex-1 text-center text-md text-primary">
+          <div className="truncate">{projectName}</div>
           {bundlePath ? (
             <div
               className="truncate text-xs font-normal text-secondary"
@@ -104,11 +97,6 @@ export function AppHeader({
             >
               {basename(bundlePath)}
             </div>
-          ) : null}
-          {frameCount > 1 ? (
-            <span className="text-sm font-normal text-secondary">
-              {`Frame ${frameIndex + 1}`}
-            </span>
           ) : null}
           {projectStatus.kind === "unsaved" ? (
             <span

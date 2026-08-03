@@ -25,6 +25,8 @@ function createContext(overrides: Partial<ToolContext> = {}): ToolContext {
     ...stubStrokeContext(),
     setActiveColorIndex: () => {},
     setActiveTool: () => {},
+    setSelection: () => {},
+    setSelectionPreview: () => {},
     ...overrides,
   };
 }

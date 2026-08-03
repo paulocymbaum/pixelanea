@@ -11,7 +11,7 @@ describe("LeftToolRail", () => {
     useEditorStore.setState({ activeTool: "paint" });
   });
 
-  it("renders six paint tools and a duplicate-frames chrome action", () => {
+  it("renders all paint tools and a duplicate-frames chrome action", () => {
     render(<LeftToolRail />);
 
     expect(screen.getByRole("complementary", { name: "Tools" })).toBeInTheDocument();

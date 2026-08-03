@@ -1,8 +1,13 @@
 import { create } from "zustand";
 import type { CellCoord } from "@/canvas/coordinates";
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
+import {
+  clampOnionSkinOpacity,
+  ONION_SKIN_OPACITY,
+} from "@/canvas/renderer";
 import type { ToolId } from "@/tools/registry";
 import type { AssetType } from "@pixelanea/api-client";
+import type { SelectionRect } from "@/canvas/selectionGeometry";
 import { DEFAULT_ASSET_TYPE } from "@/content/assetTypes";
 import type { Command } from "@/state/commands/types";
 import {
@@ -22,6 +27,20 @@ import {
   createEmptyPixels,
   createPlaybackActions,
 } from "@/state/editorStorePlayback";
+import {
+  createSelectionActions,
+  initialSelectionState,
+} from "@/state/editorStoreSelection";
+import {
+  createClipboardActions,
+  initialClipboardState,
+  type ClipboardData,
+} from "@/state/editorStoreClipboard";
+import {
+  createPasteActions,
+  initialPasteState,
+  type PastePreview,
+} from "@/state/editorStorePaste";
 import {
   deriveSyncError,
   deriveSyncStatus,
@@ -65,7 +84,10 @@ type EditorState = {
   isPlaying: boolean;
   animationFps: number;
   animationLoop: boolean;
+  animationBoomerang: boolean;
+  playbackDirection: 1 | -1;
   onionSkinEnabled: boolean;
+  onionSkinOpacity: number;
   colorFilters: ColorFilterSettings;
   placingLighting: boolean;
   undoStack: Command[];
@@ -102,7 +124,10 @@ type EditorState = {
   setPlaying: (playing: boolean) => void;
   setAnimationFps: (fps: number) => void;
   setAnimationLoop: (loop: boolean) => void;
+  setAnimationBoomerang: (enabled: boolean) => void;
+  preparePlaybackStart: () => void;
   setOnionSkinEnabled: (enabled: boolean) => void;
+  setOnionSkinOpacity: (opacity: number) => void;
   setColorFilterOverlayEnabled: (enabled: boolean) => void;
   setColorFilterOverlayColor: (color: string) => void;
   setColorFilterOverlayOpacity: (opacity: number) => void;
@@ -140,6 +165,21 @@ type EditorState = {
   ) => Promise<{ ok: true } | { ok: false }>;
   applyFrameReorder: (fromIndex: number, toIndex: number) => number;
   applyFramePixelsAtIndex: (index: number, pixels: Uint8Array) => void;
+  selection: SelectionRect | null;
+  selectionPreview: SelectionRect | null;
+  setSelection: (selection: SelectionRect | null) => void;
+  clearSelection: () => void;
+  setSelectionPreview: (selection: SelectionRect | null) => void;
+  clipboard: ClipboardData | null;
+  copySelection: () => boolean;
+  cutSelection: () => boolean;
+  clearClipboard: () => void;
+  pastePreview: PastePreview | null;
+  startPastePreview: (originX?: number, originY?: number) => boolean;
+  movePastePreview: (x: number, y: number) => void;
+  nudgePastePreview: (deltaX: number, deltaY: number) => void;
+  commitPaste: () => boolean;
+  cancelPaste: () => void;
 };
 
 export const useEditorStore = create<EditorState>((set, get) => {
@@ -148,6 +188,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
   const frames = createFrameActions(get, set);
   const frameSync = createFrameSyncActions(get, set);
   const playback = createPlaybackActions(get, set);
+  const selection = createSelectionActions(set);
+  const clipboard = createClipboardActions(get, set);
+  const paste = createPasteActions(get, set);
 
   return {
     projectId: null,
@@ -170,7 +213,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
     isPlaying: false,
     animationFps: DEFAULT_ANIMATION_FPS,
     animationLoop: true,
+    animationBoomerang: false,
+    playbackDirection: 1,
     onionSkinEnabled: true,
+    onionSkinOpacity: ONION_SKIN_OPACITY,
     colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
     placingLighting: false,
     undoStack: [],
@@ -184,6 +230,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
     paletteSyncError: null,
     bundlePath: null,
     assetType: DEFAULT_ASSET_TYPE,
+    ...initialSelectionState,
+    ...initialClipboardState,
+    ...initialPasteState,
 
     setProject: ({
       projectId,
@@ -211,6 +260,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
         assetType,
         animationFps: clampAnimationFps(fps),
         animationLoop: loop,
+        animationBoomerang: false,
+        playbackDirection: 1,
         framePixelsByIndex: writeFramePixels({}, 0, pixels),
         activeFrameIndex: 0,
         undoStack: [],
@@ -226,6 +277,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
         readOnly: false,
         colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
         placingLighting: false,
+        selection: null,
+        selectionPreview: null,
+        clipboard: null,
+        pastePreview: null,
       }),
 
     setActiveTool: (tool) => set({ activeTool: tool }),
@@ -246,8 +301,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
     ...frames,
     ...playback,
     ...frameSync,
+    ...selection,
+    ...clipboard,
+    ...paste,
 
     setOnionSkinEnabled: (onionSkinEnabled) => set({ onionSkinEnabled }),
+    setOnionSkinOpacity: (opacity) =>
+      set({ onionSkinOpacity: clampOnionSkinOpacity(opacity) }),
 
     ...colorFilters,
 
@@ -340,10 +400,21 @@ export const useActiveFrameIndex = () =>
 export const useIsPlaying = () => useEditorStore((s) => s.isPlaying);
 export const useAnimationFps = () => useEditorStore((s) => s.animationFps);
 export const useAnimationLoop = () => useEditorStore((s) => s.animationLoop);
+export const useAnimationBoomerang = () =>
+  useEditorStore((s) => s.animationBoomerang);
+export const usePlaybackDirection = () =>
+  useEditorStore((s) => s.playbackDirection);
 export const useOnionSkinEnabled = () =>
   useEditorStore((s) => s.onionSkinEnabled);
+export const useOnionSkinOpacity = () =>
+  useEditorStore((s) => s.onionSkinOpacity);
 export const useColorFilters = () => useEditorStore((s) => s.colorFilters);
 export const usePlacingLighting = () =>
   useEditorStore((s) => s.placingLighting);
 export const useFramePixelsByIndex = () =>
   useEditorStore((s) => s.framePixelsByIndex);
+export const useSelection = () => useEditorStore((s) => s.selection);
+export const useSelectionPreview = () =>
+  useEditorStore((s) => s.selectionPreview);
+export const useClipboard = () => useEditorStore((s) => s.clipboard);
+export const usePastePreview = () => useEditorStore((s) => s.pastePreview);

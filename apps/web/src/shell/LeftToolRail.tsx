@@ -7,6 +7,7 @@ import { cn } from "@/lib/cn";
 import { useActiveTool, useEditorStore } from "@/state/editorStore";
 import { PAINT_TOOL_IDS, type ToolId } from "@/tools/registry";
 import {
+  BoxSelect,
   Copy,
   Eraser,
   Hand,
@@ -22,6 +23,7 @@ const toolIcons: Record<ToolId, typeof Pencil> = {
   eyedropper: Pipette,
   fill: PaintBucket,
   line: Slash,
+  select: BoxSelect,
   hand: Hand,
 };
 

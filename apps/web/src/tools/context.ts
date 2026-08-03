@@ -23,6 +23,8 @@ export function buildToolContextFromStore(
     endStroke: () => state.setStrokeActive(false),
     setActiveColorIndex: state.setActiveColorIndex,
     setActiveTool: state.setActiveTool,
+    setSelection: state.setSelection,
+    setSelectionPreview: state.setSelectionPreview,
     ...overrides,
   };
 }

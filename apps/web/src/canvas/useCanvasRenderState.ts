@@ -1,4 +1,5 @@
 import { features } from "@/content/features";
+import { resolveOnionSkinFrameIndex } from "@/canvas/onionSkin";
 import { hasActiveColorFilters } from "@/lib/colorFilters";
 import type { LightingPoint } from "@/lib/colorFilters";
 import {
@@ -17,6 +18,7 @@ import {
   repaintGridCells,
   setupHiDpiCanvas,
 } from "./renderer";
+import { useSelection, useSelectionPreview, usePastePreview } from "@/state/editorStore";
 
 export type CanvasRenderState = {
   activeTool: import("@/tools/registry").ToolId;
@@ -29,6 +31,8 @@ export type CanvasRenderState = {
   activeFrameIndex: number;
   framePixelsByIndex: Record<number, Uint8Array>;
   onionSkinEnabled: boolean;
+  onionSkinOpacity: number;
+  playbackDirection: 1 | -1;
   colorFilters: import("@/lib/colorFilters").ColorFilterSettings;
   placingLighting: boolean;
   isPlaying: boolean;
@@ -37,6 +41,9 @@ export type CanvasRenderState = {
   panY: number;
   isStrokeActive: boolean;
   strokePreviewTick: number;
+  selection: import("@/canvas/selectionGeometry").SelectionRect | null;
+  selectionPreview: import("@/canvas/selectionGeometry").SelectionRect | null;
+  pastePreview: import("@/state/editorStorePaste").PastePreview | null;
   setHoverCell: (cell: import("@/canvas/coordinates").CellCoord | null) => void;
   fitToView: ReturnType<typeof useViewportStore.getState>["fitToView"];
   addColorFilterLightingPoint: (
@@ -58,6 +65,8 @@ export function useCanvasRenderState(): CanvasRenderState {
   const activeFrameIndex = useEditorStore((s) => s.activeFrameIndex);
   const framePixelsByIndex = useEditorStore((s) => s.framePixelsByIndex);
   const onionSkinEnabled = useOnionSkinEnabled();
+  const onionSkinOpacity = useEditorStore((s) => s.onionSkinOpacity);
+  const playbackDirection = useEditorStore((s) => s.playbackDirection);
   const colorFilters = useEditorStore((s) => s.colorFilters);
   const placingLighting = useEditorStore((s) => s.placingLighting);
   const isPlaying = useEditorStore((s) => s.isPlaying);
@@ -66,6 +75,9 @@ export function useCanvasRenderState(): CanvasRenderState {
   const panY = useViewportStore((s) => s.panY);
   const isStrokeActive = useEditorStore((s) => s.isStrokeActive);
   const strokePreviewTick = useEditorStore((s) => s.strokePreviewTick);
+  const selection = useSelection();
+  const selectionPreview = useSelectionPreview();
+  const pastePreview = usePastePreview();
   const setHoverCell = useEditorStore((s) => s.setHoverCell);
   const fitToView = useViewportStore((s) => s.fitToView);
   const addColorFilterLightingPoint = useEditorStore(
@@ -83,6 +95,8 @@ export function useCanvasRenderState(): CanvasRenderState {
     activeFrameIndex,
     framePixelsByIndex,
     onionSkinEnabled,
+    onionSkinOpacity,
+    playbackDirection,
     colorFilters,
     placingLighting,
     isPlaying,
@@ -91,6 +105,9 @@ export function useCanvasRenderState(): CanvasRenderState {
     panY,
     isStrokeActive,
     strokePreviewTick,
+    selection,
+    selectionPreview,
+    pastePreview,
     setHoverCell,
     fitToView,
     addColorFilterLightingPoint,
@@ -119,6 +136,8 @@ export function useStrokePreviewRedraw({
   const rafRedrawRef = useRef<number | null>(null);
   const strokeBaselineReadyRef = useRef(false);
   const prevPreviewCellKeysRef = useRef<Set<string>>(new Set());
+  const selectionDashOffsetRef = useRef(0);
+  const selectionAnimRef = useRef<number | null>(null);
 
   const {
     gridWidth,
@@ -136,7 +155,12 @@ export function useStrokePreviewRedraw({
     activeFrameIndex,
     framePixelsByIndex,
     onionSkinEnabled,
+    onionSkinOpacity,
+    playbackDirection,
     strokePreviewTick,
+    selection,
+    selectionPreview,
+    pastePreview,
   } = renderState;
 
   const redraw = useCallback(() => {
@@ -159,15 +183,16 @@ export function useStrokePreviewRedraw({
       !readOnly && hasActiveColorFilters(colorFilters);
 
     let onionSkinPixels: Uint8Array | undefined;
-    if (
-      features.onionSkin &&
-      onionSkinEnabled &&
-      !isPlaying &&
-      !readOnly &&
-      frameCount > 1 &&
-      activeFrameIndex > 0
-    ) {
-      onionSkinPixels = framePixelsByIndex[activeFrameIndex - 1];
+    if (features.onionSkin && onionSkinEnabled && frameCount > 1) {
+      const onionIndex = resolveOnionSkinFrameIndex(
+        activeFrameIndex,
+        frameCount,
+        isPlaying,
+        playbackDirection,
+      );
+      if (onionIndex !== null) {
+        onionSkinPixels = framePixelsByIndex[onionIndex];
+      }
     }
 
     const basePixels = committedPixels ?? pixelsRef.current;
@@ -207,6 +232,7 @@ export function useStrokePreviewRedraw({
         }),
         previewByKey,
         onionSkinPixels,
+        onionSkinOpacity,
       });
 
       prevPreviewCellKeysRef.current = currentKeys;
@@ -230,6 +256,11 @@ export function useStrokePreviewRedraw({
       colorFilters: showFilterPreview ? colorFilters : undefined,
       showLightingMarkers: showFilterPreview && !isPlaying,
       onionSkinPixels,
+      onionSkinOpacity,
+      selection,
+      selectionPreview,
+      selectionDashOffset: selectionDashOffsetRef.current,
+      pastePreview,
     });
 
     if (isStrokeActive && !showFilterPreview) {
@@ -259,7 +290,12 @@ export function useStrokePreviewRedraw({
     activeFrameIndex,
     framePixelsByIndex,
     onionSkinEnabled,
+    onionSkinOpacity,
+    playbackDirection,
     pixelsRef,
+    selection,
+    selectionPreview,
+    pastePreview,
   ]);
 
   redrawRef.current = redraw;
@@ -281,6 +317,47 @@ export function useStrokePreviewRedraw({
       rafRedrawRef.current = null;
     }
   }, []);
+
+  useEffect(() => {
+    const hasSelectionOverlay = Boolean(selection ?? selectionPreview);
+    if (!hasSelectionOverlay) {
+      if (selectionAnimRef.current !== null) {
+        cancelAnimationFrame(selectionAnimRef.current);
+        selectionAnimRef.current = null;
+      }
+      return;
+    }
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    if (reducedMotion) {
+      redrawRef.current();
+      return;
+    }
+
+    let lastTime = performance.now();
+    const animate = (time: number) => {
+      const delta = time - lastTime;
+      lastTime = time;
+      selectionDashOffsetRef.current =
+        (selectionDashOffsetRef.current + delta * 0.04) % 8;
+      redrawRef.current();
+      selectionAnimRef.current = requestAnimationFrame(animate);
+    };
+
+    selectionAnimRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (selectionAnimRef.current !== null) {
+        cancelAnimationFrame(selectionAnimRef.current);
+        selectionAnimRef.current = null;
+      }
+    };
+  }, [selection, selectionPreview]);
+
+  useEffect(() => {
+    redraw();
+  }, [selection, selectionPreview, pastePreview, redraw]);
 
   useEffect(() => {
     if (isStrokeActive) {

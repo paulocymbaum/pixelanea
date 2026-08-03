@@ -10,6 +10,7 @@ import {
 } from "./coordinates";
 import { getToolCursor } from "@/tools/registry";
 import { useToolInput } from "@/tools/useToolInput";
+import { useEditorStore } from "@/state/editorStore";
 import { ZoomControls } from "./ZoomControls";
 
 export function Canvas() {
@@ -181,7 +182,9 @@ export function Canvas() {
   );
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    if (panDragRef.current && activeTool === "hand") {
+    const pasteActive = Boolean(useEditorStore.getState().pastePreview);
+
+    if (panDragRef.current && activeTool === "hand" && !pasteActive) {
       const drag = panDragRef.current;
       useViewportStore.getState().setViewport({
         zoom,
@@ -192,7 +195,16 @@ export function Canvas() {
     }
 
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (!cell || readOnly || placingLighting || activeTool === "hand") {
+    if (!cell) {
+      return;
+    }
+
+    if (pasteActive) {
+      toolInput.onPointerMove(event.nativeEvent, cell);
+      return;
+    }
+
+    if (readOnly || placingLighting || activeTool === "hand") {
       return;
     }
     toolInput.onPointerMove(event.nativeEvent, cell);
@@ -200,8 +212,9 @@ export function Canvas() {
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
+    const pasteActive = Boolean(useEditorStore.getState().pastePreview);
 
-    if (activeTool === "hand" && !readOnly) {
+    if (activeTool === "hand" && !readOnly && !pasteActive) {
       panDragRef.current = {
         startX: event.clientX,
         startY: event.clientY,
@@ -213,7 +226,16 @@ export function Canvas() {
     }
 
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (!cell || readOnly) {
+    if (!cell) {
+      return;
+    }
+
+    if (pasteActive) {
+      toolInput.onPointerDown(event.nativeEvent, cell);
+      return;
+    }
+
+    if (readOnly) {
       return;
     }
 
@@ -231,6 +253,8 @@ export function Canvas() {
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
+    const pasteActive = Boolean(useEditorStore.getState().pastePreview);
+
     if (panDragRef.current) {
       panDragRef.current = null;
       setIsPanning(false);
@@ -238,7 +262,16 @@ export function Canvas() {
     }
 
     const cell = updateHoverFromPointer(event.clientX, event.clientY);
-    if (!cell || readOnly || placingLighting || activeTool === "hand") {
+    if (!cell) {
+      return;
+    }
+
+    if (pasteActive) {
+      toolInput.onPointerUp(event.nativeEvent, cell);
+      return;
+    }
+
+    if (readOnly || placingLighting || activeTool === "hand") {
       return;
     }
     toolInput.onPointerUp(event.nativeEvent, cell);
@@ -251,9 +284,13 @@ export function Canvas() {
     }
   };
 
+  const pastePreview = useEditorStore((s) => s.pastePreview);
+
   const canvasCursor = readOnly
     ? "not-allowed"
-    : placingLighting
+    : pastePreview
+      ? "crosshair"
+      : placingLighting
       ? "crosshair"
       : activeTool === "hand"
         ? isPanning

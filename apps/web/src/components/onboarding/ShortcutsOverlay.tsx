@@ -20,6 +20,8 @@ const TOOL_ROWS: ShortcutRow[] = [
   { keys: "I", label: copy.shortcutEyedropper },
   { keys: "G", label: copy.shortcutFill },
   { keys: "L", label: copy.shortcutLine },
+  { keys: "M", label: copy.shortcutSelect },
+  { keys: "H", label: copy.shortcutHand },
 ];
 
 const COLOR_ROWS: ShortcutRow[] = Array.from({ length: 9 }, (_, index) => ({
@@ -30,6 +32,12 @@ const COLOR_ROWS: ShortcutRow[] = Array.from({ length: 9 }, (_, index) => ({
 const EDIT_ROWS: ShortcutRow[] = [
   { keys: "Ctrl+Z", label: copy.shortcutUndo },
   { keys: "Ctrl+Shift+Z", label: copy.shortcutRedo },
+  { keys: "Ctrl+C", label: copy.shortcutCopy },
+  { keys: "Ctrl+X", label: copy.shortcutCut },
+  { keys: "Ctrl+V", label: copy.shortcutPaste },
+  { keys: "Enter", label: copy.shortcutPasteCommit },
+  { keys: "Esc", label: copy.shortcutPasteCancel },
+  { keys: "↑ ↓ ← →", label: copy.shortcutPasteNudge },
 ];
 
 const VIEW_ROWS: ShortcutRow[] = [
