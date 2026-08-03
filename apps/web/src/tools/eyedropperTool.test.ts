@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { eyedropperTool } from "./eyedropperTool";
 import type { ToolContext } from "./types";
+import { stubStrokeContext } from "./testContext";
 
 const pointerDown = { button: 0, buttons: 1 } as PointerEvent;
 
@@ -17,6 +18,7 @@ function createContext(overrides: Partial<ToolContext> = {}): ToolContext {
     paletteColorCount: 4,
     getPixelIndex: (cell) => pixels[cell.y * 2 + cell.x] ?? 0,
     dispatch: () => {},
+    ...stubStrokeContext(),
     setActiveColorIndex: () => {},
     setActiveTool: () => {},
     ...overrides,

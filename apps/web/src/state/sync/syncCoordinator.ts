@@ -1,4 +1,5 @@
 import type {
+  FrameDeltaSnapshot,
   FrameSnapshot,
   PaletteSnapshot,
   ProjectSettingsSnapshot,
@@ -27,6 +28,11 @@ export type SyncCoordinatorDeps = {
     frameIndex: number,
     pixels: Uint8Array,
   ) => Promise<SaveResult>;
+  saveFrameDelta?: (
+    projectId: string,
+    frameIndex: number,
+    changes: readonly FrameDeltaSnapshot["changes"][number][],
+  ) => Promise<SaveResult>;
   savePalette: (
     projectId: string,
     colors: readonly string[],
@@ -39,11 +45,12 @@ export type SyncCoordinatorDeps = {
   paletteCallbacks: LaneCallbacks;
   projectSettingsCallbacks: LaneCallbacks;
   getFrameSnapshot: () => FrameSnapshot | null;
+  getFrameDeltaSnapshot?: () => FrameDeltaSnapshot | null;
   getPaletteSnapshot: () => PaletteSnapshot | null;
   getProjectSettingsSnapshot: () => ProjectSettingsSnapshot | null;
 };
 
-type DebounceKind = "frame" | "palette";
+type DebounceKind = "frame" | "palette" | "projectSettings";
 
 export class SyncCoordinator {
   private readonly lanes = new Map<string, LaneRuntime>();
@@ -53,6 +60,7 @@ export class SyncCoordinator {
   > = {
     frame: null,
     palette: null,
+    projectSettings: null,
   };
 
   constructor(
@@ -62,6 +70,12 @@ export class SyncCoordinator {
 
   scheduleFrame(): void {
     this.scheduleDebounce("frame", () => {
+      const deltaSnapshot = this.deps.getFrameDeltaSnapshot?.() ?? null;
+      if (deltaSnapshot) {
+        this.enqueue(deltaSnapshot, this.deps.frameCallbacks);
+        return;
+      }
+
       const snapshot = this.deps.getFrameSnapshot();
       if (snapshot) {
         this.enqueue(snapshot, this.deps.frameCallbacks);
@@ -78,6 +92,15 @@ export class SyncCoordinator {
     });
   }
 
+  scheduleProjectSettings(): void {
+    this.scheduleDebounce("projectSettings", () => {
+      const snapshot = this.deps.getProjectSettingsSnapshot();
+      if (snapshot) {
+        this.enqueue(snapshot, this.deps.projectSettingsCallbacks);
+      }
+    });
+  }
+
   cancelFrame(): void {
     this.cancelDebounce("frame");
   }
@@ -86,9 +109,14 @@ export class SyncCoordinator {
     this.cancelDebounce("palette");
   }
 
+  cancelProjectSettings(): void {
+    this.cancelDebounce("projectSettings");
+  }
+
   async flushFrame(): Promise<void> {
     this.cancelDebounce("frame");
-    const snapshot = this.deps.getFrameSnapshot();
+    const snapshot =
+      this.deps.getFrameDeltaSnapshot?.() ?? this.deps.getFrameSnapshot();
     if (snapshot) {
       this.enqueue(snapshot, this.deps.frameCallbacks);
     }
@@ -115,8 +143,10 @@ export class SyncCoordinator {
   async flushAll(): Promise<void> {
     this.cancelDebounce("frame");
     this.cancelDebounce("palette");
+    this.cancelDebounce("projectSettings");
 
-    const frameSnapshot = this.deps.getFrameSnapshot();
+    const frameDeltaSnapshot = this.deps.getFrameDeltaSnapshot?.() ?? null;
+    const frameSnapshot = frameDeltaSnapshot ?? this.deps.getFrameSnapshot();
     const paletteSnapshot = this.deps.getPaletteSnapshot();
     const settingsSnapshot = this.deps.getProjectSettingsSnapshot();
 
@@ -140,6 +170,7 @@ export class SyncCoordinator {
   reset(): void {
     this.cancelDebounce("frame");
     this.cancelDebounce("palette");
+    this.cancelDebounce("projectSettings");
 
     for (const lane of this.lanes.values()) {
       lane.epoch += 1;
@@ -211,7 +242,9 @@ export class SyncCoordinator {
         projectId: snapshot.projectId,
         epochAtStart,
         currentEpoch: lane.epoch,
-        ...(snapshot.lane === "frame" ? { frameIndex: snapshot.frameIndex } : {}),
+        ...(snapshot.lane === "frame" || snapshot.lane === "frameDelta"
+          ? { frameIndex: snapshot.frameIndex }
+          : {}),
       });
       lane.inFlight = false;
       lane.pending = null;
@@ -223,7 +256,9 @@ export class SyncCoordinator {
       logger.error("sync", `${snapshot.lane}_save_failed`, {
         projectId: snapshot.projectId,
         message: result.message,
-        ...(snapshot.lane === "frame" ? { frameIndex: snapshot.frameIndex } : {}),
+        ...(snapshot.lane === "frame" || snapshot.lane === "frameDelta"
+          ? { frameIndex: snapshot.frameIndex }
+          : {}),
       });
       lane.inFlight = false;
       lane.pending = null;
@@ -245,6 +280,47 @@ export class SyncCoordinator {
   }
 
   private async persistSnapshot(snapshot: SyncSnapshot): Promise<SaveResult> {
+    if (snapshot.lane === "frameDelta") {
+      if (!this.deps.saveFrameDelta) {
+        const fullSnapshot = this.deps.getFrameSnapshot();
+        if (!fullSnapshot) {
+          return { ok: false, message: "delta sync unavailable" };
+        }
+        return this.deps.saveFrame(
+          fullSnapshot.projectId,
+          fullSnapshot.frameIndex,
+          fullSnapshot.pixels,
+        );
+      }
+
+      const deltaResult = await this.deps.saveFrameDelta(
+        snapshot.projectId,
+        snapshot.frameIndex,
+        snapshot.changes,
+      );
+      if (deltaResult.ok) {
+        return deltaResult;
+      }
+
+      logger.warn("sync", "frame_delta_fallback_to_full_put", {
+        projectId: snapshot.projectId,
+        frameIndex: snapshot.frameIndex,
+        message: deltaResult.message,
+        changeCount: snapshot.changes.length,
+      });
+
+      const fullSnapshot = this.deps.getFrameSnapshot();
+      if (!fullSnapshot) {
+        return deltaResult;
+      }
+
+      return this.deps.saveFrame(
+        fullSnapshot.projectId,
+        fullSnapshot.frameIndex,
+        fullSnapshot.pixels,
+      );
+    }
+
     if (snapshot.lane === "frame") {
       return this.deps.saveFrame(
         snapshot.projectId,

@@ -25,7 +25,8 @@ describe("getEditorNavigationGuardState", () => {
       isDirty: true,
       isPaletteDirty: false,
       bundleDirty: true,
-      syncStatus: "error",
+      frameSyncStatus: "error",
+      frameSyncError: "sync failed",
     });
 
     expect(getEditorNavigationGuardState()).toEqual({

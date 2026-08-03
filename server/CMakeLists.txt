@@ -98,6 +98,7 @@ set(PIXELANEA_DB_SOURCES
   src/db/project_repository.cpp
   src/db/frame_repository.cpp
   src/db/palette_repository.cpp
+  src/domain/pixel_grid_merge.cpp
   src/logging/json_line_logger.cpp
   src/logging/scoped_logger.cpp
 )
@@ -233,10 +234,15 @@ if(BUILD_TESTING)
     tests/pixel_blob_codec_test.cpp
     tests/migration_runner_test.cpp
     tests/repository_test.cpp
+    tests/frame_binary_api_test.cpp
+    tests/pixel_grid_merge_test.cpp
     tests/pixelate_pipeline_test.cpp
     tests/bundle_io_test.cpp
     tests/gif_encoder_test.cpp
     tests/file_dialog_test.cpp
+    src/api/api_server.cpp
+    src/api/base64.cpp
+    src/logging/http_request_log.cpp
     src/api/file_dialog_handlers.cpp
   )
   target_link_libraries(

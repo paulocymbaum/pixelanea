@@ -1,11 +1,40 @@
 #include "db/frame_repository.hpp"
 
 #include "db/pixel_blob_codec.hpp"
+#include "domain/pixel_grid_merge.hpp"
 #include "domain/time.hpp"
 
 #include <sqlite3.h>
 
 namespace pixelanea::db {
+
+uint64_t FrameRepository::pixel_content_hash(const std::vector<uint8_t>& pixels) {
+  uint64_t hash = 14695981039346656037ULL;
+  for (const uint8_t byte : pixels) {
+    hash ^= byte;
+    hash *= 1099511628211ULL;
+  }
+  return hash;
+}
+
+void FrameRepository::invalidate_project_cache(const domain::ProjectId& id) {
+  frame_cache_.erase(id.value);
+}
+
+void FrameRepository::invalidate_project(const domain::ProjectId& id) {
+  invalidate_project_cache(id);
+}
+
+void FrameRepository::store_cache_entry(const domain::ProjectId& id, const domain::Frame& frame,
+                                        uint64_t content_hash) const {
+  CachedFrame entry;
+  entry.pixels = frame.pixels;
+  entry.content_hash = content_hash;
+  entry.width = frame.width;
+  entry.height = frame.height;
+  entry.updated_at = frame.updated_at;
+  frame_cache_[id.value][frame.index] = std::move(entry);
+}
 
 FrameRepository::FrameRepository(ProjectRepository& projects, logging::Logger& logger)
     : projects_(projects), log_(logger, "db", "FrameRepository") {}
@@ -49,6 +78,21 @@ domain::Result<domain::Frame> FrameRepository::get(const domain::ProjectId& id,
     return domain::Result<domain::Frame>::fail("project not found");
   }
 
+  const auto project_cache_it = frame_cache_.find(id.value);
+  if (project_cache_it != frame_cache_.end()) {
+    const auto frame_it = project_cache_it->second.find(frame_index);
+    if (frame_it != project_cache_it->second.end()) {
+      const CachedFrame& cached = frame_it->second;
+      domain::Frame frame;
+      frame.index = frame_index;
+      frame.width = cached.width;
+      frame.height = cached.height;
+      frame.pixels = cached.pixels;
+      frame.updated_at = cached.updated_at;
+      return domain::Result<domain::Frame>::ok(std::move(frame));
+    }
+  }
+
   const auto& connection = projects_.connection_for(id);
   const char* sql =
       "SELECT frame_index, width, height, pixel_blob, updated_at FROM frames WHERE project_id = ? "
@@ -90,6 +134,9 @@ domain::Result<domain::Frame> FrameRepository::get(const domain::ProjectId& id,
     return domain::Result<domain::Frame>::fail(ex.what());
   }
 
+  const uint64_t content_hash = pixel_content_hash(frame.pixels);
+  store_cache_entry(id, frame, content_hash);
+
   return domain::Result<domain::Frame>::ok(std::move(frame));
 }
 
@@ -108,6 +155,29 @@ domain::Result<domain::FrameMetadata> FrameRepository::put(const domain::Project
                {"expected", static_cast<int>(expected)},
                {"actual", static_cast<int>(frame.pixels.size())}});
     return domain::Result<domain::FrameMetadata>::fail("pixel count does not match frame size");
+  }
+
+  const uint64_t content_hash = pixel_content_hash(frame.pixels);
+  const auto project_cache_it = frame_cache_.find(id.value);
+  if (project_cache_it != frame_cache_.end()) {
+    const auto frame_it = project_cache_it->second.find(frame.index);
+    if (frame_it != project_cache_it->second.end()) {
+      const CachedFrame& cached = frame_it->second;
+      if (cached.content_hash == content_hash && cached.width == frame.width &&
+          cached.height == frame.height) {
+        log_.debug("frame.put_skipped",
+                   {{"project_id", id.value},
+                    {"frame_index", frame.index},
+                    {"width", frame.width},
+                    {"height", frame.height}});
+        domain::FrameMetadata metadata;
+        metadata.index = frame.index;
+        metadata.width = frame.width;
+        metadata.height = frame.height;
+        metadata.updated_at = cached.updated_at;
+        return domain::Result<domain::FrameMetadata>::ok(std::move(metadata));
+      }
+    }
   }
 
   auto& connection = projects_.connection_for(id);
@@ -153,6 +223,9 @@ domain::Result<domain::FrameMetadata> FrameRepository::put(const domain::Project
   metadata.width = frame.width;
   metadata.height = frame.height;
   metadata.updated_at = now;
+  domain::Frame cached_frame = frame;
+  cached_frame.updated_at = now;
+  store_cache_entry(id, cached_frame, content_hash);
   log_.debug("frame.saved",
              {{"project_id", id.value},
               {"frame_index", frame.index},
@@ -162,11 +235,36 @@ domain::Result<domain::FrameMetadata> FrameRepository::put(const domain::Project
   return domain::Result<domain::FrameMetadata>::ok(std::move(metadata));
 }
 
+domain::Result<domain::FrameMetadata> FrameRepository::patch_cells(
+    const domain::ProjectId& id, int frame_index,
+    const std::vector<domain::CellChange>& changes) {
+  if (!projects_.has(id)) {
+    return domain::Result<domain::FrameMetadata>::fail("project not found");
+  }
+
+  auto current = get(id, frame_index);
+  if (!current.has_value()) {
+    return domain::Result<domain::FrameMetadata>::fail("frame not found");
+  }
+
+  auto merged = domain::apply_cell_changes(current.value().pixels, current.value().width,
+                                           current.value().height, changes);
+  if (!merged.has_value()) {
+    return domain::Result<domain::FrameMetadata>::fail(merged.error());
+  }
+
+  domain::Frame frame = current.value();
+  frame.pixels = std::move(merged.value());
+  return put(id, frame);
+}
+
 domain::Result<domain::DuplicateFramesResult> FrameRepository::duplicate(
     const domain::ProjectId& id, const domain::DuplicateFramesParams& params) {
   if (!projects_.has(id)) {
     return domain::Result<domain::DuplicateFramesResult>::fail("project not found");
   }
+
+  invalidate_project_cache(id);
 
   if (params.target_frame_count != 8 && params.target_frame_count != 16 &&
       params.target_frame_count != 32) {
@@ -256,6 +354,21 @@ domain::Result<domain::DuplicateFramesResult> FrameRepository::duplicate(
   }
   sqlite3_finalize(delete_stmt);
 
+  const uint64_t source_hash = pixel_content_hash(source_frame.pixels);
+  const uint64_t empty_hash = pixel_content_hash(empty_indices);
+  for (int index = 0; index < params.target_frame_count; ++index) {
+    const bool use_source =
+        params.fill_mode == domain::DuplicateFillMode::Copy ||
+        index == params.source_frame_index;
+    domain::Frame cached;
+    cached.index = index;
+    cached.width = source_frame.width;
+    cached.height = source_frame.height;
+    cached.updated_at = now;
+    cached.pixels = use_source ? source_frame.pixels : empty_indices;
+    store_cache_entry(id, cached, use_source ? source_hash : empty_hash);
+  }
+
   auto project = projects_.get(id);
   if (!project.has_value()) {
     return domain::Result<domain::DuplicateFramesResult>::fail(project.error());
@@ -329,6 +442,8 @@ domain::Result<std::vector<domain::FrameMetadata>> FrameRepository::reorder(
   if (!projects_.has(id)) {
     return domain::Result<std::vector<domain::FrameMetadata>>::fail("project not found");
   }
+
+  invalidate_project_cache(id);
 
   if (params.from_index < 0 || params.to_index < 0) {
     return domain::Result<std::vector<domain::FrameMetadata>>::fail("invalid frame index");

@@ -20,8 +20,6 @@ describe("AppHeader", () => {
       projectId: "p1",
       isDirty: false,
       isPaletteDirty: false,
-      syncStatus: "idle",
-      syncError: null,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
       frameSyncError: null,

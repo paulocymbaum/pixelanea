@@ -161,6 +161,24 @@ domain::ReorderFramesParams parse_reorder_frames_request(const nlohmann::json& b
   return params;
 }
 
+std::vector<domain::CellChange> parse_patch_frame_cells_request(const nlohmann::json& body) {
+  if (!body.is_array()) {
+    throw std::runtime_error("request body must be a JSON array of cell changes");
+  }
+
+  std::vector<domain::CellChange> changes;
+  changes.reserve(body.size());
+  for (const auto& item : body) {
+    domain::CellChange change;
+    change.x = item.at("x").get<int>();
+    change.y = item.at("y").get<int>();
+    change.previous = static_cast<uint8_t>(item.at("previous").get<int>());
+    change.next = static_cast<uint8_t>(item.at("next").get<int>());
+    changes.push_back(change);
+  }
+  return changes;
+}
+
 httplib::Response respond_error(const logging::ScopedLogger& log, int status,
                                 std::string_view event, const std::string& message,
                                 nlohmann::json fields = nlohmann::json::object()) {
@@ -172,6 +190,83 @@ httplib::Response respond_error(const logging::ScopedLogger& log, int status,
     log.warn(event, std::move(fields));
   }
   return error_response(status, message);
+}
+
+bool content_type_is_octet_stream(const httplib::Request& req) {
+  const std::string content_type = req.get_header_value("Content-Type");
+  return content_type.rfind("application/octet-stream", 0) == 0;
+}
+
+bool accept_prefers_octet_stream(const httplib::Request& req) {
+  const std::string accept = req.get_header_value("Accept");
+  if (accept.empty()) {
+    return false;
+  }
+
+  double octet_q = -1.0;
+  double json_q = -1.0;
+
+  std::size_t start = 0;
+  while (start < accept.size()) {
+    std::size_t end = accept.find(',', start);
+    if (end == std::string::npos) {
+      end = accept.size();
+    }
+
+    std::string token = accept.substr(start, end - start);
+    while (!token.empty() && (token.front() == ' ' || token.front() == '\t')) {
+      token.erase(token.begin());
+    }
+    while (!token.empty() && (token.back() == ' ' || token.back() == '\t')) {
+      token.pop_back();
+    }
+
+    double q = 1.0;
+    const std::size_t semicolon = token.find(';');
+    std::string media = token;
+    if (semicolon != std::string::npos) {
+      media = token.substr(0, semicolon);
+      std::string params = token.substr(semicolon + 1);
+      while (!params.empty() && (params.front() == ' ' || params.front() == '\t')) {
+        params.erase(params.begin());
+      }
+      if (params.rfind("q=", 0) == 0) {
+        try {
+          q = std::stod(params.substr(2));
+        } catch (const std::exception&) {
+          q = 0.0;
+        }
+      }
+    }
+
+    while (!media.empty() && (media.back() == ' ' || media.back() == '\t')) {
+      media.pop_back();
+    }
+
+    if (media == "application/octet-stream") {
+      octet_q = std::max(octet_q, q);
+    }
+    if (media == "application/json") {
+      json_q = std::max(json_q, q);
+    }
+
+    start = end + 1;
+  }
+
+  if (octet_q < 0.0) {
+    return false;
+  }
+  if (json_q < 0.0) {
+    return true;
+  }
+  return octet_q > json_q;
+}
+
+void set_frame_binary_headers(httplib::Response& res, const domain::Frame& frame) {
+  res.set_header("X-Frame-Index", std::to_string(frame.index));
+  res.set_header("X-Frame-Width", std::to_string(frame.width));
+  res.set_header("X-Frame-Height", std::to_string(frame.height));
+  res.set_header("X-Frame-Updated-At", frame.updated_at);
 }
 
 }  // namespace
@@ -290,6 +385,7 @@ void ApiServer::register_routes(httplib::Server& server) const {
   server.Delete(R"(/api/projects/([^/]+))", [this](const httplib::Request& req,
                                                      httplib::Response& res) {
     const domain::ProjectId id(req.matches[1]);
+    frames_.invalidate_project(id);
     auto result = projects_.close(id);
     if (!result.has_value()) {
       res = respond_error(log_, 404, "project.close_failed", result.error(),
@@ -489,21 +585,22 @@ void ApiServer::register_routes(httplib::Server& server) const {
                           {{"project_id", id.value}, {"frame_index", frame_index}});
       return;
     }
-    res = json_response(200, frame_to_json(result.value()));
+    const domain::Frame& frame = result.value();
+    if (accept_prefers_octet_stream(req)) {
+      res.status = 200;
+      set_frame_binary_headers(res, frame);
+      res.set_content(
+          std::string(reinterpret_cast<const char*>(frame.pixels.data()), frame.pixels.size()),
+          "application/octet-stream");
+      return;
+    }
+    res = json_response(200, frame_to_json(frame));
   });
 
   server.Put(R"(/api/projects/([^/]+)/frames/(\d+))", [this](const httplib::Request& req,
                                                                 httplib::Response& res) {
     const domain::ProjectId id(req.matches[1]);
     const int frame_index = std::stoi(req.matches[2]);
-
-    nlohmann::json body;
-    try {
-      body = nlohmann::json::parse(req.body);
-    } catch (const nlohmann::json::exception&) {
-      res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
-      return;
-    }
 
     auto project = projects_.get(id);
     if (!project.has_value()) {
@@ -516,7 +613,31 @@ void ApiServer::register_routes(httplib::Server& server) const {
     frame.index = frame_index;
     frame.width = project.value().width;
     frame.height = project.value().height;
-    frame.pixels = body.at("pixels").get<std::vector<uint8_t>>();
+
+    if (content_type_is_octet_stream(req)) {
+      const std::size_t expected =
+          static_cast<std::size_t>(frame.width) * static_cast<std::size_t>(frame.height);
+      if (req.body.size() != expected) {
+        res = respond_error(log_, 400, "frame.put_invalid_pixels",
+                            "pixel byte count does not match frame size",
+                            {{"project_id", id.value},
+                             {"frame_index", frame_index},
+                             {"expected", static_cast<int>(expected)},
+                             {"actual", static_cast<int>(req.body.size())}});
+        return;
+      }
+      frame.pixels.assign(reinterpret_cast<const uint8_t*>(req.body.data()),
+                          reinterpret_cast<const uint8_t*>(req.body.data()) + req.body.size());
+    } else {
+      nlohmann::json body;
+      try {
+        body = nlohmann::json::parse(req.body);
+      } catch (const nlohmann::json::exception&) {
+        res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
+        return;
+      }
+      frame.pixels = body.at("pixels").get<std::vector<uint8_t>>();
+    }
 
     auto result = frames_.put(id, frame);
     if (!result.has_value()) {
@@ -529,6 +650,45 @@ void ApiServer::register_routes(httplib::Server& server) const {
     }
     res = json_response(200, frame_metadata_to_json(result.value()));
   });
+
+  server.Patch(R"(/api/projects/([^/]+)/frames/(\d+)/cells)",
+               [this](const httplib::Request& req, httplib::Response& res) {
+                 const domain::ProjectId id(req.matches[1]);
+                 const int frame_index = std::stoi(req.matches[2]);
+
+                 nlohmann::json body;
+                 try {
+                   body = nlohmann::json::parse(req.body);
+                 } catch (const nlohmann::json::exception&) {
+                   res = respond_error(log_, 400, "request.invalid_json", "invalid JSON body");
+                   return;
+                 }
+
+                 std::vector<domain::CellChange> changes;
+                 try {
+                   changes = parse_patch_frame_cells_request(body);
+                 } catch (const std::exception& ex) {
+                   res = respond_error(log_, 400, "request.invalid_body", ex.what(),
+                                       {{"project_id", id.value}, {"frame_index", frame_index}});
+                   return;
+                 }
+
+                 auto result = frames_.patch_cells(id, frame_index, changes);
+                 if (!result.has_value()) {
+                   const std::string& error = result.error();
+                   int status = 400;
+                   if (error == "project not found" || error == "frame not found") {
+                     status = 404;
+                   } else if (error == "cell conflict") {
+                     status = 409;
+                   }
+                   res = respond_error(log_, status, "frame.patch_cells_failed", error,
+                                       {{"project_id", id.value}, {"frame_index", frame_index}});
+                   return;
+                 }
+
+                 res = json_response(200, frame_metadata_to_json(result.value()));
+               });
 
   server.Get(R"(/api/projects/([^/]+)/palette)", [this](const httplib::Request& req,
                                                            httplib::Response& res) {

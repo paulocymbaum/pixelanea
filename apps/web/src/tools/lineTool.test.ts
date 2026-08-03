@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { PaintCellsCommand } from "@/state/commands/paintCells";
 import { lineTool } from "./lineTool";
 import type { ToolContext } from "./types";
+import { stubStrokeContext } from "./testContext";
 
 const pointerDown = { button: 0, buttons: 1 } as PointerEvent;
 const pointerUp = { button: 0, buttons: 0 } as PointerEvent;
@@ -19,6 +20,7 @@ function createContext(overrides: Partial<ToolContext> = {}): ToolContext {
     paletteColorCount: 4,
     getPixelIndex: (cell) => pixels[cell.y * 3 + cell.x] ?? 0,
     dispatch: () => {},
+    ...stubStrokeContext(),
     setActiveColorIndex: () => {},
     setActiveTool: () => {},
     ...overrides,

@@ -1,76 +1,34 @@
 import type { CellCoord } from "@/canvas/coordinates";
-import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
-import { PaintCellCommand } from "@/state/commands/paintCell";
+import { PaintCellsCommand } from "@/state/commands/paintCells";
 import { useEditorStore } from "@/state/editorStore";
+import { ensureFrameCached, writeFramePixels } from "@/state/frameCache";
+import {
+  EDITOR_FIXTURE_PROJECT_ID,
+  resetEditor,
+} from "@/qa/editorFixtures";
+import { buildToolContextFromStore } from "@/tools/context";
 import { eraserTool } from "@/tools/eraserTool";
 import { eyedropperTool } from "@/tools/eyedropperTool";
 import { fillTool } from "@/tools/fillTool";
 import { lineTool } from "@/tools/lineTool";
 import { paintTool } from "@/tools/paintTool";
 import type { Tool, ToolContext } from "@/tools/types";
+import { StrokeSession } from "@/tools/strokeSession";
 
-export const MATRIX_PROJECT_ID = "matrix-project";
+export const MATRIX_PROJECT_ID = EDITOR_FIXTURE_PROJECT_ID;
 
 export function pointerEvent(button = 0, buttons = 1): PointerEvent {
   return { button, buttons } as PointerEvent;
 }
 
 export function resetPaintProject(
-  overrides: Partial<ReturnType<typeof useEditorStore.getState>> = {},
+  overrides: Parameters<typeof resetEditor>[0] = {},
 ): void {
-  const width = overrides.gridWidth ?? 32;
-  const height = overrides.gridHeight ?? 32;
-  const pixels =
-    overrides.pixels ?? new Uint8Array(width * height);
-
-  useEditorStore.setState({
-    projectId: MATRIX_PROJECT_ID,
-    projectName: "Matrix project",
-    activeTool: "paint",
-    activeColorIndex: 1,
-    activeFrameIndex: 0,
-    frameCount: 1,
-    gridWidth: width,
-    gridHeight: height,
-    pixels: new Uint8Array(pixels),
-    paletteColors: DEFAULT_PALETTE_COLORS,
-    paletteLocked: false,
-    readOnly: false,
-    isPlaying: false,
-    placingLighting: false,
-    undoStack: [],
-    redoStack: [],
-    isDirty: false,
-    framePixelsByIndex: { 0: new Uint8Array(pixels) },
-    frameSyncStatus: "idle",
-    paletteSyncStatus: "idle",
-    syncStatus: "idle",
-    frameSyncError: null,
-    paletteSyncError: null,
-    syncError: null,
-    zoom: 1,
-    panX: 0,
-    panY: 0,
-    ...overrides,
-  });
+  resetEditor(overrides);
 }
 
 export function buildToolContext(): ToolContext {
-  const state = useEditorStore.getState();
-  return {
-    activeColorIndex: state.activeColorIndex,
-    activeFrameIndex: state.activeFrameIndex,
-    gridWidth: state.gridWidth,
-    gridHeight: state.gridHeight,
-    readOnly: state.readOnly,
-    paletteLocked: state.paletteLocked,
-    paletteColorCount: state.paletteColors.length,
-    getPixelIndex: (cell) =>
-      state.pixels[cell.y * state.gridWidth + cell.x] ?? 0,
-    dispatch: state.dispatch,
-    setActiveColorIndex: state.setActiveColorIndex,
-    setActiveTool: state.setActiveTool,
-  };
+  return buildToolContextFromStore();
 }
 
 export function pixelAt(x: number, y: number): number {
@@ -80,9 +38,19 @@ export function pixelAt(x: number, y: number): number {
 
 export function setPixel(x: number, y: number, index: number): void {
   const state = useEditorStore.getState();
-  const pixels = new Uint8Array(state.pixels);
+  const cached = ensureFrameCached(state);
+  const pixels = new Uint8Array(
+    cached[state.activeFrameIndex] ?? state.pixels,
+  );
   pixels[y * state.gridWidth + x] = index;
-  useEditorStore.setState({ pixels });
+  useEditorStore.setState({
+    pixels,
+    framePixelsByIndex: writeFramePixels(
+      cached,
+      state.activeFrameIndex,
+      pixels,
+    ),
+  });
 }
 
 export function runToolStroke(
@@ -95,6 +63,31 @@ export function runToolStroke(
   }
 
   const endStroke = options.endStroke ?? true;
+
+  if (tool.id === "paint" || tool.id === "eraser") {
+    const session = new StrokeSession();
+    const ctx = buildToolContext();
+    session.begin();
+    if (endStroke) {
+      ctx.beginStroke();
+    }
+
+    for (const cell of cells) {
+      if (tool.id === "paint") {
+        session.paintCell(cell, ctx);
+      } else {
+        session.eraseCell(cell, ctx);
+      }
+      session.preview(ctx);
+    }
+
+    if (endStroke) {
+      session.commit(ctx);
+      ctx.endStroke();
+    }
+    return;
+  }
+
   const ctx = buildToolContext();
 
   for (let i = 0; i < cells.length; i++) {
@@ -125,7 +118,7 @@ export function paintCells(cells: CellCoord[], colorIndex?: number): void {
   if (colorIndex !== undefined) {
     useEditorStore.setState({ activeColorIndex: colorIndex });
   }
-  runToolStroke(paintTool, cells, { endStroke: false });
+  runToolStroke(paintTool, cells);
 }
 
 export function paintCell(x: number, y: number, colorIndex?: number): void {
@@ -138,7 +131,9 @@ export function dispatchPaintCell(
   previous: number,
   next: number,
 ): void {
-  useEditorStore.getState().dispatch(new PaintCellCommand(x, y, previous, next));
+  useEditorStore
+    .getState()
+    .dispatch(new PaintCellsCommand([{ x, y, previous, next }]));
 }
 
 export function rowCells(y: number, fromX: number, toX: number): CellCoord[] {

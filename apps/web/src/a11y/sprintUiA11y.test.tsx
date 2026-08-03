@@ -22,8 +22,6 @@ describe("Sprint UI accessibility (S1-909)", () => {
         projectId: "p1",
         isDirty: false,
         isPaletteDirty: false,
-        syncStatus: "idle",
-        syncError: null,
         frameSyncStatus: "idle",
         paletteSyncStatus: "idle",
         frameSyncError: null,

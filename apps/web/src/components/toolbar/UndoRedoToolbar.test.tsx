@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
-import { PaintCellCommand } from "@/state/commands/paintCell";
+import { PaintCellsCommand } from "@/state/commands/paintCells";
 import { useEditorStore } from "@/state/editorStore";
 import { UndoRedoToolbar } from "./UndoRedoToolbar";
 
@@ -34,7 +34,7 @@ describe("UndoRedoToolbar", () => {
   });
 
   it("undoes when undo is clicked", () => {
-    const command = new PaintCellCommand(0, 0, 0, 2);
+    const command = new PaintCellsCommand([{ x: 0, y: 0, previous: 0, next: 2 }]);
     useEditorStore.setState({
       undoStack: [command],
       pixels: new Uint8Array([2, 0, 0, 0]),
@@ -49,7 +49,7 @@ describe("UndoRedoToolbar", () => {
   });
 
   it("disables actions when readOnly", () => {
-    const command = new PaintCellCommand(0, 0, 0, 2);
+    const command = new PaintCellsCommand([{ x: 0, y: 0, previous: 0, next: 2 }]);
     useEditorStore.setState({
       readOnly: true,
       undoStack: [command],

@@ -18,7 +18,7 @@ import {
   isNavigationBlocked,
   needsNavigationGuard,
 } from "@/lib/unsavedGuard";
-import { useEditorStore } from "@/state/editorStore";
+import { useEditorStore, useSyncStatus } from "@/state/editorStore";
 import { flushAllSync } from "@/state/persist";
 import { useUiStore } from "@/state/uiStore";
 import { OverwriteConfirmDialog } from "./OverwriteConfirmDialog";
@@ -47,7 +47,7 @@ export function useProjectFileActions({
   const isDirty = useEditorStore((s) => s.isDirty);
   const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
   const bundleDirty = useEditorStore((s) => s.bundleDirty);
-  const syncStatus = useEditorStore((s) => s.syncStatus);
+  const syncStatus = useSyncStatus();
   const setBundlePath = useEditorStore((s) => s.setBundlePath);
   const setAssetType = useEditorStore((s) => s.setAssetType);
   const showToast = useUiStore((s) => s.showToast);

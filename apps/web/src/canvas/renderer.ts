@@ -37,6 +37,20 @@ export type RenderGridOptions = {
   showLightingMarkers?: boolean;
 };
 
+export type RepaintGridCellsOptions = {
+  ctx: CanvasRenderingContext2D;
+  gridWidth: number;
+  gridHeight: number;
+  basePixels: Uint8Array;
+  paletteColors: readonly string[];
+  viewport: Viewport;
+  tokens: CanvasTokens;
+  cells: Iterable<{ x: number; y: number }>;
+  previewByKey?: ReadonlyMap<string, { next: number }>;
+  onionSkinPixels?: Uint8Array;
+  onionSkinOpacity?: number;
+};
+
 const CHECKER_CELL_PX = 8;
 
 export function readCanvasTokens(element: HTMLElement): CanvasTokens {
@@ -89,6 +103,117 @@ function drawCheckerboard(
       }
     }
   }
+}
+
+function cellKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+function drawCheckerCell(
+  ctx: CanvasRenderingContext2D,
+  cellX: number,
+  cellY: number,
+  viewport: Viewport,
+  tokens: CanvasTokens,
+): void {
+  const cellSize = viewport.zoom;
+  const originX = viewport.panX;
+  const originY = viewport.panY;
+  const px = originX + cellX * cellSize;
+  const py = originY + cellY * cellSize;
+
+  for (let dy = 0; dy < cellSize; dy += CHECKER_CELL_PX) {
+    for (let dx = 0; dx < cellSize; dx += CHECKER_CELL_PX) {
+      const checkerCol = Math.floor((px + dx) / CHECKER_CELL_PX);
+      const checkerRow = Math.floor((py + dy) / CHECKER_CELL_PX);
+      ctx.fillStyle =
+        (checkerCol + checkerRow) % 2 === 0 ? tokens.checkerA : tokens.checkerB;
+      ctx.fillRect(
+        px + dx,
+        py + dy,
+        Math.min(CHECKER_CELL_PX, cellSize - dx),
+        Math.min(CHECKER_CELL_PX, cellSize - dy),
+      );
+    }
+  }
+}
+
+function drawPixelCell(
+  ctx: CanvasRenderingContext2D,
+  cellX: number,
+  cellY: number,
+  index: number,
+  paletteColors: readonly string[],
+  viewport: Viewport,
+  opacity = 1,
+): void {
+  if (index === TRANSPARENT_INDEX) {
+    return;
+  }
+
+  const cellSize = viewport.zoom;
+  const originX = viewport.panX;
+  const originY = viewport.panY;
+  const previousAlpha = ctx.globalAlpha;
+
+  if (opacity !== 1) {
+    ctx.globalAlpha = opacity;
+  }
+
+  const color = paletteColors[index] ?? DEFAULT_PALETTE_COLORS[0];
+  ctx.fillStyle = color;
+  ctx.fillRect(
+    originX + cellX * cellSize,
+    originY + cellY * cellSize,
+    cellSize,
+    cellSize,
+  );
+
+  ctx.globalAlpha = previousAlpha;
+}
+
+function drawCellGridLines(
+  ctx: CanvasRenderingContext2D,
+  cellX: number,
+  cellY: number,
+  gridWidth: number,
+  gridHeight: number,
+  viewport: Viewport,
+  tokens: CanvasTokens,
+): void {
+  if (viewport.zoom < GRID_LINE_MIN_ZOOM) {
+    return;
+  }
+
+  const cellSize = viewport.zoom;
+  const originX = viewport.panX;
+  const originY = viewport.panY;
+  const left = originX + cellX * cellSize;
+  const top = originY + cellY * cellSize;
+  const right = left + cellSize;
+  const bottom = top + cellSize;
+
+  ctx.strokeStyle = tokens.gridLine;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+
+  const lineX = left + 0.5;
+  ctx.moveTo(lineX, top);
+  ctx.lineTo(lineX, bottom);
+
+  const lineRight = right + 0.5;
+  ctx.moveTo(lineRight, top);
+  ctx.lineTo(lineRight, bottom);
+
+  const lineY = top + 0.5;
+  ctx.moveTo(left, lineY);
+  ctx.lineTo(right, lineY);
+
+  const lineBottom = bottom + 0.5;
+  ctx.moveTo(left, lineBottom);
+  ctx.lineTo(right, lineBottom);
+
+  ctx.stroke();
 }
 
 function drawPixels(
@@ -296,4 +421,49 @@ export function renderGrid({
   }
 
   drawGridLines(ctx, gridWidth, gridHeight, viewport, tokens);
+}
+
+/** Repaint only affected cells during an active stroke (no full-canvas clear). */
+export function repaintGridCells({
+  ctx,
+  gridWidth,
+  gridHeight,
+  basePixels,
+  paletteColors,
+  viewport,
+  tokens,
+  cells,
+  previewByKey,
+  onionSkinPixels,
+  onionSkinOpacity = ONION_SKIN_OPACITY,
+}: RepaintGridCellsOptions): void {
+  for (const cell of cells) {
+    const { x, y } = cell;
+    if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) {
+      continue;
+    }
+
+    drawCheckerCell(ctx, x, y, viewport, tokens);
+
+    if (onionSkinPixels) {
+      const onionIndex = onionSkinPixels[y * gridWidth + x] ?? TRANSPARENT_INDEX;
+      drawPixelCell(
+        ctx,
+        x,
+        y,
+        onionIndex,
+        paletteColors,
+        viewport,
+        onionSkinOpacity,
+      );
+    }
+
+    const preview = previewByKey?.get(cellKey(x, y));
+    const index = preview
+      ? preview.next
+      : (basePixels[y * gridWidth + x] ?? TRANSPARENT_INDEX);
+    drawPixelCell(ctx, x, y, index, paletteColors, viewport);
+
+    drawCellGridLines(ctx, x, y, gridWidth, gridHeight, viewport, tokens);
+  }
 }

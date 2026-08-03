@@ -1,77 +1,48 @@
 import { create } from "zustand";
-import type { CellCoord, Size, Viewport } from "@/canvas/coordinates";
-import {
-  fitToView as computeFitToView,
-  zoomIn as computeZoomIn,
-  zoomOut as computeZoomOut,
-  clampZoom,
-} from "@/canvas/coordinates";
+import type { CellCoord } from "@/canvas/coordinates";
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
 import type { ToolId } from "@/tools/registry";
 import type { AssetType } from "@pixelanea/api-client";
 import { DEFAULT_ASSET_TYPE } from "@/content/assetTypes";
 import type { Command } from "@/state/commands/types";
-import { pushCommands } from "@/state/commands/undoStack";
 import {
-  PALETTE_MAX_COLORS,
-  PALETTE_MIN_COLORS,
-  normalizeHex,
-  remapPixelsAfterRemove,
-} from "@/state/paletteUtils";
+  dispatchCommands,
+  redoCommand,
+  undoCommand,
+} from "@/state/editorStoreCommands";
+import { createColorFilterActions } from "@/state/editorStoreColorFilters";
 import {
-  flushFrameSync,
-  flushPaletteSync,
-  scheduleFrameSync,
-  schedulePaletteSync,
-} from "@/state/persist";
-import { fetchFrame, pixelsFromFrame } from "@/api/frames";
-import { logger } from "@/logging/logger";
-import { resolveAllFramePixels, writeFramePixels } from "@/state/frameCache";
+  createFrameActions,
+  createFrameSyncActions,
+} from "@/state/editorStoreFrames";
+import { createPaletteActions } from "@/state/editorStorePalette";
+import { writeFramePixels } from "@/state/frameCache";
 import {
-  activeIndexAfterReorder,
-  reorderFramePixels,
-} from "@/state/frameReorder";
+  clampAnimationFps,
+  createEmptyPixels,
+  createPlaybackActions,
+} from "@/state/editorStorePlayback";
 import {
-  computeFilterCellChanges,
+  deriveSyncError,
+  deriveSyncStatus,
+  withPaletteSyncStatus,
+  type SyncStatus,
+} from "@/state/editorStoreSync";
+import {
+  applyStrokePreview,
+  clearStrokePreview,
+  resetStrokePreview,
+} from "@/tools/strokePreview";
+import {
   DEFAULT_COLOR_FILTER_SETTINGS,
   type ColorFilterSettings,
   type LightingPoint,
 } from "@/lib/colorFilters";
-import { PaintCellsCommand } from "@/state/commands/paintCells";
 
 const DEFAULT_GRID_SIZE = 32;
 const DEFAULT_ANIMATION_FPS = 8;
-const MIN_ANIMATION_FPS = 1;
-const MAX_ANIMATION_FPS = 24;
 
-function createEmptyPixels(width: number, height: number): Uint8Array {
-  return new Uint8Array(width * height);
-}
-
-function clampAnimationFps(fps: number): number {
-  return Math.max(
-    MIN_ANIMATION_FPS,
-    Math.min(MAX_ANIMATION_FPS, Math.round(fps)),
-  );
-}
-
-export type SyncStatus = "idle" | "syncing" | "error";
-
-function reconcileDerivedSync(
-  frameSyncStatus: SyncStatus,
-  paletteSyncStatus: SyncStatus,
-  frameSyncError: string | null,
-  paletteSyncError: string | null,
-): { syncStatus: SyncStatus; syncError: string | null } {
-  const syncStatus: SyncStatus =
-    frameSyncStatus === "error" || paletteSyncStatus === "error"
-      ? "error"
-      : frameSyncStatus === "syncing" || paletteSyncStatus === "syncing"
-        ? "syncing"
-        : "idle";
-  const syncError = frameSyncError ?? paletteSyncError;
-  return { syncStatus, syncError };
-}
+export type { SyncStatus } from "@/state/editorStoreSync";
 
 type EditorState = {
   projectId: string | null;
@@ -84,11 +55,9 @@ type EditorState = {
   gridHeight: number;
   pixels: Uint8Array;
   paletteColors: readonly string[];
-  zoom: number;
-  panX: number;
-  panY: number;
+  isStrokeActive: boolean;
+  strokePreviewTick: number;
   hoverCell: CellCoord | null;
-  containerSize: Size;
   readOnly: boolean;
   paletteLocked: boolean;
   framePixelsByIndex: Record<number, Uint8Array>;
@@ -105,10 +74,8 @@ type EditorState = {
   bundleDirty: boolean;
   frameSyncStatus: SyncStatus;
   paletteSyncStatus: SyncStatus;
-  syncStatus: SyncStatus;
   frameSyncError: string | null;
   paletteSyncError: string | null;
-  syncError: string | null;
   bundlePath: string | null;
   assetType: AssetType;
   setProject: (params: {
@@ -149,12 +116,10 @@ type EditorState = {
   applyColorFilters: () => void;
   advancePlaybackFrame: () => boolean;
   setHoverCell: (cell: CellCoord | null) => void;
-  setContainerSize: (size: Size) => void;
-  setViewport: (viewport: Viewport) => void;
-  setZoom: (zoom: number) => void;
-  zoomIn: (anchor?: { x: number; y: number }) => void;
-  zoomOut: (anchor?: { x: number; y: number }) => void;
-  fitToView: (size?: Size) => void;
+  previewCells: (
+    changes: readonly import("@/state/commands/paintCells").CellChange[],
+  ) => void;
+  setStrokeActive: (active: boolean) => void;
   dispatch: (command: Command | Command[]) => void;
   undo: () => void;
   redo: () => void;
@@ -176,756 +141,179 @@ type EditorState = {
   applyFramePixelsAtIndex: (index: number, pixels: Uint8Array) => void;
 };
 
-/** Fold the live active buffer into the per-index cache. */
-function cacheActivePixels(
-  state: Pick<EditorState, "framePixelsByIndex" | "activeFrameIndex" | "pixels">,
-): Record<number, Uint8Array> {
-  return writeFramePixels(
-    state.framePixelsByIndex,
-    state.activeFrameIndex,
-    state.pixels,
-  );
-}
+export const useEditorStore = create<EditorState>((set, get) => {
+  const palette = createPaletteActions(get, set);
+  const colorFilters = createColorFilterActions(get, set);
+  const frames = createFrameActions(get, set);
+  const frameSync = createFrameSyncActions(get, set);
+  const playback = createPlaybackActions(get, set);
 
-function applyCommands(
-  pixels: Uint8Array,
-  gridWidth: number,
-  commands: Command[],
-  direction: "apply" | "revert",
-): void {
-  for (const command of commands) {
-    if (direction === "apply") {
-      command.apply(pixels, gridWidth);
-    } else {
-      command.revert(pixels, gridWidth);
-    }
-  }
-}
+  return {
+    projectId: null,
+    activeTool: "paint",
+    activeColorIndex: 1,
+    activeFrameIndex: 0,
+    frameCount: 1,
+    projectName: "Untitled project",
+    gridWidth: DEFAULT_GRID_SIZE,
+    gridHeight: DEFAULT_GRID_SIZE,
+    pixels: createEmptyPixels(DEFAULT_GRID_SIZE, DEFAULT_GRID_SIZE),
+    paletteColors: DEFAULT_PALETTE_COLORS,
+    isStrokeActive: false,
+    strokePreviewTick: 0,
+    hoverCell: null,
+    readOnly: false,
+    paletteLocked: false,
+    framePixelsByIndex: {},
+    isPlaying: false,
+    animationFps: DEFAULT_ANIMATION_FPS,
+    animationLoop: true,
+    onionSkinEnabled: true,
+    colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
+    placingLighting: false,
+    undoStack: [],
+    redoStack: [],
+    isDirty: false,
+    isPaletteDirty: false,
+    bundleDirty: false,
+    frameSyncStatus: "idle",
+    paletteSyncStatus: "idle",
+    frameSyncError: null,
+    paletteSyncError: null,
+    bundlePath: null,
+    assetType: DEFAULT_ASSET_TYPE,
 
-export const useEditorStore = create<EditorState>((set, get) => ({
-  projectId: null,
-  activeTool: "paint",
-  activeColorIndex: 1,
-  activeFrameIndex: 0,
-  frameCount: 1,
-  projectName: "Untitled project",
-  gridWidth: DEFAULT_GRID_SIZE,
-  gridHeight: DEFAULT_GRID_SIZE,
-  pixels: createEmptyPixels(DEFAULT_GRID_SIZE, DEFAULT_GRID_SIZE),
-  paletteColors: DEFAULT_PALETTE_COLORS,
-  zoom: 1,
-  panX: 0,
-  panY: 0,
-  hoverCell: null,
-  containerSize: { width: 0, height: 0 },
-  readOnly: false,
-  paletteLocked: false,
-  framePixelsByIndex: {},
-  isPlaying: false,
-  animationFps: DEFAULT_ANIMATION_FPS,
-  animationLoop: true,
-  onionSkinEnabled: true,
-  colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
-  placingLighting: false,
-  undoStack: [],
-  redoStack: [],
-  isDirty: false,
-  isPaletteDirty: false,
-  bundleDirty: false,
-  frameSyncStatus: "idle",
-  paletteSyncStatus: "idle",
-  syncStatus: "idle",
-  frameSyncError: null,
-  paletteSyncError: null,
-  syncError: null,
-  bundlePath: null,
-  assetType: DEFAULT_ASSET_TYPE,
-
-  setProject: ({
-    projectId,
-    name,
-    gridWidth,
-    gridHeight,
-    frameCount,
-    pixels,
-    paletteColors,
-    bundlePath = null,
-    assetType = DEFAULT_ASSET_TYPE,
-    fps = DEFAULT_ANIMATION_FPS,
-    loop = true,
-  }) =>
-    set({
+    setProject: ({
       projectId,
-      projectName: name,
+      name,
       gridWidth,
       gridHeight,
       frameCount,
       pixels,
       paletteColors,
-      bundlePath,
-      assetType,
-      animationFps: clampAnimationFps(fps),
-      animationLoop: loop,
-      framePixelsByIndex: writeFramePixels({}, 0, pixels),
-      activeFrameIndex: 0,
-      undoStack: [],
-      redoStack: [],
-      isDirty: false,
-      isPaletteDirty: false,
-      bundleDirty: false,
-      frameSyncStatus: "idle",
-      paletteSyncStatus: "idle",
-      syncStatus: "idle",
-      frameSyncError: null,
-      paletteSyncError: null,
-      syncError: null,
-      isPlaying: false,
-      readOnly: false,
-      colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
-      placingLighting: false,
-    }),
-
-  setActiveTool: (tool) => set({ activeTool: tool }),
-  setActiveColorIndex: (index) => {
-    const { paletteColors } = get();
-    const clamped = Math.max(0, Math.min(index, paletteColors.length - 1));
-    set({ activeColorIndex: clamped });
-  },
-  setFrameCount: (count) => set({ frameCount: count }),
-  setReadOnly: (readOnly) =>
-    set((state) => ({
-      readOnly,
-      placingLighting: readOnly ? false : state.placingLighting,
-    })),
-  setPaletteLocked: (paletteLocked) => set({ paletteLocked }),
-
-  applyPalettePreset: (colors) => {
-    if (colors.length === 0) {
-      return;
-    }
-
-    const state = get();
-    if (state.paletteLocked) {
-      return;
-    }
-
-    const paletteColors = colors.map((hex) => normalizeHex(hex) ?? hex);
-    const activeColorIndex = Math.min(
-      state.activeColorIndex,
-      paletteColors.length - 1,
-    );
-
-    set({
-      paletteColors,
-      activeColorIndex,
-      isPaletteDirty: true,
-      bundleDirty: true,
-      paletteSyncStatus: "idle",
-      paletteSyncError: null,
-      ...reconcileDerivedSync(
-        state.frameSyncStatus,
-        "idle",
-        state.frameSyncError,
-        null,
-      ),
-    });
-    schedulePaletteSync();
-  },
-
-  switchFrame: async (index) => {
-    const state = get();
-    if (
-      index < 0 ||
-      index >= state.frameCount ||
-      index === state.activeFrameIndex ||
-      state.isPlaying
-    ) {
-      return;
-    }
-
-    set({ framePixelsByIndex: cacheActivePixels(state) });
-
-    if (state.isDirty) {
-      await flushFrameSync();
-    }
-
-    // Paints landing during an await update the outgoing frame, so every
-    // resume point re-reads the store instead of reusing a stale snapshot.
-    const flushed = get();
-    let cachedCurrent = cacheActivePixels(flushed);
-
-    let nextPixels = cachedCurrent[index];
-    if (!nextPixels && flushed.projectId) {
-      const result = await fetchFrame(flushed.projectId, index);
-      if (!result.ok) {
-        logger.error("editorStore", "switch_frame_fetch_failed", {
-          projectId: flushed.projectId,
-          frameIndex: index,
-          message: result.message,
-        });
-        get().setFrameSyncStatus("error", result.message);
-        return;
-      }
-      nextPixels = pixelsFromFrame(result.frame);
-      cachedCurrent = cacheActivePixels(get());
-    }
-
-    if (!nextPixels) {
-      nextPixels = createEmptyPixels(flushed.gridWidth, flushed.gridHeight);
-    }
-
-    set({
-      activeFrameIndex: index,
-      pixels: new Uint8Array(nextPixels),
-      framePixelsByIndex: writeFramePixels(cachedCurrent, index, nextPixels),
-      undoStack: [],
-      redoStack: [],
-      isDirty: false,
-      frameSyncStatus: "idle",
-      paletteSyncStatus: "idle",
-      frameSyncError: null,
-      paletteSyncError: null,
-      ...reconcileDerivedSync("idle", "idle", null, null),
-    });
-  },
-
-  setPlaying: (isPlaying) => {
-    set({ isPlaying, readOnly: isPlaying, placingLighting: false });
-  },
-
-  setAnimationFps: (fps) => set({ animationFps: clampAnimationFps(fps) }),
-
-  setAnimationLoop: (animationLoop) => set({ animationLoop }),
-
-  setOnionSkinEnabled: (onionSkinEnabled) => set({ onionSkinEnabled }),
-
-  setColorFilterOverlayEnabled: (overlayEnabled) =>
-    set((state) => ({
-      colorFilters: { ...state.colorFilters, overlayEnabled },
-    })),
-
-  setColorFilterOverlayColor: (overlayColor) =>
-    set((state) => ({
-      colorFilters: { ...state.colorFilters, overlayColor },
-    })),
-
-  setColorFilterOverlayOpacity: (overlayOpacity) =>
-    set((state) => ({
-      colorFilters: {
-        ...state.colorFilters,
-        overlayOpacity: Math.max(0, Math.min(1, overlayOpacity)),
-      },
-    })),
-
-  addColorFilterLightingPoint: (point) =>
-    set((state) => ({
-      colorFilters: {
-        ...state.colorFilters,
-        lightingPoints: [
-          ...state.colorFilters.lightingPoints,
-          { ...point, id: crypto.randomUUID() },
-        ],
-      },
-    })),
-
-  removeColorFilterLightingPoint: (id) =>
-    set((state) => ({
-      colorFilters: {
-        ...state.colorFilters,
-        lightingPoints: state.colorFilters.lightingPoints.filter(
-          (point) => point.id !== id,
-        ),
-      },
-    })),
-
-  updateColorFilterLightingPoint: (id, patch) =>
-    set((state) => ({
-      colorFilters: {
-        ...state.colorFilters,
-        lightingPoints: state.colorFilters.lightingPoints.map((point) =>
-          point.id === id ? { ...point, ...patch } : point,
-        ),
-      },
-    })),
-
-  setPlacingLighting: (placingLighting) => set({ placingLighting }),
-
-  resetColorFilters: () =>
-    set({
-      colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
-      placingLighting: false,
-    }),
-
-  applyColorFilters: () => {
-    const state = get();
-    if (state.readOnly) {
-      return;
-    }
-
-    const changes = computeFilterCellChanges(
-      state.pixels,
-      state.gridWidth,
-      state.gridHeight,
-      state.paletteColors,
-      state.colorFilters,
-    );
-
-    if (changes.length === 0) {
-      return;
-    }
-
-    get().dispatch(new PaintCellsCommand(changes));
-  },
-
-  advancePlaybackFrame: () => {
-    const state = get();
-    if (!state.isPlaying || state.frameCount <= 1) {
-      return false;
-    }
-
-    const nextIndex = state.activeFrameIndex + 1;
-    if (nextIndex >= state.frameCount) {
-      if (!state.animationLoop) {
-        set({ isPlaying: false, readOnly: false });
-        return false;
-      }
-      const firstFrame = state.framePixelsByIndex[0];
-      if (!firstFrame) {
-        return false;
-      }
+      bundlePath = null,
+      assetType = DEFAULT_ASSET_TYPE,
+      fps = DEFAULT_ANIMATION_FPS,
+      loop = true,
+    }) =>
       set({
-        activeFrameIndex: 0,
-        pixels: new Uint8Array(firstFrame),
-      });
-      return true;
-    }
-
-    const nextPixels = state.framePixelsByIndex[nextIndex];
-    if (!nextPixels) {
-      return false;
-    }
-
-    set({
-      activeFrameIndex: nextIndex,
-      pixels: new Uint8Array(nextPixels),
-    });
-    return true;
-  },
-
-  setHoverCell: (cell) => set({ hoverCell: cell }),
-  setContainerSize: (size) => set({ containerSize: size }),
-  setViewport: (viewport) =>
-    set({
-      zoom: clampZoom(viewport.zoom),
-      panX: viewport.panX,
-      panY: viewport.panY,
-    }),
-  setZoom: (zoom) => set({ zoom: clampZoom(zoom) }),
-  zoomIn: (anchor) => {
-    const { zoom, panX, panY } = get();
-    const next = computeZoomIn({ zoom, panX, panY }, anchor);
-    set(next);
-  },
-  zoomOut: (anchor) => {
-    const { zoom, panX, panY } = get();
-    const next = computeZoomOut({ zoom, panX, panY }, anchor);
-    set(next);
-  },
-  fitToView: (size) => {
-    const state = get();
-    const container = size ?? state.containerSize;
-    if (container.width <= 0 || container.height <= 0) {
-      return;
-    }
-    const viewport = computeFitToView(
-      container,
-      state.gridWidth,
-      state.gridHeight,
-    );
-    set(viewport);
-  },
-
-  dispatch: (commandOrCommands) => {
-    const commands = Array.isArray(commandOrCommands)
-      ? commandOrCommands
-      : [commandOrCommands];
-    if (commands.length === 0) {
-      return;
-    }
-
-    const state = get();
-    if (state.readOnly) {
-      return;
-    }
-
-    const pixels = new Uint8Array(state.pixels);
-    applyCommands(pixels, state.gridWidth, commands, "apply");
-
-    set({
-      pixels,
-      framePixelsByIndex: writeFramePixels(
-        state.framePixelsByIndex,
-        state.activeFrameIndex,
-        pixels,
-      ),
-      undoStack: pushCommands(state.undoStack, commands),
-      redoStack: [],
-      isDirty: true,
-      bundleDirty: true,
-      frameSyncStatus: "idle",
-      frameSyncError: null,
-      ...reconcileDerivedSync(
-        "idle",
-        get().paletteSyncStatus,
-        null,
-        get().paletteSyncError,
-      ),
-    });
-
-    scheduleFrameSync();
-  },
-
-  undo: () => {
-    const state = get();
-    if (state.readOnly || state.undoStack.length === 0) {
-      return;
-    }
-
-    const command = state.undoStack[state.undoStack.length - 1]!;
-    const pixels = new Uint8Array(state.pixels);
-    command.revert(pixels, state.gridWidth);
-
-    set({
-      pixels,
-      framePixelsByIndex: writeFramePixels(
-        state.framePixelsByIndex,
-        state.activeFrameIndex,
-        pixels,
-      ),
-      undoStack: state.undoStack.slice(0, -1),
-      redoStack: [...state.redoStack, command],
-      isDirty: true,
-      bundleDirty: true,
-      frameSyncStatus: "idle",
-      frameSyncError: null,
-      ...reconcileDerivedSync(
-        "idle",
-        state.paletteSyncStatus,
-        null,
-        state.paletteSyncError,
-      ),
-    });
-
-    scheduleFrameSync();
-  },
-
-  redo: () => {
-    const state = get();
-    if (state.readOnly || state.redoStack.length === 0) {
-      return;
-    }
-
-    const command = state.redoStack[state.redoStack.length - 1]!;
-    const pixels = new Uint8Array(state.pixels);
-    command.apply(pixels, state.gridWidth);
-
-    set({
-      pixels,
-      framePixelsByIndex: writeFramePixels(
-        state.framePixelsByIndex,
-        state.activeFrameIndex,
-        pixels,
-      ),
-      undoStack: pushCommands(state.undoStack, [command]),
-      redoStack: state.redoStack.slice(0, -1),
-      isDirty: true,
-      bundleDirty: true,
-      frameSyncStatus: "idle",
-      frameSyncError: null,
-      ...reconcileDerivedSync(
-        "idle",
-        state.paletteSyncStatus,
-        null,
-        state.paletteSyncError,
-      ),
-    });
-
-    scheduleFrameSync();
-  },
-
-  addPaletteColor: (hexInput) => {
-    const normalized = normalizeHex(hexInput);
-    if (!normalized) {
-      return;
-    }
-
-    const state = get();
-    if (state.paletteLocked || state.paletteColors.length >= PALETTE_MAX_COLORS) {
-      return;
-    }
-
-    const paletteColors = [...state.paletteColors, normalized];
-    set({
-      paletteColors,
-      activeColorIndex: paletteColors.length - 1,
-      isPaletteDirty: true,
-      bundleDirty: true,
-      paletteSyncStatus: "idle",
-      paletteSyncError: null,
-      ...reconcileDerivedSync(
-        get().frameSyncStatus,
-        "idle",
-        get().frameSyncError,
-        null,
-      ),
-    });
-    schedulePaletteSync();
-  },
-
-  updatePaletteColor: (index, hexInput) => {
-    const normalized = normalizeHex(hexInput);
-    if (!normalized) {
-      return;
-    }
-
-    const state = get();
-    if (state.paletteLocked || index < 0 || index >= state.paletteColors.length) {
-      return;
-    }
-
-    const paletteColors = [...state.paletteColors];
-    paletteColors[index] = normalized;
-
-    set({
-      paletteColors,
-      isPaletteDirty: true,
-      bundleDirty: true,
-      paletteSyncStatus: "idle",
-      paletteSyncError: null,
-      ...reconcileDerivedSync(
-        state.frameSyncStatus,
-        "idle",
-        state.frameSyncError,
-        null,
-      ),
-    });
-    schedulePaletteSync();
-  },
-
-  savePalette: () => {
-    void flushPaletteSync();
-  },
-
-  removePaletteColor: (index) => {
-    const state = get();
-    if (
-      state.paletteLocked ||
-      index < 0 ||
-      index >= state.paletteColors.length ||
-      state.paletteColors.length <= PALETTE_MIN_COLORS
-    ) {
-      return;
-    }
-
-    const paletteColors = state.paletteColors.filter((_, i) => i !== index);
-    const pixels = remapPixelsAfterRemove(state.pixels, index);
-
-    let activeColorIndex = state.activeColorIndex;
-    if (index === activeColorIndex) {
-      activeColorIndex = 0;
-    } else if (index < activeColorIndex) {
-      activeColorIndex -= 1;
-    }
-
-    set({
-      paletteColors,
-      pixels,
-      framePixelsByIndex: writeFramePixels(
-        state.framePixelsByIndex,
-        state.activeFrameIndex,
-        pixels,
-      ),
-      activeColorIndex,
-      isDirty: true,
-      isPaletteDirty: true,
-      bundleDirty: true,
-      frameSyncStatus: "idle",
-      paletteSyncStatus: "idle",
-      frameSyncError: null,
-      paletteSyncError: null,
-      ...reconcileDerivedSync("idle", "idle", null, null),
-    });
-
-    scheduleFrameSync();
-    schedulePaletteSync();
-  },
-
-  markFrameSynced: () =>
-    set((state) => {
-      const frameSyncStatus: SyncStatus = "idle";
-      const frameSyncError = null;
-      return {
-        isDirty: false,
-        frameSyncStatus,
-        frameSyncError,
-        ...reconcileDerivedSync(
-          frameSyncStatus,
-          state.paletteSyncStatus,
-          frameSyncError,
-          state.paletteSyncError,
-        ),
-      };
-    }),
-
-  markPaletteSynced: () =>
-    set((state) => {
-      const paletteSyncStatus: SyncStatus = "idle";
-      const paletteSyncError = null;
-      return {
-        isPaletteDirty: false,
-        paletteSyncStatus,
-        paletteSyncError,
-        ...reconcileDerivedSync(
-          state.frameSyncStatus,
-          paletteSyncStatus,
-          state.frameSyncError,
-          paletteSyncError,
-        ),
-      };
-    }),
-
-  setFrameSyncStatus: (status, error = null) =>
-    set((state) => {
-      const frameSyncError = status === "error" ? error : null;
-      return {
-        frameSyncStatus: status,
-        frameSyncError,
-        ...reconcileDerivedSync(
-          status,
-          state.paletteSyncStatus,
-          frameSyncError,
-          state.paletteSyncError,
-        ),
-      };
-    }),
-
-  setPaletteSyncStatus: (status, error = null) =>
-    set((state) => {
-      const paletteSyncError = status === "error" ? error : null;
-      return {
-        paletteSyncStatus: status,
-        paletteSyncError,
-        ...reconcileDerivedSync(
-          state.frameSyncStatus,
-          status,
-          state.frameSyncError,
-          paletteSyncError,
-        ),
-      };
-    }),
-
-  setBundlePath: (bundlePath) => set({ bundlePath, bundleDirty: false }),
-  setAssetType: (assetType) => set({ assetType }),
-
-  reloadAllFrames: async (frameCount, activeIndex = 0) => {
-    const state = get();
-    if (!state.projectId) {
-      return { ok: false };
-    }
-
-    if (state.isDirty) {
-      await flushFrameSync();
-    }
-
-    const clampedActive = Math.max(0, Math.min(activeIndex, frameCount - 1));
-    const result = await resolveAllFramePixels({
-      projectId: state.projectId,
-      frameCount,
-      gridWidth: state.gridWidth,
-      gridHeight: state.gridHeight,
-      activeFrameIndex: state.activeFrameIndex,
-      activePixels: state.pixels,
-      framePixelsByIndex: state.framePixelsByIndex,
-    });
-
-    if (!result.ok) {
-      logger.error("editorStore", "reload_all_frames_failed", {
-        projectId: state.projectId,
+        projectId,
+        projectName: name,
+        gridWidth,
+        gridHeight,
         frameCount,
-        message: result.message,
-      });
-      get().setFrameSyncStatus("error", result.message);
-      return { ok: false };
-    }
-
-    const pixels = result.frames[clampedActive];
-
-    set({
-      frameCount,
-      activeFrameIndex: clampedActive,
-      framePixelsByIndex: result.framePixelsByIndex,
-      pixels: new Uint8Array(pixels),
-      undoStack: [],
-      redoStack: [],
-      isDirty: false,
-      frameSyncStatus: "idle",
-      paletteSyncStatus: "idle",
-      frameSyncError: null,
-      paletteSyncError: null,
-      ...reconcileDerivedSync("idle", "idle", null, null),
-    });
-
-    return { ok: true };
-  },
-
-  applyFrameReorder: (fromIndex, toIndex) => {
-    const state = get();
-    const activeFrameIndex = activeIndexAfterReorder(
-      state.activeFrameIndex,
-      fromIndex,
-      toIndex,
-    );
-
-    // The active buffer travels with its frame, so only the keys change.
-    set({
-      activeFrameIndex,
-      framePixelsByIndex: reorderFramePixels(
-        cacheActivePixels(state),
-        fromIndex,
-        toIndex,
-      ),
-    });
-
-    return activeFrameIndex;
-  },
-
-  applyFramePixelsAtIndex: (index, pixels) => {
-    const state = get();
-    const framePixelsByIndex = writeFramePixels(
-      state.framePixelsByIndex,
-      index,
-      pixels,
-    );
-
-    if (index === state.activeFrameIndex) {
-      set({
-        framePixelsByIndex,
-        pixels: new Uint8Array(pixels),
+        pixels,
+        paletteColors,
+        bundlePath,
+        assetType,
+        animationFps: clampAnimationFps(fps),
+        animationLoop: loop,
+        framePixelsByIndex: writeFramePixels({}, 0, pixels),
+        activeFrameIndex: 0,
         undoStack: [],
         redoStack: [],
         isDirty: false,
+        isPaletteDirty: false,
+        bundleDirty: false,
         frameSyncStatus: "idle",
         paletteSyncStatus: "idle",
         frameSyncError: null,
         paletteSyncError: null,
-        ...reconcileDerivedSync("idle", "idle", null, null),
-      });
-      return;
-    }
+        isPlaying: false,
+        readOnly: false,
+        colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
+        placingLighting: false,
+      }),
 
-    set({ framePixelsByIndex });
-  },
-}));
+    setActiveTool: (tool) => set({ activeTool: tool }),
+    setActiveColorIndex: (index) => {
+      const { paletteColors } = get();
+      const clamped = Math.max(0, Math.min(index, paletteColors.length - 1));
+      set({ activeColorIndex: clamped });
+    },
+    setFrameCount: (count) => set({ frameCount: count }),
+    setReadOnly: (readOnly) =>
+      set((state) => ({
+        readOnly,
+        placingLighting: readOnly ? false : state.placingLighting,
+      })),
+    setPaletteLocked: (paletteLocked) => set({ paletteLocked }),
+
+    ...palette,
+    ...frames,
+    ...playback,
+    ...frameSync,
+
+    setOnionSkinEnabled: (onionSkinEnabled) => set({ onionSkinEnabled }),
+
+    ...colorFilters,
+
+    setHoverCell: (cell) => set({ hoverCell: cell }),
+    previewCells: (changes) => {
+      if (changes.length === 0) {
+        return;
+      }
+
+      const state = get();
+      if (state.readOnly) {
+        return;
+      }
+
+      applyStrokePreview(changes);
+      set({ strokePreviewTick: state.strokePreviewTick + 1 });
+    },
+    setStrokeActive: (active) => {
+      if (active) {
+        resetStrokePreview();
+      } else {
+        clearStrokePreview();
+      }
+      set({ isStrokeActive: active });
+    },
+
+    dispatch: (commandOrCommands) =>
+      dispatchCommands(get, set, commandOrCommands),
+
+    undo: () => undoCommand(get, set),
+
+    redo: () => redoCommand(get, set),
+
+    markPaletteSynced: () =>
+      set({
+        isPaletteDirty: false,
+        paletteSyncStatus: "idle",
+        paletteSyncError: null,
+      }),
+
+    setPaletteSyncStatus: (status, error?: string | null) =>
+      set((state) => withPaletteSyncStatus(state, status, error ?? null)),
+
+    setBundlePath: (bundlePath) => set({ bundlePath, bundleDirty: false }),
+    setAssetType: (assetType) => set({ assetType }),
+  };
+});
+
+export const useSyncStatus = () =>
+  useEditorStore((s) => deriveSyncStatus(s.frameSyncStatus, s.paletteSyncStatus));
+
+export const useSyncError = () =>
+  useEditorStore((s) => deriveSyncError(s.frameSyncError, s.paletteSyncError));
+
+/** Snapshot helper for guards and file actions that read full store state. */
+export function getDerivedSyncFields(
+  state: Pick<
+    EditorState,
+    | "frameSyncStatus"
+    | "paletteSyncStatus"
+    | "frameSyncError"
+    | "paletteSyncError"
+  >,
+): { syncStatus: SyncStatus; syncError: string | null } {
+  return {
+    syncStatus: deriveSyncStatus(state.frameSyncStatus, state.paletteSyncStatus),
+    syncError: deriveSyncError(state.frameSyncError, state.paletteSyncError),
+  };
+}
 
 export const useActiveTool = () => useEditorStore((s) => s.activeTool);
 export const useActiveColorIndex = () =>

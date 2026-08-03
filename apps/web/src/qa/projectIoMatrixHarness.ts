@@ -14,6 +14,13 @@ import type {
 } from "@pixelanea/api-client";
 import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
 import { useEditorStore } from "@/state/editorStore";
+import { ensureFrameCached, writeFramePixels } from "@/state/frameCache";
+import {
+  EDITOR_FIXTURE_PROJECT_ID,
+  resetEditor,
+  type EditorFixtureOverrides,
+} from "@/qa/editorFixtures";
+import { useViewportStore } from "@/state/viewportStore";
 
 export const MATRIX_PROJECT_ID = "project-io-project";
 export const MATRIX_GRID = 8;
@@ -253,6 +260,22 @@ export class FakeProjectBackend {
         };
       },
 
+      getFrameBinary: async (projectId: string, frameIndex: number) => {
+        this.calls.push(`getFrameBinary:${projectId}:${frameIndex}`);
+        const record = this.requireRecord(projectId);
+        const pixels = record.frames.get(frameIndex);
+        if (!pixels) {
+          throw new ApiError(404, "frame not found", { message: "frame not found" });
+        }
+        return {
+          index: frameIndex,
+          width: record.project.width,
+          height: record.project.height,
+          updatedAt: "2026-07-31T00:00:00Z",
+          pixels: Uint8Array.from(pixels),
+        };
+      },
+
       putFrame: async (
         projectId: string,
         frameIndex: number,
@@ -268,6 +291,24 @@ export class FakeProjectBackend {
           height: record.project.height,
           updatedAt: "2026-07-31T00:00:00Z",
           pixels: [...body.pixels],
+        };
+      },
+
+      putFrameBinary: async (
+        projectId: string,
+        frameIndex: number,
+        pixels: Uint8Array,
+      ): Promise<Frame> => {
+        this.calls.push(`putFrame:${projectId}:${frameIndex}`);
+        await this.beforeFrameWrite?.(frameIndex);
+        const record = this.requireRecord(projectId);
+        record.frames.set(frameIndex, [...pixels]);
+        return {
+          index: frameIndex,
+          width: record.project.width,
+          height: record.project.height,
+          updatedAt: "2026-07-31T00:00:00Z",
+          pixels: [...pixels],
         };
       },
 
@@ -347,46 +388,25 @@ export class FakeProjectBackend {
 
 /** Reset the editor store to a clean saved-project baseline for a matrix case. */
 export function resetProjectIoStore(
-  overrides: Partial<ReturnType<typeof useEditorStore.getState>> = {},
+  overrides: EditorFixtureOverrides = {},
 ): void {
   const width = overrides.gridWidth ?? MATRIX_GRID;
   const height = overrides.gridHeight ?? MATRIX_GRID;
   const pixels = overrides.pixels ?? new Uint8Array(width * height);
 
-  useEditorStore.setState({
+  resetEditor({
     projectId: MATRIX_PROJECT_ID,
     projectName: "Matrix project",
-    activeTool: "paint",
-    activeColorIndex: 1,
-    activeFrameIndex: 0,
-    frameCount: 1,
     gridWidth: width,
     gridHeight: height,
-    pixels: new Uint8Array(pixels),
-    paletteColors: DEFAULT_PALETTE_COLORS,
-    paletteLocked: false,
-    readOnly: false,
-    isPlaying: false,
-    placingLighting: false,
-    undoStack: [],
-    redoStack: [],
-    isDirty: false,
-    isPaletteDirty: false,
-    bundleDirty: false,
-    framePixelsByIndex: { 0: new Uint8Array(pixels) },
-    frameSyncStatus: "idle",
-    paletteSyncStatus: "idle",
-    syncStatus: "idle",
-    frameSyncError: null,
-    paletteSyncError: null,
-    syncError: null,
-    bundlePath: null,
-    assetType: "character",
-    animationFps: 8,
-    animationLoop: true,
-    zoom: 1,
-    panX: 0,
-    panY: 0,
+    pixels,
+    framePixelsByIndex: overrides.framePixelsByIndex ?? {
+      0: new Uint8Array(pixels),
+    },
+    bundlePath: overrides.bundlePath ?? null,
+    assetType: overrides.assetType ?? "character",
+    animationFps: overrides.animationFps ?? 8,
+    animationLoop: overrides.animationLoop ?? true,
     ...overrides,
   });
 }
@@ -394,14 +414,18 @@ export function resetProjectIoStore(
 /** Paint one cell and mark the frame dirty, mimicking a completed stroke. */
 export function paintDirtyPixel(x: number, y: number, colorIndex = 1): void {
   const state = useEditorStore.getState();
-  const pixels = new Uint8Array(state.pixels);
+  const cached = ensureFrameCached(state);
+  const pixels = new Uint8Array(
+    cached[state.activeFrameIndex] ?? state.pixels,
+  );
   pixels[y * state.gridWidth + x] = colorIndex;
   useEditorStore.setState({
     pixels,
-    framePixelsByIndex: {
-      ...state.framePixelsByIndex,
-      [state.activeFrameIndex]: new Uint8Array(pixels),
-    },
+    framePixelsByIndex: writeFramePixels(
+      cached,
+      state.activeFrameIndex,
+      pixels,
+    ),
     isDirty: true,
     bundleDirty: true,
   });

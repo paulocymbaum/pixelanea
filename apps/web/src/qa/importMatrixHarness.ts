@@ -10,8 +10,7 @@ import type { PalettePresetId } from "@/components/palette/palettePresets";
 import { palettePresetLabel } from "@/components/palette/palettePresets";
 import type { ImportColorCount, ImportPaletteMode } from "@/components/import/paletteImportOptions";
 import { copy } from "@/content/copy";
-import { useSessionStore } from "@/state/sessionStore";
-import { useUiStore } from "@/state/uiStore";
+import { resetSession } from "@/qa/editorFixtures";
 
 export const IMPORT_PREVIEW_LABEL = "Import preview";
 
@@ -86,31 +85,9 @@ export function pixelsWithTransparentBorder(
 }
 
 export function resetImportSession(
-  overrides: Partial<ReturnType<typeof useSessionStore.getState>> = {},
+  overrides: Parameters<typeof resetSession>[0] = {},
 ): void {
-  useSessionStore.setState({
-    theme: "system",
-    palettePanelWidth: 240,
-    lastPalettePreset: null,
-    lastImportPaletteMode: "image",
-    lastImportColorCount: 8,
-    hasVisited: false,
-    lastEntryPath: "blank",
-    lastResolution: 32,
-    lastCanvasSize: { width: 32, height: 32 },
-    lastFrameCount: 1,
-    removeBackground: true,
-    ...overrides,
-  });
-
-  useUiStore.setState({
-    importWizardStep: 0,
-    onboardingDismissed: false,
-    onboardingStep: 0,
-    apiStatus: "checking",
-    apiVersion: null,
-    toastMessage: null,
-  });
+  resetSession(overrides);
 }
 
 /** Re-arms the shared setup stub after `vi.resetAllMocks()` clears it. */

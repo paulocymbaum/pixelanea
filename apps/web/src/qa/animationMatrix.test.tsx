@@ -17,7 +17,6 @@ import {
   cachedPixelAt,
   createDataTransfer,
   duplicateResponse,
-  frameResponse,
   framePixels,
   GRID_SIZE,
   installFrameCoordinator,
@@ -81,10 +80,17 @@ function deferred<T>() {
 
 /** Answer every uncached frame fetch with the marker buffer for that index. */
 function fetchFramesFromMarkers(markers: Record<number, number> = {}) {
-  vi.mocked(fetchFrame).mockImplementation(async (_projectId, index) => ({
-    ok: true,
-    frame: frameResponse(index, framePixels(markers[index] ?? 0)),
-  }));
+  vi.mocked(fetchFrame).mockImplementation(async (_projectId, index) => {
+    const pixels = framePixels(markers[index] ?? 0);
+    return {
+      ok: true,
+      index,
+      width: GRID_SIZE,
+      height: GRID_SIZE,
+      updatedAt: "2026-07-31T00:00:00Z",
+      pixels,
+    };
+  });
 }
 
 function openDuplicateDialog() {
@@ -250,6 +256,18 @@ describe("QA-003 animation matrix", () => {
       expect(useEditorStore.getState().animationFps).toBe(12);
       expect(screen.getByText(copy.animationFpsValue(12))).toBeInTheDocument();
       expect(1000 / useEditorStore.getState().animationFps).toBeCloseTo(83.33, 1);
+    });
+
+    it("[HP-006b] advancePlaybackFrame preserves outgoing frame in cache", () => {
+      resetAnimationProject({ frameCount: 4 });
+      paintActiveFrame(2, 2, 7);
+      expect(activePixelAt(2, 2)).toBe(7);
+
+      useEditorStore.setState({ isPlaying: true, readOnly: true });
+      expect(useEditorStore.getState().advancePlaybackFrame()).toBe(true);
+      expect(useEditorStore.getState().activeFrameIndex).toBe(1);
+      expect(cachedPixelAt(0, 2, 2)).toBe(7);
+      expect(activePixelAt(0, 0)).toBe(2);
     });
 
     it("[HP-007] loop toggle stops on last frame when off", () => {

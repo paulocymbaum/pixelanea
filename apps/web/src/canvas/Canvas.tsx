@@ -1,7 +1,6 @@
 import { copy } from "@/content/copy";
-import { features } from "@/content/features";
-import { hasActiveColorFilters } from "@/lib/colorFilters";
-import { useEditorStore, useOnionSkinEnabled } from "@/state/editorStore";
+import { useCanvasRenderState, useStrokePreviewRedraw } from "@/canvas/useCanvasRenderState";
+import { useViewportStore } from "@/state/viewportStore";
 import { useCallback, useEffect, useRef } from "react";
 import {
   isCellInBounds,
@@ -9,7 +8,6 @@ import {
   zoomAtPoint,
   ZOOM_STEP,
 } from "./coordinates";
-import { readCanvasTokens, renderGrid, setupHiDpiCanvas } from "./renderer";
 import { getToolCursor } from "@/tools/registry";
 import { useToolInput } from "@/tools/useToolInput";
 import { ZoomControls } from "./ZoomControls";
@@ -18,97 +16,47 @@ export function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const toolInput = useToolInput();
+  const pixelsRef = useRef<Uint8Array>(new Uint8Array());
 
-  const activeTool = useEditorStore((s) => s.activeTool);
-  const readOnly = useEditorStore((s) => s.readOnly);
-  const gridWidth = useEditorStore((s) => s.gridWidth);
-  const gridHeight = useEditorStore((s) => s.gridHeight);
-  const pixels = useEditorStore((s) => s.pixels);
-  const paletteColors = useEditorStore((s) => s.paletteColors);
-  const frameCount = useEditorStore((s) => s.frameCount);
-  const activeFrameIndex = useEditorStore((s) => s.activeFrameIndex);
-  const framePixelsByIndex = useEditorStore((s) => s.framePixelsByIndex);
-  const onionSkinEnabled = useOnionSkinEnabled();
-  const colorFilters = useEditorStore((s) => s.colorFilters);
-  const placingLighting = useEditorStore((s) => s.placingLighting);
-  const addColorFilterLightingPoint = useEditorStore(
-    (s) => s.addColorFilterLightingPoint,
-  );
-  const isPlaying = useEditorStore((s) => s.isPlaying);
-  const zoom = useEditorStore((s) => s.zoom);
-  const panX = useEditorStore((s) => s.panX);
-  const panY = useEditorStore((s) => s.panY);
-  const setHoverCell = useEditorStore((s) => s.setHoverCell);
-  const setViewport = useEditorStore((s) => s.setViewport);
-  const fitToView = useEditorStore((s) => s.fitToView);
-
-  const redraw = useCallback(() => {
-    const container = containerRef.current;
-    const canvas = canvasRef.current;
-    if (!container || !canvas) {
-      return;
-    }
-
-    const cssWidth = container.clientWidth;
-    const cssHeight = container.clientHeight;
-    if (cssWidth <= 0 || cssHeight <= 0) {
-      return;
-    }
-
-    const ctx = setupHiDpiCanvas(canvas, cssWidth, cssHeight);
-    const tokens = readCanvasTokens(canvas);
-
-    const showFilterPreview =
-      !readOnly && hasActiveColorFilters(colorFilters);
-
-    let onionSkinPixels: Uint8Array | undefined;
-    if (
-      features.onionSkin &&
-      onionSkinEnabled &&
-      !isPlaying &&
-      !readOnly &&
-      frameCount > 1 &&
-      activeFrameIndex > 0
-    ) {
-      onionSkinPixels = framePixelsByIndex[activeFrameIndex - 1];
-    }
-
-    renderGrid({
-      ctx,
-      cssWidth,
-      cssHeight,
-      gridWidth,
-      gridHeight,
-      pixels,
-      paletteColors,
-      viewport: { zoom, panX, panY },
-      tokens,
-      colorFilters: showFilterPreview ? colorFilters : undefined,
-      showLightingMarkers: showFilterPreview && !isPlaying,
-      onionSkinPixels,
-    });
-  }, [
+  const renderState = useCanvasRenderState();
+  const {
+    activeTool,
+    readOnly,
     gridWidth,
     gridHeight,
-    pixels,
+    committedPixels,
     paletteColors,
-    zoom,
-    panX,
-    panY,
-    colorFilters,
-    readOnly,
-    isPlaying,
     frameCount,
     activeFrameIndex,
     framePixelsByIndex,
     onionSkinEnabled,
-  ]);
+    colorFilters,
+    placingLighting,
+    isPlaying,
+    zoom,
+    panX,
+    panY,
+    isStrokeActive,
+    setHoverCell,
+    fitToView,
+    addColorFilterLightingPoint,
+  } = renderState;
+
+  const { redraw } = useStrokePreviewRedraw({
+    containerRef,
+    canvasRef,
+    renderState,
+    pixelsRef,
+  });
 
   useEffect(() => {
-    redraw();
-  }, [redraw]);
+    if (committedPixels) {
+      pixelsRef.current = committedPixels;
+    }
+  }, [committedPixels]);
 
-  const setContainerSize = useEditorStore((s) => s.setContainerSize);
+  const setContainerSize = useViewportStore((s) => s.setContainerSize);
+  const initialFitDoneRef = useRef(false);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -131,22 +79,76 @@ export function Canvas() {
     });
 
     observer.observe(container);
-    const size = updateContainerSize();
-    fitToView(size);
+    updateContainerSize();
+
+    if (!initialFitDoneRef.current) {
+      initialFitDoneRef.current = true;
+      fitToView(
+        {
+          width: container.clientWidth,
+          height: container.clientHeight,
+        },
+        gridWidth,
+        gridHeight,
+      );
+    }
 
     return () => observer.disconnect();
-  }, [fitToView, redraw, setContainerSize]);
+  }, [fitToView, gridWidth, gridHeight, redraw, setContainerSize]);
+
+  const prevGridSizeRef = useRef({ width: gridWidth, height: gridHeight });
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) {
       return;
     }
-    fitToView({
-      width: container.clientWidth,
-      height: container.clientHeight,
-    });
+
+    const gridChanged =
+      prevGridSizeRef.current.width !== gridWidth ||
+      prevGridSizeRef.current.height !== gridHeight;
+    prevGridSizeRef.current = { width: gridWidth, height: gridHeight };
+
+    if (!gridChanged) {
+      return;
+    }
+
+    fitToView(
+      {
+        width: container.clientWidth,
+        height: container.clientHeight,
+      },
+      gridWidth,
+      gridHeight,
+    );
   }, [fitToView, gridWidth, gridHeight]);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) {
+      return;
+    }
+
+    const handleWheel = (event: WheelEvent) => {
+      event.preventDefault();
+      const rect = canvas.getBoundingClientRect();
+      const anchorX = event.clientX - rect.left;
+      const anchorY = event.clientY - rect.top;
+      const viewport = useViewportStore.getState();
+      const factor = event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
+      const nextZoom = viewport.zoom * factor;
+      const next = zoomAtPoint(
+        { zoom: viewport.zoom, panX: viewport.panX, panY: viewport.panY },
+        anchorX,
+        anchorY,
+        nextZoom,
+      );
+      useViewportStore.getState().setViewport(next);
+    };
+
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    return () => canvas.removeEventListener("wheel", handleWheel);
+  }, []);
 
   const updateHoverFromPointer = useCallback(
     (clientX: number, clientY: number) => {
@@ -213,32 +215,16 @@ export function Canvas() {
       ? "crosshair"
       : getToolCursor(activeTool);
 
+  const blankCheckPixels = committedPixels ?? pixelsRef.current;
   const canvasIsBlank =
-    !pixels.some((value) => value !== 0) &&
+    !blankCheckPixels.some((value) => value !== 0) &&
     Array.from({ length: frameCount }, (_, index) => index).every((index) => {
-      const frame = framePixelsByIndex[index] ?? pixels;
+      const frame = framePixelsByIndex[index] ?? blankCheckPixels;
       return !frame.some((value) => value !== 0);
     });
 
   const showEmptyCanvasHint =
     !readOnly && !isPlaying && !placingLighting && canvasIsBlank;
-
-  const handleWheel = (event: React.WheelEvent<HTMLCanvasElement>) => {
-    event.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const rect = canvas.getBoundingClientRect();
-    const anchorX = event.clientX - rect.left;
-    const anchorY = event.clientY - rect.top;
-    const factor = event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
-    const nextZoom = zoom * factor;
-
-    const next = zoomAtPoint({ zoom, panX, panY }, anchorX, anchorY, nextZoom);
-    setViewport(next);
-  };
 
   return (
     <div
@@ -255,7 +241,6 @@ export function Canvas() {
         onPointerUp={handlePointerUp}
         onPointerCancel={handlePointerUp}
         onPointerLeave={() => setHoverCell(null)}
-        onWheel={handleWheel}
       />
       {showEmptyCanvasHint ? (
         <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-base text-secondary">

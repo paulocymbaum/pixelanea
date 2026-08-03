@@ -13,7 +13,7 @@ import {
 } from "@/components/project/animationFramePresets";
 import { duplicateFrames } from "@/api/frames";
 import { copy } from "@/content/copy";
-import { useActiveFrameIndex, useEditorStore } from "@/state/editorStore";
+import { useActiveFrameIndex, getDerivedSyncFields, useEditorStore } from "@/state/editorStore";
 import { flushFrameSync } from "@/state/persist";
 
 type FillMode = "copy" | "blank";
@@ -71,7 +71,7 @@ export function FrameDuplicateDialog({
     setIsSubmitting(false);
 
     if (!reload.ok) {
-      setError(useEditorStore.getState().syncError ?? copy.projectOpening);
+      setError(getDerivedSyncFields(useEditorStore.getState()).syncError ?? copy.projectOpening);
       return;
     }
 

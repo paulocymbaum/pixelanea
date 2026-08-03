@@ -54,6 +54,7 @@ vi.mock("@/state/uiStore", () => ({
 vi.mock("@/state/editorStore", () => ({
   useEditorStore: (selector: (state: typeof editorState) => unknown) =>
     selector(editorState),
+  useSyncStatus: () => editorState.syncStatus,
 }));
 
 vi.mock("@/lib/loadProject", () => ({

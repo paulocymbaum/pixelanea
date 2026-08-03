@@ -264,15 +264,53 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** Get frame pixel data */
+        /**
+         * Get frame pixel data
+         * @description Returns frame pixels as JSON by default (`Accept: application/json` or omitted).
+         *     Request `Accept: application/octet-stream` for raw palette-index bytes (row-major,
+         *     `width * height` bytes). Frame dimensions and metadata are returned in response
+         *     headers on the binary lane (see `FrameBinaryResponseHeaders`).
+         */
         get: operations["getFrame"];
-        /** Replace frame pixel data */
+        /**
+         * Replace frame pixel data
+         * @description JSON body (`PutFrameRequest`) remains the default and backward-compatible path.
+         *     Send `Content-Type: application/octet-stream` with raw palette-index bytes
+         *     (row-major, `project.width * project.height` bytes) to avoid JSON `number[]`
+         *     expansion. Dimensions are taken from project metadata, not the body.
+         */
         put: operations["putFrame"];
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/projects/{projectId}/frames/{frameIndex}/cells": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                frameIndex: components["parameters"]["FrameIndex"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Apply cell-level pixel changes
+         * @description Applies a batch of cell changes without replacing the full grid. Each change
+         *     includes `previous` for optimistic concurrency; mismatches return 409.
+         *     Prefer full `PUT` with `application/octet-stream` for large change sets
+         *     or after undo/redo.
+         */
+        patch: operations["patchFrameCells"];
         trace?: never;
     };
 }
@@ -392,6 +430,16 @@ export interface components {
         PutFrameRequest: {
             pixels: number[];
         };
+        CellChange: {
+            /** @description Cell column (0-based) */
+            x: number;
+            /** @description Cell row (0-based) */
+            y: number;
+            /** @description Expected palette index before the change (optimistic concurrency) */
+            previous: number;
+            /** @description Palette index after the change */
+            next: number;
+        };
         DuplicateFramesRequest: {
             /** @enum {integer} */
             frameCount: 8 | 16 | 32;
@@ -505,7 +553,16 @@ export interface components {
         FrameIndex: number;
     };
     requestBodies: never;
-    headers: never;
+    headers: {
+        /** @description Frame index in the animation timeline */
+        FrameIndexHeader: number;
+        /** @description Frame width in pixels */
+        FrameWidthHeader: number;
+        /** @description Frame height in pixels */
+        FrameHeightHeader: number;
+        /** @description ISO-8601 timestamp of the last frame update */
+        FrameUpdatedAtHeader: string;
+    };
     pathItems: never;
 }
 export type $defs = Record<string, never>;
@@ -942,7 +999,10 @@ export interface operations {
     getFrame: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                /** @description Prefer `application/octet-stream` for raw bytes; default is JSON. */
+                Accept?: string;
+            };
             path: {
                 projectId: components["parameters"]["ProjectId"];
                 frameIndex: components["parameters"]["FrameIndex"];
@@ -954,10 +1014,16 @@ export interface operations {
             /** @description Frame data */
             200: {
                 headers: {
+                    "X-Frame-Index": components["headers"]["FrameIndexHeader"];
+                    "X-Frame-Width": components["headers"]["FrameWidthHeader"];
+                    "X-Frame-Height": components["headers"]["FrameHeightHeader"];
+                    "X-Frame-Updated-At": components["headers"]["FrameUpdatedAtHeader"];
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["Frame"];
+                    /** @description Raw palette indices row-major (width * height bytes) */
+                    "application/octet-stream": string;
                 };
             };
             404: components["responses"]["NotFound"];
@@ -976,6 +1042,8 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PutFrameRequest"];
+                /** @description Raw palette indices row-major (width * height bytes) */
+                "application/octet-stream": string;
             };
         };
         responses: {
@@ -990,6 +1058,44 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
+        };
+    };
+    patchFrameCells: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                projectId: components["parameters"]["ProjectId"];
+                frameIndex: components["parameters"]["FrameIndex"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CellChange"][];
+            };
+        };
+        responses: {
+            /** @description Frame updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrameMetadata"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            404: components["responses"]["NotFound"];
+            /** @description Cell conflict (previous value mismatch) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
 }

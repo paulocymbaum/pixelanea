@@ -21,6 +21,7 @@ import { getPalettePreset } from "@/components/palette/palettePresets";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
+import { resetEditor, type EditorFixtureOverrides } from "@/qa/editorFixtures";
 import { useEditorStore } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
@@ -153,31 +154,6 @@ function makeProject(id: string, params: CreateProjectRequest): Project {
   };
 }
 
-function resetEditorStore(): void {
-  const pixels = new Uint8Array(32 * 32);
-  useEditorStore.setState({
-    projectId: null,
-    projectName: "",
-    gridWidth: 32,
-    gridHeight: 32,
-    frameCount: 1,
-    activeFrameIndex: 0,
-    activeTool: "paint",
-    activeColorIndex: 1,
-    pixels,
-    framePixelsByIndex: { 0: new Uint8Array(pixels) },
-    paletteColors: DEFAULT_PALETTE_COLORS,
-    paletteLocked: false,
-    readOnly: false,
-    isPlaying: false,
-    bundlePath: null,
-    undoStack: [],
-    redoStack: [],
-    isDirty: false,
-    isPaletteDirty: false,
-  });
-}
-
 function installDefaultMocks(): void {
   checkHealthMock.mockResolvedValue({
     ok: true,
@@ -274,7 +250,13 @@ describe("QA-002 import matrix", () => {
     lastPixelate = null;
     setSyncCoordinatorForTests(null);
     resetImportSession();
-    resetEditorStore();
+    resetEditor({
+      projectId: null,
+      projectName: "",
+      pixels: new Uint8Array(32 * 32),
+      framePixelsByIndex: { 0: new Uint8Array(32 * 32) },
+      bundlePath: null,
+    });
     installDefaultMocks();
     stubMatchMedia();
     capture = stubPreviewCanvas();

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
-import { ONION_SKIN_OPACITY, renderGrid } from "./renderer";
+import { ONION_SKIN_OPACITY, renderGrid, repaintGridCells } from "./renderer";
 
 function createMockContext() {
   const alphaLog: number[] = [];
@@ -164,5 +164,55 @@ describe("renderGrid color filters", () => {
     expect(fillStyles.filter((style) => style.startsWith("rgb("))).toHaveLength(
       0,
     );
+  });
+});
+
+describe("repaintGridCells stroke overlay", () => {
+  const tokens = {
+    checkerA: "#ccc",
+    checkerB: "#fff",
+    gridLine: "rgba(0,0,0,0.08)",
+  };
+
+  it("repaints only targeted cells without clearing the full canvas", () => {
+    const { ctx } = createMockContext();
+    const palette = ["#000000", "#ff0000", "#00ff00"];
+    const basePixels = new Uint8Array([1, TRANSPARENT_INDEX, 2]);
+
+    repaintGridCells({
+      ctx,
+      gridWidth: 3,
+      gridHeight: 1,
+      basePixels,
+      paletteColors: palette,
+      viewport: { zoom: 8, panX: 0, panY: 0 },
+      tokens,
+      cells: [{ x: 1, y: 0 }],
+      previewByKey: new Map([["1,0", { next: 2 }]]),
+    });
+
+    expect(ctx.clearRect).not.toHaveBeenCalled();
+    expect(ctx.fillRect).toHaveBeenCalled();
+  });
+
+  it("uses preview color over committed pixel for overlay cells", () => {
+    const { ctx, fillStyles } = createMockContext();
+    const palette = ["#000000", "#ff0000", "#00ff00"];
+    const basePixels = new Uint8Array([1]);
+
+    repaintGridCells({
+      ctx,
+      gridWidth: 1,
+      gridHeight: 1,
+      basePixels,
+      paletteColors: palette,
+      viewport: { zoom: 16, panX: 0, panY: 0 },
+      tokens,
+      cells: [{ x: 0, y: 0 }],
+      previewByKey: new Map([["0,0", { next: 2 }]]),
+    });
+
+    expect(fillStyles).toContain("#00ff00");
+    expect(fillStyles).not.toContain("#ff0000");
   });
 });

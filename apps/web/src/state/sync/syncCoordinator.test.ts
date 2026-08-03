@@ -1,10 +1,23 @@
 import { describe, expect, it, vi } from "vitest";
 import { SyncCoordinator } from "./syncCoordinator";
 import type {
+  FrameDeltaSnapshot,
   FrameSnapshot,
   PaletteSnapshot,
   ProjectSettingsSnapshot,
 } from "./types";
+
+function frameDeltaSnapshot(
+  projectId: string,
+  frameIndex: number,
+): FrameDeltaSnapshot {
+  return {
+    lane: "frameDelta",
+    projectId,
+    frameIndex,
+    changes: [{ x: 0, y: 0, previous: 0, next: 2 }],
+  };
+}
 
 function frameSnapshot(
   projectId: string,
@@ -42,9 +55,11 @@ function createCoordinator(
   return new SyncCoordinator(
     {
       saveFrame: vi.fn().mockResolvedValue({ ok: true }),
+      saveFrameDelta: vi.fn().mockResolvedValue({ ok: true }),
       savePalette: vi.fn().mockResolvedValue({ ok: true }),
       saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
       getFrameSnapshot: () => null,
+      getFrameDeltaSnapshot: () => null,
       getPaletteSnapshot: () => null,
       getProjectSettingsSnapshot: () => null,
       frameCallbacks: {
@@ -235,5 +250,44 @@ describe("SyncCoordinator", () => {
     await flushPromise;
 
     expect(onSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("prefers delta lane when a small change set is pending", async () => {
+    const saveFrame = vi.fn().mockResolvedValue({ ok: true });
+    const saveFrameDelta = vi.fn().mockResolvedValue({ ok: true });
+    const delta = frameDeltaSnapshot("p1", 0);
+
+    const coordinator = createCoordinator({
+      saveFrame,
+      saveFrameDelta,
+      getFrameDeltaSnapshot: () => delta,
+      getFrameSnapshot: () => frameSnapshot("p1", 0, 9),
+    });
+
+    await coordinator.flushFrame();
+
+    expect(saveFrameDelta).toHaveBeenCalledTimes(1);
+    expect(saveFrameDelta.mock.calls[0]?.[2]).toEqual(delta.changes);
+    expect(saveFrame).not.toHaveBeenCalled();
+  });
+
+  it("falls back to full PUT when delta save fails", async () => {
+    const saveFrame = vi.fn().mockResolvedValue({ ok: true });
+    const saveFrameDelta = vi.fn().mockResolvedValue({ ok: false, message: "conflict" });
+    const full = frameSnapshot("p1", 0, 5);
+    const delta = frameDeltaSnapshot("p1", 0);
+
+    const coordinator = createCoordinator({
+      saveFrame,
+      saveFrameDelta,
+      getFrameDeltaSnapshot: () => delta,
+      getFrameSnapshot: () => full,
+    });
+
+    await coordinator.flushFrame();
+
+    expect(saveFrameDelta).toHaveBeenCalledTimes(1);
+    expect(saveFrame).toHaveBeenCalledTimes(1);
+    expect(saveFrame.mock.calls[0]?.[2]).toEqual(full.pixels);
   });
 });

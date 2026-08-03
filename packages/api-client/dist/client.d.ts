@@ -7,6 +7,14 @@ export type FrameMetadata = components["schemas"]["FrameMetadata"];
 export type CreateProjectRequest = components["schemas"]["CreateProjectRequest"];
 export type UpdateProjectRequest = components["schemas"]["UpdateProjectRequest"];
 export type PutFrameRequest = components["schemas"]["PutFrameRequest"];
+export type CellChange = components["schemas"]["CellChange"];
+export type FrameBinary = {
+    index: number;
+    width: number;
+    height: number;
+    updatedAt: string;
+    pixels: Uint8Array;
+};
 export type DuplicateFramesRequest = components["schemas"]["DuplicateFramesRequest"];
 export type DuplicateFramesResponse = components["schemas"]["DuplicateFramesResponse"];
 export type CopyFrameRequest = components["schemas"]["CopyFrameRequest"];
@@ -111,6 +119,19 @@ export declare function createApiClient(config?: ApiClientConfig): {
         pixels: number[];
     }>;
     putFrame: (projectId: string, frameIndex: number, body: PutFrameRequest) => Promise<{
+        index: number;
+        width: number;
+        height: number;
+        updatedAt: string;
+    }>;
+    putFrameBinary: (projectId: string, frameIndex: number, pixels: Uint8Array) => Promise<{
+        index: number;
+        width: number;
+        height: number;
+        updatedAt: string;
+    }>;
+    getFrameBinary: (projectId: string, frameIndex: number) => Promise<FrameBinary>;
+    patchFrameCells: (projectId: string, frameIndex: number, changes: CellChange[]) => Promise<{
         index: number;
         width: number;
         height: number;

@@ -13,7 +13,7 @@
  */
 import { useMemo } from "react";
 import { copy } from "@/content/copy";
-import { useEditorStore } from "@/state/editorStore";
+import { useEditorStore, useSyncStatus } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 
 export type ProjectStatus =
@@ -79,7 +79,7 @@ export function useDerivedProjectStatus(): ProjectStatus {
   const isDirty = useEditorStore((s) => s.isDirty);
   const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
   const bundleDirty = useEditorStore((s) => s.bundleDirty);
-  const syncStatus = useEditorStore((s) => s.syncStatus);
+  const syncStatus = useSyncStatus();
   const apiStatus = useUiStore((s) => s.apiStatus);
 
   return useMemo(

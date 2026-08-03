@@ -6,7 +6,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/DropdownMenu";
-import { copyFrame, fetchFrame, pixelsFromFrame } from "@/api/frames";
+import { copyFrame, fetchFrame } from "@/api/frames";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
 
@@ -53,7 +53,7 @@ export function FrameThumbnailMenu({
       return;
     }
 
-    applyFramePixelsAtIndex(frameIndex, pixelsFromFrame(fetched.frame));
+    applyFramePixelsAtIndex(frameIndex, fetched.pixels);
   };
 
   return (

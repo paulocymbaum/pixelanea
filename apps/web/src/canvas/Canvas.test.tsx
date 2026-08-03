@@ -2,6 +2,7 @@ import { act, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
 import { useEditorStore } from "@/state/editorStore";
+import { useViewportStore } from "@/state/viewportStore";
 import { stubCanvasEnvironment } from "@/test/canvas-mocks";
 import { Canvas } from "./Canvas";
 
@@ -10,10 +11,12 @@ describe("Canvas", () => {
     useEditorStore.setState({
       gridWidth: 32,
       gridHeight: 32,
+      hoverCell: null,
+    });
+    useViewportStore.setState({
       zoom: 1,
       panX: 0,
       panY: 0,
-      hoverCell: null,
     });
 
     stubCanvasEnvironment();

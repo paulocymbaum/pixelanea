@@ -1,4 +1,4 @@
-import { useEditorStore } from "@/state/editorStore";
+import { getDerivedSyncFields, useEditorStore } from "@/state/editorStore";
 
 export type UnsavedGuardState = {
   isDirty: boolean;
@@ -10,11 +10,12 @@ export type UnsavedGuardState = {
 /** Snapshot of editor fields used by navigation guard helpers. */
 export function getEditorNavigationGuardState(): UnsavedGuardState {
   const state = useEditorStore.getState();
+  const { syncStatus } = getDerivedSyncFields(state);
   return {
     isDirty: state.isDirty,
     isPaletteDirty: state.isPaletteDirty,
     bundleDirty: state.bundleDirty,
-    syncStatus: state.syncStatus,
+    syncStatus,
   };
 }
 

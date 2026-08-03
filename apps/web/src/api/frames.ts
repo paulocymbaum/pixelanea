@@ -19,17 +19,28 @@ export function pixelsFromFrame(frame: Frame): Uint8Array {
   return pixels;
 }
 
-export function pixelsToApi(pixels: Uint8Array): number[] {
-  return Array.from(pixels);
-}
+export type FetchedFramePixels = {
+  index: number;
+  width: number;
+  height: number;
+  updatedAt: string;
+  pixels: Uint8Array;
+};
 
 export async function fetchFrame(
   projectId: string,
   frameIndex: number,
-): Promise<{ ok: true; frame: Frame } | { ok: false; message: string }> {
+): Promise<{ ok: true } & FetchedFramePixels | { ok: false; message: string }> {
   try {
-    const frame = await getApiClient().getFrame(projectId, frameIndex);
-    return { ok: true, frame };
+    const binary = await getApiClient().getFrameBinary(projectId, frameIndex);
+    return {
+      ok: true,
+      index: binary.index,
+      width: binary.width,
+      height: binary.height,
+      updatedAt: binary.updatedAt,
+      pixels: binary.pixels,
+    };
   } catch (error) {
     return {
       ok: false,
@@ -44,14 +55,37 @@ export async function saveFrame(
   pixels: Uint8Array,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   try {
-    await getApiClient().putFrame(projectId, frameIndex, {
-      pixels: pixelsToApi(pixels),
-    });
+    await getApiClient().putFrameBinary(projectId, frameIndex, pixels);
     return { ok: true };
   } catch (error) {
     return {
       ok: false,
       message: logAndMapApiError("saveFrame", error, { projectId, frameIndex }),
+    };
+  }
+}
+
+export async function saveFrameCells(
+  projectId: string,
+  frameIndex: number,
+  changes: readonly {
+    x: number;
+    y: number;
+    previous: number;
+    next: number;
+  }[],
+): Promise<{ ok: true } | { ok: false; message: string }> {
+  try {
+    await getApiClient().patchFrameCells(projectId, frameIndex, [...changes]);
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      message: logAndMapApiError("saveFrameCells", error, {
+        projectId,
+        frameIndex,
+        changeCount: changes.length,
+      }),
     };
   }
 }

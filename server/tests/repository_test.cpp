@@ -116,6 +116,47 @@ TEST_CASE("FrameRepository list get put round-trip", "[repository]") {
   REQUIRE(projects.close(id).has_value());
 }
 
+TEST_CASE("FrameRepository skips encode and write when pixels unchanged", "[repository][frame_cache]") {
+  NullLogger logger;
+  ProjectRepository projects{logger};
+  FrameRepository frames{projects, logger};
+
+  const auto created = projects.create(sample_project_params());
+  REQUIRE(created.has_value());
+  const ProjectId id = created.value().id;
+
+  auto fetched = frames.get(id, 0);
+  REQUIRE(fetched.has_value());
+
+  Frame frame = fetched.value();
+  frame.pixels[0] = 2;
+  const auto first_save = frames.put(id, frame);
+  REQUIRE(first_save.has_value());
+  const std::string first_updated = first_save.value().updated_at;
+
+  const auto skipped_save = frames.put(id, frame);
+  REQUIRE(skipped_save.has_value());
+  REQUIRE(skipped_save.value().updated_at == first_updated);
+
+  frame.pixels[1] = 3;
+  const auto second_save = frames.put(id, frame);
+  REQUIRE(second_save.has_value());
+
+  const auto after_change = frames.get(id, 0);
+  REQUIRE(after_change.has_value());
+  REQUIRE(after_change.value().pixels[1] == 3);
+
+  frames.invalidate_project(id);
+  const auto after_invalidate = frames.put(id, frame);
+  REQUIRE(after_invalidate.has_value());
+
+  const auto skipped_after_repopulate = frames.put(id, frame);
+  REQUIRE(skipped_after_repopulate.has_value());
+  REQUIRE(skipped_after_repopulate.value().updated_at == after_invalidate.value().updated_at);
+
+  REQUIRE(projects.close(id).has_value());
+}
+
 TEST_CASE("FrameRepository rejects wrong pixel count", "[repository]") {
   NullLogger logger;
   ProjectRepository projects{logger};
@@ -210,6 +251,40 @@ TEST_CASE("FrameRepository duplicate blank fill mode keeps art on source only", 
       REQUIRE(pixel == 0);
     }
   }
+
+  REQUIRE(projects.close(id).has_value());
+}
+
+TEST_CASE("FrameRepository duplicate warms frame cache for put skip", "[repository][frame_cache]") {
+  NullLogger logger;
+  ProjectRepository projects{logger};
+  FrameRepository frames{projects, logger};
+
+  const auto created = projects.create(sample_project_params());
+  REQUIRE(created.has_value());
+  const ProjectId id = created.value().id;
+
+  Frame frame;
+  frame.index = 0;
+  frame.width = 4;
+  frame.height = 4;
+  frame.pixels = std::vector<uint8_t>(16, 0);
+  frame.pixels[0] = 3;
+  REQUIRE(frames.put(id, frame).has_value());
+
+  DuplicateFramesParams params;
+  params.target_frame_count = 8;
+  params.source_frame_index = 0;
+  params.fill_mode = pixelanea::domain::DuplicateFillMode::Copy;
+  const auto duplicated = frames.duplicate(id, params);
+  REQUIRE(duplicated.has_value());
+  const std::string duplicated_updated = duplicated.value().frames[3].updated_at;
+
+  Frame unchanged = frame;
+  unchanged.index = 3;
+  const auto skipped = frames.put(id, unchanged);
+  REQUIRE(skipped.has_value());
+  REQUIRE(skipped.value().updated_at == duplicated_updated);
 
   REQUIRE(projects.close(id).has_value());
 }

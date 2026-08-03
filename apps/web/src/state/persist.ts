@@ -1,15 +1,17 @@
-import { saveFrame } from "@/api/frames";
+import { saveFrame, saveFrameCells } from "@/api/frames";
 import { savePalette } from "@/api/palette";
 import { updateProjectSettings } from "@/api/projects";
 import type { SaveResult } from "./sync/types";
 import { useEditorStore } from "./editorStore";
 import {
+  captureFrameDeltaSnapshot,
   captureFrameSnapshot,
   capturePaletteSnapshot,
   captureProjectSettingsSnapshot,
   forgetProjectSettingsSynced,
   markProjectSettingsSynced,
 } from "./sync/snapshots";
+import { clearPendingCellChanges } from "./sync/pendingCellChanges";
 import { SyncCoordinator } from "./sync/syncCoordinator";
 
 let coordinator = createCoordinator();
@@ -28,14 +30,19 @@ async function saveProjectSettings(
 function createCoordinator(): SyncCoordinator {
   return new SyncCoordinator({
     saveFrame,
+    saveFrameDelta: saveFrameCells,
     savePalette,
     saveProjectSettings,
     getFrameSnapshot: captureFrameSnapshot,
+    getFrameDeltaSnapshot: captureFrameDeltaSnapshot,
     getPaletteSnapshot: capturePaletteSnapshot,
     getProjectSettingsSnapshot: captureProjectSettingsSnapshot,
     frameCallbacks: {
       onSyncing: () => useEditorStore.getState().setFrameSyncStatus("syncing"),
-      onSuccess: () => useEditorStore.getState().markFrameSynced(),
+      onSuccess: () => {
+        clearPendingCellChanges();
+        useEditorStore.getState().markFrameSynced();
+      },
       onError: (message) =>
         useEditorStore.getState().setFrameSyncStatus("error", message),
     },
@@ -61,6 +68,10 @@ export function scheduleFrameSync(): void {
 
 export function schedulePaletteSync(): void {
   coordinator.schedulePalette();
+}
+
+export function scheduleProjectSettingsSync(): void {
+  coordinator.scheduleProjectSettings();
 }
 
 export function cancelFrameSync(): void {
@@ -89,6 +100,7 @@ export async function flushAllSync(): Promise<void> {
 
 export function resetPersistState(): void {
   coordinator.reset();
+  clearPendingCellChanges();
   forgetProjectSettingsSynced();
 }
 

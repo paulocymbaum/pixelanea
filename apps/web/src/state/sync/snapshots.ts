@@ -1,9 +1,14 @@
 import { useEditorStore } from "@/state/editorStore";
+import {
+  getPendingCellChanges,
+} from "./pendingCellChanges";
 import type {
+  FrameDeltaSnapshot,
   FrameSnapshot,
   PaletteSnapshot,
   ProjectSettingsSnapshot,
 } from "./types";
+import { MAX_DELTA_CELL_COUNT } from "./types";
 
 /**
  * Last fps/loop the server acknowledged for a project. Animation settings can
@@ -27,6 +32,25 @@ export function captureFrameSnapshot(): FrameSnapshot | null {
     projectId: state.projectId,
     frameIndex: state.activeFrameIndex,
     pixels: new Uint8Array(state.pixels),
+  };
+}
+
+export function captureFrameDeltaSnapshot(): FrameDeltaSnapshot | null {
+  const state = useEditorStore.getState();
+  if (!state.projectId || !state.isDirty) {
+    return null;
+  }
+
+  const changes = getPendingCellChanges();
+  if (changes.length === 0 || changes.length > MAX_DELTA_CELL_COUNT) {
+    return null;
+  }
+
+  return {
+    lane: "frameDelta",
+    projectId: state.projectId,
+    frameIndex: state.activeFrameIndex,
+    changes: [...changes],
   };
 }
 

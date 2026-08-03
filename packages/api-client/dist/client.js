@@ -10,11 +10,16 @@ export class ApiError extends Error {
 }
 async function request(path, options = {}, config = {}) {
     const base = config.baseUrl ?? "";
+    const hasOctetStreamBody = options.headers &&
+        typeof options.headers === "object" &&
+        !Array.isArray(options.headers) &&
+        "Content-Type" in options.headers &&
+        String(options.headers["Content-Type"]).startsWith("application/octet-stream");
     const response = await fetch(`${base}${path}`, {
         ...options,
         headers: {
             Accept: "application/json",
-            ...(options.body ? { "Content-Type": "application/json" } : {}),
+            ...(options.body && !hasOctetStreamBody ? { "Content-Type": "application/json" } : {}),
             ...options.headers,
         },
     });
@@ -57,6 +62,30 @@ async function requestBinary(path, options = {}, config = {}) {
     }
     return response.blob();
 }
+async function requestOctetStream(path, options = {}, config = {}) {
+    const base = config.baseUrl ?? "";
+    const response = await fetch(`${base}${path}`, {
+        ...options,
+        headers: {
+            Accept: "application/octet-stream",
+            ...(options.body ? { "Content-Type": "application/octet-stream" } : {}),
+            ...options.headers,
+        },
+    });
+    if (!response.ok) {
+        let body;
+        try {
+            body = (await response.json());
+        }
+        catch {
+            // non-JSON error body
+        }
+        const message = body?.message ?? `Request failed (${response.status})`;
+        throw new ApiError(response.status, message, body);
+    }
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    return { body: bytes, headers: response.headers };
+}
 export function createApiClient(config = {}) {
     return {
         getHealth: () => request("/api/health", {}, config),
@@ -70,6 +99,20 @@ export function createApiClient(config = {}) {
         listFrames: (projectId) => request(`/api/projects/${projectId}/frames`, {}, config),
         getFrame: (projectId, frameIndex) => request(`/api/projects/${projectId}/frames/${frameIndex}`, {}, config),
         putFrame: (projectId, frameIndex, body) => request(`/api/projects/${projectId}/frames/${frameIndex}`, { method: "PUT", body: JSON.stringify(body) }, config),
+        putFrameBinary: (projectId, frameIndex, pixels) => request(`/api/projects/${projectId}/frames/${frameIndex}`, {
+            method: "PUT",
+            body: new Blob([Uint8Array.from(pixels)]),
+            headers: { "Content-Type": "application/octet-stream" },
+        }, config),
+        getFrameBinary: async (projectId, frameIndex) => {
+            const { body, headers } = await requestOctetStream(`/api/projects/${projectId}/frames/${frameIndex}`, {}, config);
+            const index = Number(headers.get("X-Frame-Index") ?? frameIndex);
+            const width = Number(headers.get("X-Frame-Width") ?? 0);
+            const height = Number(headers.get("X-Frame-Height") ?? 0);
+            const updatedAt = headers.get("X-Frame-Updated-At") ?? "";
+            return { index, width, height, updatedAt, pixels: body };
+        },
+        patchFrameCells: (projectId, frameIndex, changes) => request(`/api/projects/${projectId}/frames/${frameIndex}/cells`, { method: "PATCH", body: JSON.stringify(changes) }, config),
         duplicateFrames: (projectId, body) => request(`/api/projects/${projectId}/frames/duplicate`, { method: "POST", body: JSON.stringify(body) }, config),
         copyFrame: (projectId, body) => request(`/api/projects/${projectId}/frames/copy`, { method: "POST", body: JSON.stringify(body) }, config),
         reorderFrames: (projectId, body) => request(`/api/projects/${projectId}/frames/reorder`, { method: "POST", body: JSON.stringify(body) }, config),

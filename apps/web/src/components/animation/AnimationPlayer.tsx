@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useRef } from "react";
-import { fetchFrame, pixelsFromFrame } from "@/api/frames";
+import { useCallback, useRef } from "react";
 import { Button } from "@/components/ui/Button";
 import { Slider } from "@/components/ui/Slider";
 import { copy } from "@/content/copy";
 import { features } from "@/content/features";
 import { cn } from "@/lib/cn";
 import { useEditorStore, useOnionSkinEnabled } from "@/state/editorStore";
-import { writeFramePixels } from "@/state/frameCache";
-import { flushFrameSync } from "@/state/persist";
+import {
+  startPlaybackWithPrefetch,
+  useAnimationPrefetch,
+  usePlaybackLoop,
+} from "@/components/animation/useAnimationPlayback";
 import { Layers, Pause, Play, Repeat } from "lucide-react";
 
 type AnimationPlayerProps = {
@@ -27,96 +29,21 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
   const onionSkinEnabled = useOnionSkinEnabled();
   const setOnionSkinEnabled = useEditorStore((s) => s.setOnionSkinEnabled);
 
-  const rafRef = useRef<number | null>(null);
-  const lastTickRef = useRef(0);
+  const prefetchFrames = useAnimationPrefetch(projectId);
 
-  const prefetchFrames = useCallback(async () => {
-    if (!projectId) {
-      return;
-    }
-
-    const state = useEditorStore.getState();
-    const cached = writeFramePixels(
-      state.framePixelsByIndex,
-      state.activeFrameIndex,
-      state.pixels,
-    );
-    let nextCache = cached;
-
-    const missing: number[] = [];
-    for (let i = 0; i < state.frameCount; i++) {
-      if (!nextCache[i]) {
-        missing.push(i);
-      }
-    }
-
-    if (missing.length === 0) {
-      useEditorStore.setState({ framePixelsByIndex: nextCache });
-      return;
-    }
-
-    const results = await Promise.all(
-      missing.map(async (index) => {
-        const result = await fetchFrame(projectId, index);
-        return { index, result };
-      }),
-    );
-
-    for (const { index, result } of results) {
-      if (result.ok) {
-        nextCache = writeFramePixels(
-          nextCache,
-          index,
-          pixelsFromFrame(result.frame),
-        );
-      }
-    }
-
-    useEditorStore.setState({ framePixelsByIndex: nextCache });
-  }, [projectId]);
+  usePlaybackLoop(isPlaying, fps, advancePlaybackFrame);
 
   const stopPlayback = useCallback(() => {
-    if (rafRef.current !== null) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
-    }
     setPlaying(false);
   }, [setPlaying]);
 
-  const tick = useCallback(
-    (timestamp: number) => {
-      if (!useEditorStore.getState().isPlaying) {
-        return;
-      }
-
-      const intervalMs = 1000 / useEditorStore.getState().animationFps;
-      if (timestamp - lastTickRef.current >= intervalMs) {
-        const advanced = advancePlaybackFrame();
-        if (advanced) {
-          lastTickRef.current = timestamp;
-        }
-      }
-
-      rafRef.current = requestAnimationFrame(tick);
-    },
-    [advancePlaybackFrame],
-  );
-
   const startPlayback = useCallback(async () => {
-    if (frameCount <= 1) {
+    const tick = await startPlaybackWithPrefetch(frameCount, prefetchFrames);
+    if (!tick) {
       return;
     }
-
-    const state = useEditorStore.getState();
-    if (state.isDirty) {
-      await flushFrameSync();
-    }
-
-    await prefetchFrames();
-    lastTickRef.current = performance.now();
     setPlaying(true);
-    rafRef.current = requestAnimationFrame(tick);
-  }, [frameCount, prefetchFrames, setPlaying, tick]);
+  }, [frameCount, prefetchFrames, setPlaying]);
 
   const togglePlay = () => {
     if (isPlaying) {
@@ -125,24 +52,6 @@ export function AnimationPlayer({ className }: AnimationPlayerProps) {
     }
     void startPlayback();
   };
-
-  useEffect(() => {
-    return () => {
-      if (rafRef.current !== null) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!isPlaying) {
-      return;
-    }
-    if (rafRef.current === null) {
-      lastTickRef.current = performance.now();
-      rafRef.current = requestAnimationFrame(tick);
-    }
-  }, [fps, isPlaying, tick]);
 
   return (
     <div

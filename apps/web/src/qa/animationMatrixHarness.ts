@@ -1,11 +1,13 @@
 import { vi, type Mock } from "vitest";
 import type { Frame, FrameMetadata, Project } from "@pixelanea/api-client";
-import { DEFAULT_PALETTE_COLORS } from "@/canvas/palette";
-import { PaintCellCommand } from "@/state/commands/paintCell";
-import { useEditorStore } from "@/state/editorStore";
-import { setSyncCoordinatorForTests, SyncCoordinator } from "@/state/persist";
-import { captureFrameSnapshot } from "@/state/sync/snapshots";
 import type { SaveResult } from "@/state/sync/types";
+import { PaintCellsCommand } from "@/state/commands/paintCells";
+import { useEditorStore } from "@/state/editorStore";
+import {
+  resetEditor,
+  withFrames,
+  withFrameSyncMock,
+} from "@/qa/editorFixtures";
 
 export const MATRIX_PROJECT_ID = "animation-matrix-project";
 export const GRID_SIZE = 8;
@@ -34,50 +36,32 @@ export function buildFrameCache(
 export function resetAnimationProject(
   overrides: Partial<EditorState> = {},
 ): void {
-  const gridWidth = overrides.gridWidth ?? GRID_SIZE;
-  const gridHeight = overrides.gridHeight ?? GRID_SIZE;
   const frameCount = overrides.frameCount ?? 1;
-  const framePixelsByIndex =
-    overrides.framePixelsByIndex ?? buildFrameCache(frameCount, { size: gridWidth });
-  const activeFrameIndex = overrides.activeFrameIndex ?? 0;
+  const gridWidth = overrides.gridWidth ?? GRID_SIZE;
+  const preset = withFrames(frameCount, {
+    gridSize: gridWidth,
+    projectId: MATRIX_PROJECT_ID,
+    framePixelsByIndex: overrides.framePixelsByIndex,
+  });
+
+  const merged = {
+    ...preset,
+    projectName: "Animation matrix",
+    ...overrides,
+  };
+  const cache = merged.framePixelsByIndex as Record<number, Uint8Array>;
+  const activeFrameIndex = merged.activeFrameIndex ?? 0;
   const pixels =
     overrides.pixels ??
-    framePixelsByIndex[activeFrameIndex] ??
-    new Uint8Array(gridWidth * gridHeight);
+    new Uint8Array(
+      cache[activeFrameIndex] ?? new Uint8Array(gridWidth * gridWidth),
+    );
 
-  useEditorStore.setState({
-    projectId: MATRIX_PROJECT_ID,
-    projectName: "Animation matrix",
-    activeTool: "paint",
-    activeColorIndex: 1,
-    gridWidth,
-    gridHeight,
-    frameCount,
+  resetEditor({
+    ...merged,
     activeFrameIndex,
-    pixels: new Uint8Array(pixels),
-    framePixelsByIndex: { ...framePixelsByIndex },
-    paletteColors: DEFAULT_PALETTE_COLORS,
-    paletteLocked: false,
-    readOnly: false,
-    isPlaying: false,
-    animationFps: 8,
-    animationLoop: true,
-    onionSkinEnabled: true,
-    placingLighting: false,
-    undoStack: [],
-    redoStack: [],
-    isDirty: false,
-    isPaletteDirty: false,
-    frameSyncStatus: "idle",
-    paletteSyncStatus: "idle",
-    syncStatus: "idle",
-    frameSyncError: null,
-    paletteSyncError: null,
-    syncError: null,
-    zoom: 1,
-    panX: 0,
-    panY: 0,
-    ...overrides,
+    pixels,
+    framePixelsByIndex: { ...cache },
   });
 }
 
@@ -136,39 +120,7 @@ export function installFrameCoordinator(
   ) => Promise<SaveResult> = async () => ({ ok: true }),
   debounceMs = 0,
 ): Mock {
-  const mock = vi.fn(saveFrame);
-
-  setSyncCoordinatorForTests(
-    new SyncCoordinator(
-      {
-        saveFrame: mock,
-        savePalette: vi.fn().mockResolvedValue({ ok: true }),
-        saveProjectSettings: vi.fn().mockResolvedValue({ ok: true }),
-        getFrameSnapshot: captureFrameSnapshot,
-        getPaletteSnapshot: () => null,
-        getProjectSettingsSnapshot: () => null,
-        frameCallbacks: {
-          onSyncing: () => useEditorStore.getState().setFrameSyncStatus("syncing"),
-          onSuccess: () => useEditorStore.getState().markFrameSynced(),
-          onError: (message) =>
-            useEditorStore.getState().setFrameSyncStatus("error", message),
-        },
-        paletteCallbacks: {
-          onSyncing: vi.fn(),
-          onSuccess: vi.fn(),
-          onError: vi.fn(),
-        },
-        projectSettingsCallbacks: {
-          onSyncing: vi.fn(),
-          onSuccess: vi.fn(),
-          onError: vi.fn(),
-        },
-      },
-      debounceMs,
-    ),
-  );
-
-  return mock;
+  return withFrameSyncMock(saveFrame, debounceMs);
 }
 
 export function activePixelAt(x: number, y: number): number {
@@ -191,7 +143,9 @@ export function paintActiveFrame(x: number, y: number, colorIndex: number): void
   const previous = activePixelAt(x, y);
   useEditorStore
     .getState()
-    .dispatch(new PaintCellCommand(x, y, previous, colorIndex));
+    .dispatch(
+      new PaintCellsCommand([{ x, y, previous, next: colorIndex }]),
+    );
 }
 
 /** Minimal DataTransfer stand-in; jsdom does not implement drag-and-drop. */

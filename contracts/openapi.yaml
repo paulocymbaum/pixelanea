@@ -371,7 +371,20 @@ paths:
     get:
       operationId: getFrame
       summary: Get frame pixel data
+      description: |
+        Returns frame pixels as JSON by default (`Accept: application/json` or omitted).
+        Request `Accept: application/octet-stream` for raw palette-index bytes (row-major,
+        `width * height` bytes). Frame dimensions and metadata are returned in response
+        headers on the binary lane (see `FrameBinaryResponseHeaders`).
       tags: [Frames]
+      parameters:
+        - name: Accept
+          in: header
+          required: false
+          description: Prefer `application/octet-stream` for raw bytes; default is JSON.
+          schema:
+            type: string
+            default: application/json
       responses:
         "200":
           description: Frame data
@@ -379,11 +392,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Frame"
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+              description: Raw palette indices row-major (width * height bytes)
+          headers:
+            X-Frame-Index:
+              $ref: "#/components/headers/FrameIndexHeader"
+            X-Frame-Width:
+              $ref: "#/components/headers/FrameWidthHeader"
+            X-Frame-Height:
+              $ref: "#/components/headers/FrameHeightHeader"
+            X-Frame-Updated-At:
+              $ref: "#/components/headers/FrameUpdatedAtHeader"
         "404":
           $ref: "#/components/responses/NotFound"
     put:
       operationId: putFrame
       summary: Replace frame pixel data
+      description: |
+        JSON body (`PutFrameRequest`) remains the default and backward-compatible path.
+        Send `Content-Type: application/octet-stream` with raw palette-index bytes
+        (row-major, `project.width * project.height` bytes) to avoid JSON `number[]`
+        expansion. Dimensions are taken from project metadata, not the body.
       tags: [Frames]
       requestBody:
         required: true
@@ -391,6 +423,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PutFrameRequest"
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+            description: Raw palette indices row-major (width * height bytes)
       responses:
         "200":
           description: Frame updated
@@ -403,7 +440,68 @@ paths:
         "404":
           $ref: "#/components/responses/NotFound"
 
+  /api/projects/{projectId}/frames/{frameIndex}/cells:
+    parameters:
+      - $ref: "#/components/parameters/ProjectId"
+      - $ref: "#/components/parameters/FrameIndex"
+    patch:
+      operationId: patchFrameCells
+      summary: Apply cell-level pixel changes
+      description: |
+        Applies a batch of cell changes without replacing the full grid. Each change
+        includes `previous` for optimistic concurrency; mismatches return 409.
+        Prefer full `PUT` with `application/octet-stream` for large change sets
+        or after undo/redo.
+      tags: [Frames]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/CellChange"
+      responses:
+        "200":
+          description: Frame updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FrameMetadata"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Cell conflict (previous value mismatch)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
 components:
+  headers:
+    FrameIndexHeader:
+      description: Frame index in the animation timeline
+      schema:
+        type: integer
+        minimum: 0
+    FrameWidthHeader:
+      description: Frame width in pixels
+      schema:
+        type: integer
+        minimum: 1
+    FrameHeightHeader:
+      description: Frame height in pixels
+      schema:
+        type: integer
+        minimum: 1
+    FrameUpdatedAtHeader:
+      description: ISO-8601 timestamp of the last frame update
+      schema:
+        type: string
+        format: date-time
+
   parameters:
     ProjectId:
       name: projectId
@@ -644,6 +742,29 @@ components:
             type: integer
             minimum: 0
             maximum: 255
+
+    CellChange:
+      type: object
+      required: [x, y, previous, next]
+      properties:
+        x:
+          type: integer
+          minimum: 0
+          description: Cell column (0-based)
+        y:
+          type: integer
+          minimum: 0
+          description: Cell row (0-based)
+        previous:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: Expected palette index before the change (optimistic concurrency)
+        next:
+          type: integer
+          minimum: 0
+          maximum: 255
+          description: Palette index after the change
 
     DuplicateFramesRequest:
       type: object

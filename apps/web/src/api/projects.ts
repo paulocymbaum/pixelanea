@@ -1,5 +1,5 @@
 import type { AssetType, CreateProjectRequest, Project } from "@pixelanea/api-client";
-import { fetchFrame, pixelsFromFrame } from "./frames";
+import { fetchFrame } from "./frames";
 import { fetchPalette, paletteColorsFromApi } from "./palette";
 import { getApiClient } from "./client";
 import { mapBundleApiError } from "./errors";
@@ -81,7 +81,7 @@ export async function loadProject(
         gridWidth: project.width,
         gridHeight: project.height,
         frameCount: project.frameCount,
-        pixels: pixelsFromFrame(frameResult.frame),
+        pixels: frameResult.pixels,
         paletteColors: paletteColorsFromApi(paletteResult.palette),
         assetType: project.assetType,
         fps: project.fps,

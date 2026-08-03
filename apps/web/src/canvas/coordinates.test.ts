@@ -95,6 +95,19 @@ describe("zoomIn and zoomOut", () => {
     const smaller = zoomOut(bigger);
     expect(smaller.zoom).toBeCloseTo(start.zoom, 5);
   });
+
+  it("with anchor keeps the anchor cell fixed on screen", () => {
+    const viewport = fitToView({ width: 200, height: 200 }, 32, 32);
+    const anchor = { x: 100, y: 100 };
+    const zoomedIn = zoomIn(viewport, anchor);
+    expect(screenToCell(anchor.x, anchor.y, viewport)).toEqual(
+      screenToCell(anchor.x, anchor.y, zoomedIn),
+    );
+    const zoomedOut = zoomOut(zoomedIn, anchor);
+    expect(screenToCell(anchor.x, anchor.y, viewport)).toEqual(
+      screenToCell(anchor.x, anchor.y, zoomedOut),
+    );
+  });
 });
 
 describe("formatZoomPercent", () => {

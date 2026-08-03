@@ -1,4 +1,4 @@
-import { fetchFrame, pixelsFromFrame } from "@/api/frames";
+import { fetchFrame } from "@/api/frames";
 
 /** Clone pixel buffer for per-frame cache entries. */
 export function clonePixels(pixels: Uint8Array): Uint8Array {
@@ -66,7 +66,7 @@ export async function resolveAllFramePixels(
       if (!result.ok) {
         return { ok: false, message: result.message };
       }
-      const pixels = pixelsFromFrame(result.frame);
+      const pixels = result.pixels;
       cache = writeFramePixels(cache, index, pixels);
       frames[index] = pixels;
     }
@@ -80,17 +80,25 @@ export async function resolveAllFramePixels(
   return { ok: true, frames: ordered, framePixelsByIndex: cache };
 }
 
-export function readFramePixels(
-  cache: Record<number, Uint8Array>,
-  index: number,
-): Uint8Array | undefined {
-  return cache[index];
-}
-
 export function writeFramePixels(
   cache: Record<number, Uint8Array>,
   index: number,
   pixels: Uint8Array,
 ): Record<number, Uint8Array> {
   return { ...cache, [index]: clonePixels(pixels) };
+}
+
+export type FrameCacheState = {
+  framePixelsByIndex: Record<number, Uint8Array>;
+  activeFrameIndex: number;
+  pixels: Uint8Array;
+};
+
+/** Fold the live active buffer into the per-index cache (dual-buffer invariant). */
+export function ensureFrameCached(state: FrameCacheState): Record<number, Uint8Array> {
+  return writeFramePixels(
+    state.framePixelsByIndex,
+    state.activeFrameIndex,
+    state.pixels,
+  );
 }

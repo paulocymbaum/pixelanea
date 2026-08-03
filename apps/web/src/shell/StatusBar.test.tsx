@@ -18,8 +18,6 @@ describe("StatusBar", () => {
       projectId: "p1",
       isDirty: false,
       isPaletteDirty: false,
-      syncStatus: "idle",
-      syncError: null,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
       frameSyncError: null,
@@ -64,7 +62,7 @@ describe("StatusBar", () => {
 
   it("shows saving while syncing", () => {
     useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
-    useEditorStore.setState({ syncStatus: "syncing" });
+    useEditorStore.setState({ frameSyncStatus: "syncing" });
     render(<StatusBar />);
     expect(screen.getByText(copy.statusSaving)).toBeInTheDocument();
   });

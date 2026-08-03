@@ -8,11 +8,11 @@ import { tools } from "@/content/tools";
 import { copy } from "@/content/copy";
 import { PaletteSwatchGrid } from "@/components/palette/PaletteSwatchGrid";
 import { UndoRedoToolbar } from "@/components/toolbar/UndoRedoToolbar";
-import { PaintCellCommand } from "@/state/commands/paintCell";
 import { PaintCellsCommand } from "@/state/commands/paintCells";
 import { pushCommands } from "@/state/commands/undoStack";
 import { UNDO_STACK_CAP } from "@/state/commands/types";
 import { useEditorStore } from "@/state/editorStore";
+import { useViewportStore } from "@/state/viewportStore";
 import {
   flushFrameSync,
   scheduleFrameSync,
@@ -42,6 +42,7 @@ import {
 
 vi.mock("@/api/frames", () => ({
   saveFrame: vi.fn().mockResolvedValue({ ok: true }),
+  saveFrameCells: vi.fn().mockResolvedValue({ ok: true }),
   fetchFrame: vi.fn(),
   pixelsFromFrame: vi.fn(),
 }));
@@ -75,7 +76,7 @@ describe("QA-001 paint matrix", () => {
     it("[HP-002] eraser removes pixels", () => {
       paintCells(rowCells(0, 0, 3));
       useEditorStore.setState({ activeTool: "eraser" });
-      runToolStroke(eraserTool, rowCells(0, 1, 2), { endStroke: false });
+      runToolStroke(eraserTool, rowCells(0, 1, 2));
       expect(pixelAt(1, 0)).toBe(0);
       expect(tools.eraser).toBe("Fix mistakes");
     });
@@ -129,14 +130,11 @@ describe("QA-001 paint matrix", () => {
     it("[HP-006] undo / redo paint stroke", () => {
       paintCells(rowCells(0, 0, 2));
       expect(pixelAt(2, 0)).toBe(1);
-      for (let i = 0; i < 3; i++) {
-        useEditorStore.getState().undo();
-      }
+      expect(useEditorStore.getState().undoStack).toHaveLength(1);
+      useEditorStore.getState().undo();
       expect(pixelAt(0, 0)).toBe(0);
       expect(pixelAt(2, 0)).toBe(0);
-      for (let i = 0; i < 3; i++) {
-        useEditorStore.getState().redo();
-      }
+      useEditorStore.getState().redo();
       expect(pixelAt(2, 0)).toBe(1);
     });
 
@@ -149,7 +147,7 @@ describe("QA-001 paint matrix", () => {
     });
 
     it("[HP-008] zoom maps pointer to correct cell at high zoom", () => {
-      useEditorStore.setState({ zoom: 8, panX: 0, panY: 0 });
+      useViewportStore.setState({ zoom: 8, panX: 0, panY: 0 });
       expect(screenToCell(16, 16, { zoom: 8, panX: 0, panY: 0 })).toEqual({
         x: 2,
         y: 2,
@@ -175,7 +173,7 @@ describe("QA-001 paint matrix", () => {
     it("[HP-010] eraser click + drag stroke", () => {
       paintCells(rowCells(2, 0, 5));
       useEditorStore.setState({ activeTool: "eraser" });
-      runToolStroke(eraserTool, rowCells(2, 1, 4), { endStroke: false });
+      runToolStroke(eraserTool, rowCells(2, 1, 4));
       expect(pixelAt(1, 2)).toBe(0);
       expect(pixelAt(2, 2)).toBe(0);
       expect(pixelAt(0, 2)).toBe(1);
@@ -205,7 +203,7 @@ describe("QA-001 paint matrix", () => {
 
     it("[HP-012] undo / redo via toolbar", () => {
       paintCell(3, 3);
-      const command = new PaintCellCommand(3, 3, 0, 1);
+      const command = new PaintCellsCommand([{ x: 3, y: 3, previous: 0, next: 1 }]);
       useEditorStore.setState({
         undoStack: [command],
         pixels: new Uint8Array(useEditorStore.getState().pixels),
@@ -312,22 +310,19 @@ describe("QA-001 paint matrix", () => {
 
   describe("race conditions", () => {
     it("[RACE-001] rapid tool switching while dragging", () => {
-      paintTool.onPointerDown?.(pointerEvent(), { x: 0, y: 0 }, buildToolContext());
-      paintTool.onPointerMove?.(pointerEvent(0, 1), { x: 1, y: 0 }, buildToolContext());
+      const { result } = renderHook(() => useToolInput());
+      result.current.onPointerDown(pointerEvent(), { x: 0, y: 0 });
+      result.current.onPointerMove(pointerEvent(0, 1), { x: 1, y: 0 });
       useEditorStore.setState({ activeTool: "eraser" });
-      const cmd = eraserTool.onPointerMove?.(
-        pointerEvent(0, 1),
-        { x: 2, y: 0 },
-        buildToolContext(),
-      );
-      expect(cmd).toBeUndefined();
+      result.current.onPointerMove(pointerEvent(0, 1), { x: 2, y: 0 });
+      result.current.onPointerUp(pointerEvent(0, 0), { x: 2, y: 0 });
+      expect(pixelAt(0, 0)).toBe(1);
+      expect(pixelAt(1, 0)).toBe(1);
+      expect(pixelAt(2, 0)).toBe(1);
       setPixel(2, 0, 1);
-      const eraseCmd = eraserTool.onPointerMove?.(
-        pointerEvent(0, 1),
-        { x: 2, y: 0 },
-        buildToolContext(),
-      );
-      expect(eraseCmd).toBeDefined();
+      useEditorStore.setState({ activeTool: "eraser" });
+      runToolStroke(eraserTool, [{ x: 2, y: 0 }]);
+      expect(pixelAt(2, 0)).toBe(0);
     });
 
     it("[RACE-002] undo during debounced frame sync", async () => {
@@ -525,17 +520,12 @@ describe("QA-001 paint matrix", () => {
     });
 
     it("[RACE-008] rapid color change while dragging", () => {
-      paintTool.onPointerDown?.(pointerEvent(), { x: 0, y: 0 }, buildToolContext());
-      useEditorStore.getState().dispatch(
-        paintTool.onPointerDown?.(pointerEvent(), { x: 0, y: 0 }, buildToolContext())!,
-      );
+      const { result } = renderHook(() => useToolInput());
+      result.current.onPointerDown(pointerEvent(), { x: 0, y: 0 });
       useEditorStore.setState({ activeColorIndex: 2 });
-      const cmd = paintTool.onPointerMove?.(
-        pointerEvent(0, 1),
-        { x: 1, y: 0 },
-        buildToolContext(),
-      );
-      buildToolContext().dispatch(cmd!);
+      result.current.onPointerMove(pointerEvent(0, 1), { x: 1, y: 0 });
+      result.current.onPointerUp(pointerEvent(0, 0), { x: 1, y: 0 });
+      expect(pixelAt(0, 0)).toBe(1);
       expect(pixelAt(1, 0)).toBe(2);
     });
 
@@ -574,17 +564,15 @@ describe("QA-001 paint matrix", () => {
     });
 
     it("[RACE-011] zoom change during drag does not crash", () => {
-      paintTool.onPointerDown?.(pointerEvent(), { x: 0, y: 0 }, buildToolContext());
-      useEditorStore.getState().dispatch(
-        paintTool.onPointerDown?.(pointerEvent(), { x: 0, y: 0 }, buildToolContext())!,
-      );
-      useEditorStore.getState().setZoom(4);
-      const cmd = paintTool.onPointerMove?.(
-        pointerEvent(0, 1),
-        { x: 1, y: 0 },
-        buildToolContext(),
-      );
-      expect(() => buildToolContext().dispatch(cmd!)).not.toThrow();
+      const { result } = renderHook(() => useToolInput());
+      result.current.onPointerDown(pointerEvent(), { x: 0, y: 0 });
+      useViewportStore.getState().setZoom(4);
+      result.current.onPointerMove(pointerEvent(0, 1), { x: 1, y: 0 });
+      expect(() =>
+        result.current.onPointerUp(pointerEvent(0, 0), { x: 1, y: 0 }),
+      ).not.toThrow();
+      expect(pixelAt(0, 0)).toBe(1);
+      expect(pixelAt(1, 0)).toBe(1);
     });
 
     it("[RACE-012] paint burst then immediate frame switch", async () => {
@@ -642,12 +630,8 @@ describe("QA-001 paint matrix", () => {
   describe("edge cases", () => {
     it("[EDGE-001] paint with palette lock on", () => {
       useEditorStore.setState({ paletteLocked: true, activeColorIndex: 99 });
-      const result = paintTool.onPointerDown?.(
-        pointerEvent(),
-        { x: 0, y: 0 },
-        buildToolContext(),
-      );
-      expect(result).toBeUndefined();
+      paintCell(0, 0);
+      expect(useEditorStore.getState().undoStack).toHaveLength(0);
     });
 
     it("[EDGE-002] paint same color on same cell", () => {
@@ -661,12 +645,7 @@ describe("QA-001 paint matrix", () => {
     it("[EDGE-003] eraser on empty cell", () => {
       useEditorStore.setState({ activeTool: "eraser" });
       const stackBefore = useEditorStore.getState().undoStack.length;
-      const result = eraserTool.onPointerDown?.(
-        pointerEvent(),
-        { x: 0, y: 0 },
-        buildToolContext(),
-      );
-      expect(result).toBeUndefined();
+      runToolStroke(eraserTool, [{ x: 0, y: 0 }]);
       expect(useEditorStore.getState().undoStack.length).toBe(stackBefore);
     });
 
@@ -685,7 +664,8 @@ describe("QA-001 paint matrix", () => {
     it("[EDGE-005] undo stack at cap (500)", () => {
       const commands = Array.from(
         { length: UNDO_STACK_CAP + 10 },
-        (_, i) => new PaintCellCommand(i % 32, 0, 0, 1),
+        (_, i) =>
+          new PaintCellsCommand([{ x: i % 32, y: 0, previous: 0, next: 1 }]),
       );
       const capped = pushCommands([], commands);
       expect(capped).toHaveLength(UNDO_STACK_CAP);
@@ -722,12 +702,8 @@ describe("QA-001 paint matrix", () => {
 
     it("[EDGE-009] pointer move without button held", () => {
       const stackBefore = useEditorStore.getState().undoStack.length;
-      const result = paintTool.onPointerMove?.(
-        pointerEvent(0, 0),
-        { x: 1, y: 1 },
-        buildToolContext(),
-      );
-      expect(result).toBeUndefined();
+      const { result } = renderHook(() => useToolInput());
+      result.current.onPointerMove(pointerEvent(0, 0), { x: 1, y: 1 });
       expect(useEditorStore.getState().undoStack.length).toBe(stackBefore);
     });
 
@@ -832,6 +808,7 @@ describe("QA-001 paint matrix", () => {
       result.current.onPointerDown(pointerEvent(), { x: 1, y: 1 });
       result.current.onPointerMove(pointerEvent(0, 1), { x: 1, y: 1 });
       result.current.onPointerMove(pointerEvent(0, 1), { x: 1, y: 1 });
+      result.current.onPointerUp(pointerEvent(0, 0), { x: 1, y: 1 });
       expect(useEditorStore.getState().undoStack.length).toBe(1);
     });
 
@@ -872,10 +849,10 @@ describe("QA-001 paint matrix", () => {
       setPixel(1, 0, 1);
       setPixel(3, 0, 1);
       useEditorStore.setState({ activeTool: "eraser" });
-      runToolStroke(eraserTool, rowCells(0, 0, 4), { endStroke: false });
+      runToolStroke(eraserTool, rowCells(0, 0, 4));
       expect(pixelAt(1, 0)).toBe(0);
       expect(pixelAt(3, 0)).toBe(0);
-      expect(useEditorStore.getState().undoStack).toHaveLength(2);
+      expect(useEditorStore.getState().undoStack).toHaveLength(1);
     });
 
     it("[EDGE-023] fill off-palette when palette locked", () => {
