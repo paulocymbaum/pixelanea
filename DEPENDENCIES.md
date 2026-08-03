@@ -544,6 +544,9 @@ Example GitHub Actions cache steps:
 | vcpkg build slow | Cold cache | Enable CI cache; use `ninja` generator |
 | C++ link errors on Windows | Triplet mismatch | Use consistent `VCPKG_TARGET_TRIPLET` |
 | `pnpm` vs `npm` conflict | Wrong manager | Always use `pnpm` in this repo; add `"packageManager": "pnpm@9.x"` to root `package.json` |
+| Native window won't open | WebKitGTK missing | `sudo apt install libwebkit2gtk-4.1-0 libgtk-3-0`; or use `pixelanea-browser` |
+| `cargo tauri` / shell build fails | Rust or dev libs missing | Run `./scripts/install-desktop-shell-build-deps.sh` |
+| Corrupt or tiny `.deb` | Interrupted `dpkg-deb` build | `rm dist/pixelanea_*.deb && pnpm package:deb` |
 
 ---
 
@@ -551,11 +554,11 @@ Example GitHub Actions cache steps:
 
 | Addition | Package / library | Trigger |
 |----------|-------------------|---------|
-| Desktop shell | Tauri 2.x (`apps/desktop/`) | **Implemented** — native window + `pixelanea-shell` |
-| E2E tests | Playwright | Full editor flow automation |
-| GIF export | `gifenc` (C) or server-side encoder | Animation export feature |
+| E2E tests | Playwright | **Implemented** — see `e2e/` |
+| GIF export | `gifenc` (C) or server-side encoder | **Implemented** — `server/export` |
 | WASM pixelation | Emscripten + stb in browser | Offline mode without C++ server |
 | Monorepo orchestration | Turborepo | Parallel builds across apps/packages |
+| Windows desktop shell | Tauri 2.x | Post-v1 distribution batch |
 
 ---
 
@@ -578,6 +581,15 @@ pnpm --filter @pixelanea/web generate:api
 
 # Start development
 ./scripts/dev.sh
+
+# Desktop shell (requires Rust + WebKitGTK dev packages — see Linux desktop shell above)
+./scripts/install-desktop-shell-build-deps.sh   # once per machine
+pnpm desktop:shell                              # dev
+pnpm build:desktop-shell                        # release binary
+pnpm package:deb                                # .deb in dist/
+pnpm package:desktop                            # portable .tar.gz
+pnpm test:package:linux
+pnpm test:desktop-shell
 
 # Run E2E (first time: pnpm test:e2e:install)
 pnpm test:e2e

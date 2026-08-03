@@ -4,6 +4,16 @@
 
 Free, open-source, local-only pixel art editor. Draw on a grid, pixelate photos, animate in 8/16/32 frames, and share a single `.pixelanea` project file — no accounts, subscriptions, or cloud required.
 
+## See it in action
+
+Demos use a real photo imported at 64×64, with procedural shadow shading and frame-by-frame horizontal animation (Select → Copy → Paste → nudge per frame).
+
+| New blank project | Import & pixelate | Shadow + walk cycle |
+|:---:|:---:|:---:|
+| ![Start a blank canvas, paint, and save](docs/media/linkedin/blank-project.gif) | ![Import a photo through the wizard](docs/media/linkedin/import-capybara.gif) | ![Add shadows, select, and animate across frames](docs/media/linkedin/animation-walk.gif) |
+
+Regenerate demos locally: `./scripts/record-linkedin-media.sh` (outputs GIFs only; video intermediates are not committed or packaged).
+
 ## Features
 
 - **Two front doors** — start from a blank canvas or import an image through the pixelate wizard
@@ -24,6 +34,7 @@ Free, open-source, local-only pixel art editor. Draw on a grid, pixelate photos,
 |-------|------|
 | Frontend | React, Vite, TypeScript, Tailwind (`apps/web`) |
 | Backend | C++17, cpp-httplib, SQLite (`server/`) |
+| Desktop shell | Tauri 2 + WebKitGTK (`apps/desktop/`) |
 | Contract | OpenAPI → TypeScript client (`contracts/`, `packages/api-client`) |
 
 ## Desktop install (recommended)
@@ -37,7 +48,7 @@ Free, open-source, local-only pixel art editor. Draw on a grid, pixelate photos,
 pixelanea
 ```
 
-**Developers (native shell):** install Rust stable + WebKitGTK dev packages ([DEPENDENCIES.md](./DEPENDENCIES.md)), then `pnpm build:desktop-shell` or `pnpm package:deb` for a `.deb` in `dist/`. `pnpm package:desktop` builds a portable `.tar.gz` (browser launcher). Build artifacts are gitignored — never commit `dist/`.
+**Developers (native shell):** install Rust stable + WebKitGTK dev packages ([DEPENDENCIES.md](./DEPENDENCIES.md)), then `pnpm build:desktop-shell` or `pnpm package:deb` for a `.deb` in `dist/`. `pnpm package:desktop` builds a portable `.tar.gz` (shell primary, browser fallback). Build artifacts are gitignored — never commit `dist/`.
 
 See [docs/user-guide.md](./docs/user-guide.md) and [docs/workshop/teacher-guide.md](./docs/workshop/teacher-guide.md) for install details.
 
@@ -74,6 +85,10 @@ pnpm test:smoke
 pnpm test:smoke:frontend   # frontend smoke only
 pnpm test:smoke:backend    # backend smoke only
 
+# Desktop packaging
+pnpm test:package:linux    # .deb structure (+ optional --docker)
+pnpm test:desktop-shell    # shell subprocess smoke
+
 # Backward-compatible aliases
 pnpm test                  # same as test:smoke
 
@@ -85,43 +100,50 @@ pnpm test:e2e
 ./scripts/ci-sprint1.sh
 ```
 
-CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml).
+CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Documentation
 
 | Doc | Description |
 |-----|-------------|
+| [docs/README.md](./docs/README.md) | Documentation index |
 | [docs/user-guide.md](./docs/user-guide.md) | End-user walkthrough |
 | [docs/shortcuts.md](./docs/shortcuts.md) | Keyboard shortcuts reference |
 | [docs/workshop/teacher-guide.md](./docs/workshop/teacher-guide.md) | Classroom workshop guide |
+| [docs/adr/](./docs/adr/) | Architecture decision records |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System design and layer boundaries |
 | [UX.md](./UX.md) | User flows and personas |
 | [DESIGN.md](./DESIGN.md) | UI tokens and layout |
 | [DEPENDENCIES.md](./DEPENDENCIES.md) | Install and dependency pinning |
-| [BACKLOG.md](./BACKLOG.md) | Product roadmap (Sprint 2+) |
+| [BACKLOG.md](./BACKLOG.md) | Active roadmap and done items |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | How to contribute |
 
 ## Project layout
 
 ```text
 pixelanea/
-├── apps/web/            # React editor
-├── server/              # C++ API + SQLite + bundle I/O
-├── contracts/           # OpenAPI spec
+├── apps/
+│   ├── web/               # React editor
+│   └── desktop/           # Tauri shell (pixelanea-shell)
+├── server/                # C++ API + SQLite + bundle I/O
+├── contracts/             # OpenAPI spec
 ├── packages/api-client/   # Generated TS client
-├── e2e/                 # Playwright E2E specs
-├── examples/projects/   # Sample .pixelanea files for File → Open
-├── brand/               # Logo and color assets
-├── docs/                # User and workshop guides
+├── e2e/                   # Playwright E2E specs
+├── examples/projects/     # Sample .pixelanea files for File → Open
+├── brand/                 # Logo and color assets
+├── docs/                  # User, workshop, and ADR guides
 └── scripts/
-    ├── dev.sh           # Start API + Vite with proxy
-    ├── ci-sprint1.sh    # Sprint 1 quality gate
-    └── e2e-webserver.sh # Stack for Playwright
+    ├── dev.sh             # Start API + Vite with proxy
+    ├── build-desktop-shell.sh
+    ├── package-deb.sh     # Debian installer
+    ├── package-desktop-linux.sh
+    ├── ci-sprint1.sh      # Sprint 1 quality gate
+    └── e2e-webserver.sh   # Stack for Playwright
 ```
 
 ## Status
 
-Core editor and Sprint 1 trust/flow work are complete (2026-08-01). **Sprint 2+** focuses on wiring export/animation features, desktop install, and v1.0 launch — see [BACKLOG.md](./BACKLOG.md).
+Core editor, export, animation, and **Linux desktop shell** (Tauri + `.deb`) are complete on `main` — see [CHANGELOG.md](./CHANGELOG.md) Unreleased. Active post-v1 work (Windows shell, workshop PDF kit) is tracked in [BACKLOG.md](./BACKLOG.md).
 
 ## License
 

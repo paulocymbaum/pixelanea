@@ -86,12 +86,13 @@ Run once per lab image before a workshop (manual — not automated):
 | Step | Action | Expected |
 |------|--------|----------|
 | 1 | `command -v zenity` on lab machines | Installed, or install before class |
-| 2 | Start via `./pixelanea` without zenity | Stderr hint to install zenity |
+| 2 | Start **Pixelanea** without zenity | In-app notice to install zenity (or stderr hint with `pixelanea-browser`) |
 | 3 | **File → Open** → pick a `.pixelanea` | Project loads; no manual path typing |
 | 4 | **File → Open** → Cancel | No toast; editor unchanged |
 | 5 | **File → Save As** → new path | Toast **Project saved.**; status **All changes saved** |
 | 6 | **Save** on existing project | Saves in place; no path dialog |
 | 7 | Zenity missing (fallback) | Manual path dialog with recovery copy; students can still save with teacher path template |
+| 8 | Native window check | App menu opens Pixelanea — window has no browser URL bar or tabs |
 
 ## Mini challenges
 

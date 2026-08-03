@@ -16,6 +16,7 @@ SOLID, DRY, and Clean Code conventions for the monorepo. Derived from [ARCHITECT
 3. **Portable projects** — `.pixelanea` bundle format and SQLite schema are owned by `server/`; the UI never encodes blobs or reads the DB.
 4. **Client undo, server grids** — Undo/redo is frontend-only for speed; save/autosave persists the resulting pixel grid.
 5. **Local-only** — Backend on `127.0.0.1`; no cloud calls from the editor.
+6. **Desktop shell** — `apps/desktop/` may spawn `pixelanea-server` and host the WebView only; same API boundary as the browser; no direct DB or domain access from Rust.
 
 ---
 

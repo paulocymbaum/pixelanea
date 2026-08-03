@@ -36,3 +36,8 @@ Thumbs.db
 # Playwright
 test-results/
 playwright-report/
+
+# README demo recordings (regenerate: ./scripts/record-linkedin-media.sh)
+docs/media/linkedin/*.mp4
+docs/media/linkedin/*.webm
+docs/media/linkedin/fixtures/

@@ -15,6 +15,7 @@
 
 - Desktop install path in README, user guide, and workshop teacher guide (shell primary, browser fallback)
 - ADR 0001 (Tauri shell), ADR 0002 (keep zenity file dialogs on server)
+- Full documentation sweep: ARCHITECTURE, CONTRIBUTING, DEPENDENCIES, BACKLOG, docs/README, THIRD_PARTY_NOTICES, security-audit, PRACTICES
 
 ## v1.0.0 — 2026-08-01
 

@@ -9,7 +9,7 @@ use std::sync::Mutex;
 
 use argv::extract_bundle_path_from_args;
 use paths::{devtools_requested, resolve_paths_flexible, InstallPaths};
-use port::{app_url, find_free_port, is_port_listening};
+use port::{app_url, find_free_port, is_pixelanea_healthy, is_port_listening};
 use server::ServerProcess;
 use tauri::webview::{WebviewWindow, WebviewWindowBuilder};
 use tauri::{AppHandle, Manager, Url, WebviewUrl};
@@ -63,6 +63,15 @@ fn ask_port_in_use(app: &AppHandle, host: &str, port: u16) -> PortDecision {
 
 fn resolve_runtime_port(app: &AppHandle, host: &str, requested_port: u16) -> Option<u16> {
     if !is_port_listening(host, requested_port) {
+        return Some(requested_port);
+    }
+
+    // Reuse a healthy local server without prompting (common after a crashed shell left
+    // pixelanea-server running, or when the port dialog would appear before any window).
+    if is_pixelanea_healthy(host, requested_port) {
+        log::info!(
+            "Port {requested_port} already serves a healthy Pixelanea API — reusing it"
+        );
         return Some(requested_port);
     }
 
@@ -124,7 +133,7 @@ fn warn_zenity_missing(app: &AppHandle) {
         )
         .title("Pixelanea")
         .kind(MessageDialogKind::Info)
-        .blocking_show();
+        .show(|_| {});
 }
 
 fn focus_main_window(app: &AppHandle) {
@@ -249,8 +258,6 @@ pub fn run() {
                 port,
             });
 
-            warn_zenity_missing(app.handle());
-
             open_main_window(
                 app.handle(),
                 &host,
@@ -265,6 +272,8 @@ pub fn run() {
                     .blocking_show();
                 error
             })?;
+
+            warn_zenity_missing(app.handle());
 
             log::info!(
                 "Pixelanea shell ready at {} (spawned_server={}, startup_open={})",

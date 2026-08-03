@@ -24,7 +24,9 @@ Pixelanea is a free pixel art editor that runs entirely on your computer. Your p
 
 ### Portable archive (no root)
 
-Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder (browser-based launcher). For a user-level install: `./install.sh` (adds `~/.local/bin/pixelanea`). The `.deb` install path above is preferred for workshops because it ships the native `pixelanea-shell` window.
+Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder — this launches the **native shell** (`pixelanea-shell`). For a user-level install: `./install.sh` (adds `~/.local/bin/pixelanea`). Use `./pixelanea-browser` inside the folder if the native window does not start. The `.deb` install path is preferred for workshops.
+
+**Open a project from the file manager:** double-click a `.pixelanea` file (if your desktop registered the MIME type during install) or use **File → Open** inside the app.
 
 ## Getting started
 
@@ -192,6 +194,7 @@ See [shortcuts.md](./shortcuts.md) for a printable reference card.
 | Problem | Try |
 |---------|-----|
 | Connection banner / can't reach server | Click **Retry**; restart Pixelanea from the app menu or run `pixelanea` again |
+| Native window won't open | Install WebKitGTK (`libwebkit2gtk-4.1-0`) or use `pixelanea-browser` |
 | Port 8787 already in use | Choose **Open** to use the running instance, or **Cancel** and close the other copy first |
 | Save fails | Check disk space and write permissions on the target folder |
 | Import looks wrong | Try a smaller output size or different palette preset |

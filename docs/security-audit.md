@@ -12,6 +12,7 @@
 | **Checksum validation** | PASS | Bundle I/O validates SHA-256 manifest entries |
 | **Unsafe ZIP entries** | PASS | Rejected with plain error `bundleUnsafeEntry` (S1-912) |
 | **OpenAPI surface** | PASS | No auth endpoints; no remote callbacks |
+| **Shell WebView navigation** | PASS | `apps/desktop/src-tauri/src/lib.rs` — `on_navigation` allows only `127.0.0.1` / `localhost` |
 
 ## Residual risk (accepted)
 
@@ -21,4 +22,5 @@
 ## Follow-up (post-v1.0)
 
 - Fuzz bundle unpack with malformed ZIPs.
-- Optional CSP headers when serving `web/dist` from desktop server.
+- Optional CSP headers when serving `web/dist` from `pixelanea-server`.
+- Review Tauri capability scope when adding new shell plugins.

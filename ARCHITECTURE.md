@@ -15,7 +15,7 @@ This document describes the system architecture: a **React frontend**, a **C++ b
 | Portable projects | One `.pixelanea` bundle per project (ZIP + SQLite + manifest) |
 | Shareable artifacts | Export/import bundles with schema versioning and checksums |
 | Performance | C++ handles image pixelation, persistence, and bundle I/O |
-| Future scalability | Monorepo packages; optional desktop shell later |
+| Future scalability | Monorepo packages; Tauri desktop shell on Linux |
 
 ---
 
@@ -57,7 +57,8 @@ This document describes the system architecture: a **React frontend**, a **C++ b
 ```text
 pixelanea/
 ├── apps/
-│   └── web/                      # React + Vite frontend
+│   ├── web/                      # React + Vite frontend
+│   └── desktop/                  # Tauri 2 native shell (pixelanea-shell)
 ├── server/                       # C++ local HTTP server
 │   ├── CMakeLists.txt
 │   ├── src/
@@ -74,6 +75,12 @@ pixelanea/
 ├── e2e/                          # Playwright E2E specs
 ├── scripts/
 │   ├── dev.sh                    # Start C++ server + Vite dev server
+│   ├── build-desktop-shell.sh    # Build Tauri release binary
+│   ├── package-deb.sh            # Debian .deb installer
+│   ├── package-desktop-linux.sh  # Portable .tar.gz
+│   ├── stage-linux-desktop.sh    # Shared staging for shell + server + web
+│   ├── test-package-linux.sh     # .deb structure smoke test
+│   ├── test-desktop-shell.sh     # Shell subprocess smoke test
 │   ├── ci-sprint1.sh             # Sprint quality gate
 │   └── e2e-webserver.sh          # Stack for Playwright
 ├── ARCHITECTURE.md
@@ -85,6 +92,7 @@ pixelanea/
 | Path | Role |
 |------|------|
 | `apps/web` | Editor UI, canvas rendering, tool plugins, client-side undo stack |
+| `apps/desktop` | Tauri shell: spawn `pixelanea-server`, WebView window, port UX, single-instance |
 | `server` | Persistence, project I/O, image processing, API surface |
 | `contracts` | OpenAPI spec; generates TypeScript client for the frontend |
 | `packages/api-client` | Typed fetch/WebSocket wrappers used by React |
@@ -103,9 +111,31 @@ Development:
     → server listens on http://127.0.0.1:8787
     → Vite dev server on http://localhost:5173 (proxies /api → backend)
 
-Production (future desktop shell):
-  Launcher starts server binary + opens embedded or system browser
+Desktop (production):
+  pixelanea-shell (Tauri)
+    → spawns pixelanea-server with --web-root
+    → WebView loads http://127.0.0.1:8787
+
+Fallback:
+  pixelanea-browser
+    → bash launcher starts server + xdg-open to same URL
 ```
+
+### Desktop shell (`apps/desktop/`)
+
+The Tauri 2 shell (`pixelanea-shell`) is a thin process wrapper — not a second editor implementation.
+
+**Responsibilities:**
+
+- Spawn and terminate `pixelanea-server` with `--host 127.0.0.1 --port {port} --web-root {path}`
+- Poll `GET /api/health` before showing the window
+- Port-in-use dialog (open existing / alternate port / cancel) — never silent `fuser -k`
+- Single-instance focus; optional `.pixelanea` file argv from the file manager
+- WebView navigation restricted to `127.0.0.1` / `localhost`
+
+**Non-responsibilities:** no SQL, no OpenAPI handlers, no canvas rendering, no domain logic.
+
+See [docs/adr/0001-desktop-shell-tauri.md](docs/adr/0001-desktop-shell-tauri.md) for the technology decision.
 
 No authentication is required; the threat model assumes single-user local access.
 
@@ -591,14 +621,14 @@ class PaintCellCommand implements Command {
 
 The architecture supports growth without rewrites:
 
-| Future capability | How to add |
-|-------------------|------------|
-| Desktop app (Tauri/Electron) | Shell launches `server` binary + embeds `apps/web` build |
-| CLI exporter | `pixelanea export project.pixelanea --format png` using `server/export` |
-| Plugin tools | Register new `Tool` implementations in `apps/web/tools/` |
-| Layers | Add `layers` table; extend `Frame` with `layer_id` |
-| GIF/spritesheet export | New `server/export` encoder; no UI rewrite |
-| Cloud sync (if ever needed) | New `persistence` adapter behind repository interface |
+| Capability | Status | How |
+|------------|--------|-----|
+| Desktop app (Tauri) | **Implemented (Linux)** | `apps/desktop/` launches `pixelanea-server` + embeds `apps/web` build in WebKitGTK |
+| CLI exporter | Planned | `pixelanea export project.pixelanea --format png` using `server/export` |
+| Plugin tools | Supported | Register new `Tool` implementations in `apps/web/tools/` |
+| Layers | Planned | Add `layers` table; extend `Frame` with `layer_id` |
+| GIF/spritesheet export | Supported | `server/export` encoder; UI behind feature flags |
+| Cloud sync (if ever needed) | Deferred | New `persistence` adapter behind repository interface |
 
 ---
 
@@ -646,7 +676,8 @@ cd server && cmake -B build && cmake --build build
 7. Frame duplication (8/16/32) + frame picker
 8. Animation preview player
 9. `.pixelanea` bundle export/import
-10. README, polish, desktop shell (optional)
+10. Linux desktop shell (`apps/desktop/`, `.deb` packaging) — **done**
+11. Windows desktop shell + installer (optional next)
 
 ---
 

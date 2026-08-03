@@ -31,6 +31,14 @@ pub fn health_url(host: &str, port: u16) -> String {
     format!("http://{host}:{port}/api/health")
 }
 
+pub fn is_pixelanea_healthy(host: &str, port: u16) -> bool {
+    let url = health_url(host, port);
+    ureq::get(&url)
+        .call()
+        .map(|response| response.status() == 200)
+        .unwrap_or(false)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
