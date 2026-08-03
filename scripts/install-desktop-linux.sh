@@ -12,10 +12,12 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# shellcheck source=stage-linux-desktop.sh
+source "${ROOT_DIR}/scripts/stage-linux-desktop.sh"
+
 INSTALL_PREFIX="${HOME}/.local/share/pixelanea"
 BIN_DIR="${HOME}/.local/bin"
 DESKTOP_DIR="${HOME}/.local/share/applications"
-ICON_PATH="${ROOT_DIR}/brand/logo-glyph.svg"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -38,65 +40,10 @@ done
 
 mkdir -p "${INSTALL_PREFIX}" "${BIN_DIR}" "${DESKTOP_DIR}"
 
-install -m 755 "${ROOT_DIR}/server/build/pixelanea-server" "${INSTALL_PREFIX}/pixelanea-server"
-rm -rf "${INSTALL_PREFIX}/web"
-cp -a "${ROOT_DIR}/apps/web/dist" "${INSTALL_PREFIX}/web"
-install -m 644 "${ICON_PATH}" "${INSTALL_PREFIX}/logo-glyph.svg"
+stage_linux_desktop_assets "${INSTALL_PREFIX}"
 
 LAUNCHER="${INSTALL_PREFIX}/pixelanea-launch.sh"
-cat >"${LAUNCHER}" <<'EOF'
-#!/usr/bin/env bash
-set -euo pipefail
-INSTALL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-HOST="127.0.0.1"
-PORT="8787"
-APP_URL="http://${HOST}:${PORT}"
-BINARY="${INSTALL_DIR}/pixelanea-server"
-WEB_ROOT="${INSTALL_DIR}/web"
-
-port_in_use() {
-  if command -v ss >/dev/null 2>&1; then
-    ss -tln "sport = :${PORT}" 2>/dev/null | grep -q LISTEN
-    return
-  fi
-  fuser "${PORT}/tcp" >/dev/null 2>&1
-}
-
-if port_in_use; then
-  if command -v fuser >/dev/null 2>&1; then
-    fuser -k "${PORT}/tcp" 2>/dev/null || true
-    sleep 0.5
-  fi
-fi
-
-"${BINARY}" --host "${HOST}" --port "${PORT}" --web-root "${WEB_ROOT}" &
-SERVER_PID=$!
-
-cleanup() {
-  kill "${SERVER_PID}" 2>/dev/null || true
-}
-trap cleanup EXIT INT TERM
-
-if command -v curl >/dev/null 2>&1; then
-  for _ in $(seq 1 50); do
-    if curl -sf "${APP_URL}/api/health" >/dev/null 2>&1; then
-      break
-    fi
-    sleep 0.2
-  done
-else
-  sleep 2
-fi
-
-if command -v xdg-open >/dev/null 2>&1; then
-  xdg-open "${APP_URL}" >/dev/null 2>&1 &
-elif command -v sensible-browser >/dev/null 2>&1; then
-  sensible-browser "${APP_URL}" >/dev/null 2>&1 &
-fi
-
-wait "${SERVER_PID}"
-EOF
-chmod 755 "${LAUNCHER}"
+write_linux_desktop_launcher "${LAUNCHER}" self
 
 ln -sf "${LAUNCHER}" "${BIN_DIR}/pixelanea"
 

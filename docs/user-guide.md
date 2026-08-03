@@ -4,6 +4,25 @@
 
 Pixelanea is a free pixel art editor that runs entirely on your computer. Your projects stay in `.pixelanea` files — one portable bundle you can copy, email, or put on a USB drive.
 
+## Install (Linux)
+
+### Debian / Ubuntu (.deb — recommended for workshops)
+
+1. Download or copy `pixelanea_<version>_amd64.deb` to your computer.
+2. Install from the folder containing the file:
+   ```bash
+   sudo apt install ./pixelanea_*.deb
+   ```
+   Or double-click the `.deb` file and follow the graphical installer.
+3. Launch **Pixelanea** from your application menu, or run `pixelanea` in a terminal.
+4. Your browser opens http://127.0.0.1:8787 — draw, save, and close the terminal when finished.
+
+Optional: `sudo apt install zenity` enables native **File → Open** and **Save As** dialogs.
+
+### Portable archive (no root)
+
+Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder. For a user-level install: `./install.sh` (adds `~/.local/bin/pixelanea`).
+
 ## Getting started
 
 When you open Pixelanea, you see two equal choices:
@@ -169,7 +188,8 @@ See [shortcuts.md](./shortcuts.md) for a printable reference card.
 
 | Problem | Try |
 |---------|-----|
-| Connection banner / can't reach server | Click **Retry**; run `./scripts/dev.sh` or restart the desktop app |
+| Connection banner / can't reach server | Click **Retry**; restart Pixelanea from the app menu or run `pixelanea` again |
+| Port 8787 already in use | Choose **Open** to use the running instance, or **Cancel** and close the other copy first |
 | Save fails | Check disk space and write permissions on the target folder |
 | Import looks wrong | Try a smaller output size or different palette preset |
 | Canvas won't edit | Stop animation playback first |
