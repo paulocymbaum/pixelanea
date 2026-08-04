@@ -13,12 +13,22 @@ import {
 } from "@/tools/strokePreview";
 import { useCallback, useEffect, useRef } from "react";
 import {
+  buildClipboardPreviewByKey,
+  buildMovePreviewByKey,
+  clipboardPreviewCellKeys,
+  drawSelectionOutline,
+  movePreviewAffectedCellKeys,
   readCanvasTokens,
   renderGrid,
   repaintGridCells,
   setupHiDpiCanvas,
 } from "./renderer";
-import { useSelection, useSelectionPreview, usePastePreview } from "@/state/editorStore";
+import {
+  useSelection,
+  useSelectionPreview,
+  usePastePreview,
+  useMovePreview,
+} from "@/state/editorStore";
 
 export type CanvasRenderState = {
   activeTool: import("@/tools/registry").ToolId;
@@ -44,6 +54,7 @@ export type CanvasRenderState = {
   selection: import("@/canvas/selectionGeometry").SelectionRect | null;
   selectionPreview: import("@/canvas/selectionGeometry").SelectionRect | null;
   pastePreview: import("@/state/editorStorePaste").PastePreview | null;
+  movePreview: import("@/state/editorStoreMove").MovePreview | null;
   setHoverCell: (cell: import("@/canvas/coordinates").CellCoord | null) => void;
   fitToView: ReturnType<typeof useViewportStore.getState>["fitToView"];
   addColorFilterLightingPoint: (
@@ -78,6 +89,7 @@ export function useCanvasRenderState(): CanvasRenderState {
   const selection = useSelection();
   const selectionPreview = useSelectionPreview();
   const pastePreview = usePastePreview();
+  const movePreview = useMovePreview();
   const setHoverCell = useEditorStore((s) => s.setHoverCell);
   const fitToView = useViewportStore((s) => s.fitToView);
   const addColorFilterLightingPoint = useEditorStore(
@@ -108,6 +120,7 @@ export function useCanvasRenderState(): CanvasRenderState {
     selection,
     selectionPreview,
     pastePreview,
+    movePreview,
     setHoverCell,
     fitToView,
     addColorFilterLightingPoint,
@@ -121,7 +134,13 @@ type StrokePreviewRedrawParams = {
   pixelsRef: React.MutableRefObject<Uint8Array>;
 };
 
-/** RAF-coalesced redraw during active strokes; full redraw when stroke ends. */
+type PlacementPreview = {
+  originX: number;
+  originY: number;
+  clipboard: { width: number; height: number; pixels: Uint8Array };
+};
+
+/** RAF-coalesced redraw during active strokes; partial repaint for placement previews. */
 export function useStrokePreviewRedraw({
   containerRef,
   canvasRef,
@@ -135,9 +154,9 @@ export function useStrokePreviewRedraw({
   const redrawRef = useRef<() => void>(() => {});
   const rafRedrawRef = useRef<number | null>(null);
   const strokeBaselineReadyRef = useRef(false);
+  const placementBaselineReadyRef = useRef(false);
   const prevPreviewCellKeysRef = useRef<Set<string>>(new Set());
-  const selectionDashOffsetRef = useRef(0);
-  const selectionAnimRef = useRef<number | null>(null);
+  const prevPlacementRef = useRef<PlacementPreview | null>(null);
 
   const {
     gridWidth,
@@ -161,7 +180,11 @@ export function useStrokePreviewRedraw({
     selection,
     selectionPreview,
     pastePreview,
+    movePreview,
   } = renderState;
+
+  const placementPreview: PlacementPreview | null =
+    pastePreview ?? movePreview ?? null;
 
   const redraw = useCallback(() => {
     const container = containerRef.current;
@@ -239,6 +262,60 @@ export function useStrokePreviewRedraw({
       return;
     }
 
+    const canRepaintPlacementCells =
+      placementPreview &&
+      !isStrokeActive &&
+      !showFilterPreview &&
+      placementBaselineReadyRef.current;
+
+    if (canRepaintPlacementCells) {
+      const isMove = Boolean(movePreview);
+      const currentKeys = isMove
+        ? movePreviewAffectedCellKeys(movePreview!)
+        : clipboardPreviewCellKeys(
+            placementPreview.originX,
+            placementPreview.originY,
+            placementPreview.clipboard,
+          );
+      const affectedKeys = new Set([
+        ...prevPreviewCellKeysRef.current,
+        ...currentKeys,
+      ]);
+      const previewByKey = isMove
+        ? buildMovePreviewByKey(movePreview!)
+        : buildClipboardPreviewByKey(
+            placementPreview.originX,
+            placementPreview.originY,
+            placementPreview.clipboard,
+          );
+
+      repaintGridCells({
+        ctx,
+        gridWidth,
+        gridHeight,
+        basePixels,
+        paletteColors,
+        viewport,
+        tokens,
+        cells: Array.from(affectedKeys).map((key) => {
+          const [x, y] = key.split(",").map(Number);
+          return { x, y };
+        }),
+        previewByKey,
+        onionSkinPixels,
+        onionSkinOpacity,
+      });
+
+      const activeSelection = selectionPreview ?? selection;
+      if (activeSelection) {
+        drawSelectionOutline(ctx, activeSelection, viewport, 0);
+      }
+
+      prevPreviewCellKeysRef.current = currentKeys;
+      prevPlacementRef.current = placementPreview;
+      return;
+    }
+
     const pixels = isStrokeActive
       ? mergeStrokePreviewIntoPixels(basePixels, gridWidth)
       : basePixels;
@@ -259,8 +336,10 @@ export function useStrokePreviewRedraw({
       onionSkinOpacity,
       selection,
       selectionPreview,
-      selectionDashOffset: selectionDashOffsetRef.current,
+      selectionDashOffset: 0,
+      drawSelectionOutline: false,
       pastePreview,
+      movePreview,
     });
 
     if (isStrokeActive && !showFilterPreview) {
@@ -268,9 +347,24 @@ export function useStrokePreviewRedraw({
       prevPreviewCellKeysRef.current = new Set(
         previewChanges.map((change) => `${change.x},${change.y}`),
       );
+      placementBaselineReadyRef.current = false;
+      prevPlacementRef.current = null;
+    } else if (placementPreview && !showFilterPreview) {
+      placementBaselineReadyRef.current = true;
+      prevPreviewCellKeysRef.current = movePreview
+        ? movePreviewAffectedCellKeys(movePreview)
+        : clipboardPreviewCellKeys(
+            placementPreview.originX,
+            placementPreview.originY,
+            placementPreview.clipboard,
+          );
+      prevPlacementRef.current = placementPreview;
+      strokeBaselineReadyRef.current = false;
     } else {
       strokeBaselineReadyRef.current = false;
+      placementBaselineReadyRef.current = false;
       prevPreviewCellKeysRef.current.clear();
+      prevPlacementRef.current = null;
     }
   }, [
     containerRef,
@@ -296,6 +390,8 @@ export function useStrokePreviewRedraw({
     selection,
     selectionPreview,
     pastePreview,
+    movePreview,
+    placementPreview,
   ]);
 
   redrawRef.current = redraw;
@@ -319,45 +415,14 @@ export function useStrokePreviewRedraw({
   }, []);
 
   useEffect(() => {
-    const hasSelectionOverlay = Boolean(selection ?? selectionPreview);
-    if (!hasSelectionOverlay) {
-      if (selectionAnimRef.current !== null) {
-        cancelAnimationFrame(selectionAnimRef.current);
-        selectionAnimRef.current = null;
-      }
-      return;
-    }
-
-    const reducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-    if (reducedMotion) {
-      redrawRef.current();
-      return;
-    }
-
-    let lastTime = performance.now();
-    const animate = (time: number) => {
-      const delta = time - lastTime;
-      lastTime = time;
-      selectionDashOffsetRef.current =
-        (selectionDashOffsetRef.current + delta * 0.04) % 8;
-      redrawRef.current();
-      selectionAnimRef.current = requestAnimationFrame(animate);
-    };
-
-    selectionAnimRef.current = requestAnimationFrame(animate);
-    return () => {
-      if (selectionAnimRef.current !== null) {
-        cancelAnimationFrame(selectionAnimRef.current);
-        selectionAnimRef.current = null;
-      }
-    };
-  }, [selection, selectionPreview]);
-
-  useEffect(() => {
     redraw();
-  }, [selection, selectionPreview, pastePreview, redraw]);
+  }, [
+    selection,
+    selectionPreview,
+    pastePreview,
+    movePreview,
+    redraw,
+  ]);
 
   useEffect(() => {
     if (isStrokeActive) {
@@ -375,6 +440,23 @@ export function useStrokePreviewRedraw({
     strokePreviewTick,
     cancelScheduledRedraw,
     scheduleRedraw,
+  ]);
+
+  useEffect(() => {
+    if (!placementPreview || isStrokeActive) {
+      return;
+    }
+    scheduleRedraw();
+    return () => {
+      cancelScheduledRedraw();
+    };
+  }, [
+    placementPreview,
+    placementPreview?.originX,
+    placementPreview?.originY,
+    isStrokeActive,
+    scheduleRedraw,
+    cancelScheduledRedraw,
   ]);
 
   return { redraw, scheduleRedraw, cancelScheduledRedraw };

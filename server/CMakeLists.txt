@@ -99,6 +99,7 @@ set(PIXELANEA_DB_SOURCES
   src/db/frame_repository.cpp
   src/db/palette_repository.cpp
   src/domain/pixel_grid_merge.cpp
+  src/domain/selection_ops.cpp
   src/logging/json_line_logger.cpp
   src/logging/scoped_logger.cpp
 )
@@ -201,6 +202,7 @@ set(PIXELANEA_SERVER_SOURCES
   src/api/project_handlers.cpp
   src/api/palette_handlers.cpp
   src/api/frame_handlers.cpp
+  src/api/compute_handlers.cpp
   src/api/import_handlers.cpp
   src/api/export_handlers.cpp
   src/api/file_dialog_handlers.cpp
@@ -244,6 +246,8 @@ if(BUILD_TESTING)
     tests/repository_test.cpp
     tests/frame_binary_api_test.cpp
     tests/pixel_grid_merge_test.cpp
+    tests/selection_ops_test.cpp
+    tests/selection_compute_api_test.cpp
     tests/pixelate_pipeline_test.cpp
     tests/bundle_io_test.cpp
     tests/gif_encoder_test.cpp
@@ -257,6 +261,7 @@ if(BUILD_TESTING)
     src/api/project_handlers.cpp
     src/api/palette_handlers.cpp
     src/api/frame_handlers.cpp
+  src/api/compute_handlers.cpp
     src/api/import_handlers.cpp
     src/api/export_handlers.cpp
     src/logging/http_request_log.cpp

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
-import { ONION_SKIN_OPACITY, PASTE_PREVIEW_OPACITY, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
+import { ONION_SKIN_OPACITY, PASTE_PREVIEW_OPACITY, buildMovePreviewByKey, movePreviewAffectedCellKeys, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
 
 function createMockContext() {
   const alphaLog: number[] = [];
@@ -270,6 +270,28 @@ describe("renderGrid paste preview", () => {
     });
 
     expect(fillRectCalls).toContain(PASTE_PREVIEW_OPACITY);
+  });
+});
+
+describe("move preview repaint helpers", () => {
+  it("includes source and destination cells for move preview", () => {
+    const movePreview = {
+      originX: 2,
+      originY: 0,
+      clipboard: { width: 2, height: 1, pixels: new Uint8Array([1, 2]) },
+      sourceSelection: { x: 0, y: 0, width: 2, height: 1, shape: "rect" as const },
+    };
+
+    const keys = movePreviewAffectedCellKeys(movePreview);
+    expect(keys.has("0,0")).toBe(true);
+    expect(keys.has("1,0")).toBe(true);
+    expect(keys.has("2,0")).toBe(true);
+    expect(keys.has("3,0")).toBe(true);
+
+    const previewByKey = buildMovePreviewByKey(movePreview);
+    expect(previewByKey.get("0,0")?.next).toBe(TRANSPARENT_INDEX);
+    expect(previewByKey.get("2,0")?.next).toBe(1);
+    expect(previewByKey.get("3,0")?.next).toBe(2);
   });
 });
 

@@ -11,21 +11,19 @@ import {
 } from "@/state/persist";
 import { writeFramePixels } from "@/state/frameCache";
 import { SetPaletteColorsCommand } from "@/state/commands/setPaletteColors";
-import { dispatchCommands } from "@/state/editorStoreCommands";
-import type { StoreApi } from "zustand";
+import {
+  dispatchCommands,
+  type CommandStoreGet,
+  type CommandStoreSet,
+} from "@/state/editorStoreCommands";
 
-type PaletteEditorSlice = {
+type PaletteStoreGet = () => ReturnType<CommandStoreGet> & {
   paletteLocked: boolean;
-  paletteColors: readonly string[];
-  activeColorIndex: number;
-  pixels: Uint8Array;
-  framePixelsByIndex: Record<number, Uint8Array>;
-  activeFrameIndex: number;
 };
 
 export function createPaletteActions(
-  get: StoreApi<PaletteEditorSlice>["getState"],
-  set: StoreApi<PaletteEditorSlice>["setState"],
+  get: PaletteStoreGet,
+  set: CommandStoreSet,
 ) {
   return {
     applyPalettePreset: (colors: readonly string[]) => {

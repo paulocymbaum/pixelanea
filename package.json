@@ -22,7 +22,7 @@
     "lint": "pnpm lint:web && pnpm lint:cpp",
     "lint:web": "pnpm --filter @pixelanea/web lint",
     "lint:cpp": "./scripts/lint-cpp.sh",
-    "typecheck": "pnpm --filter @pixelanea/web exec tsc --noEmit",
+    "typecheck": "pnpm --filter @pixelanea/web exec tsc -b --noEmit",
     "test:unit": "pnpm --filter @pixelanea/web test",
     "test:unit:watch": "pnpm --filter @pixelanea/web test:watch",
     "test:qa": "pnpm --filter @pixelanea/web exec vitest run src/qa/",

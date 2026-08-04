@@ -194,7 +194,7 @@ export function createFrameActions(
 }
 
 export function createFrameSyncActions(
-  get: StoreApi<FrameSlice>["getState"],
+  _get: StoreApi<FrameSlice>["getState"],
   set: StoreApi<FrameSlice>["setState"],
 ) {
   return {

@@ -78,6 +78,10 @@ export function useEditorShortcuts() {
   const commitPaste = useEditorStore((s) => s.commitPaste);
   const cancelPaste = useEditorStore((s) => s.cancelPaste);
   const nudgePastePreview = useEditorStore((s) => s.nudgePastePreview);
+  const commitMove = useEditorStore((s) => s.commitMove);
+  const cancelMove = useEditorStore((s) => s.cancelMove);
+  const nudgeMovePreview = useEditorStore((s) => s.nudgeMovePreview);
+  const nudgeSelection = useEditorStore((s) => s.nudgeSelection);
   const setActiveColorIndex = useEditorStore((s) => s.setActiveColorIndex);
   const setActiveTool = useEditorStore((s) => s.setActiveTool);
   const paletteLength = useEditorStore((s) => s.paletteColors.length);
@@ -99,9 +103,15 @@ export function useEditorShortcuts() {
       const mod = event.metaKey || event.ctrlKey;
 
       if (event.key === "Escape") {
-        if (useEditorStore.getState().pastePreview) {
+        const state = useEditorStore.getState();
+        if (state.pastePreview) {
           event.preventDefault();
           cancelPaste();
+          return;
+        }
+        if (state.movePreview) {
+          event.preventDefault();
+          cancelMove();
           return;
         }
 
@@ -126,17 +136,21 @@ export function useEditorShortcuts() {
 
       if (mod && key === "c") {
         event.preventDefault();
-        if (copySelection()) {
-          showToast(copy.selectionCopied);
-        }
+        void copySelection().then((ok) => {
+          if (ok) {
+            showToast(copy.selectionCopied);
+          }
+        });
         return;
       }
 
       if (mod && key === "x") {
         event.preventDefault();
-        if (cutSelection()) {
-          showToast(copy.selectionCut);
-        }
+        void cutSelection().then((ok) => {
+          if (ok) {
+            showToast(copy.selectionCut);
+          }
+        });
         return;
       }
 
@@ -146,13 +160,19 @@ export function useEditorShortcuts() {
         return;
       }
 
-      if (event.key === "Enter" && useEditorStore.getState().pastePreview) {
+      const placementState = useEditorStore.getState();
+      if (event.key === "Enter" && placementState.pastePreview) {
         event.preventDefault();
-        commitPaste();
+        void commitPaste();
+        return;
+      }
+      if (event.key === "Enter" && placementState.movePreview) {
+        event.preventDefault();
+        void commitMove();
         return;
       }
 
-      if (useEditorStore.getState().pastePreview && !mod && !event.altKey) {
+      if (placementState.pastePreview && !mod && !event.altKey) {
         switch (event.key) {
           case "ArrowUp":
             event.preventDefault();
@@ -169,6 +189,54 @@ export function useEditorShortcuts() {
           case "ArrowRight":
             event.preventDefault();
             nudgePastePreview(1, 0);
+            return;
+        }
+      }
+
+      if (placementState.movePreview && !mod && !event.altKey) {
+        switch (event.key) {
+          case "ArrowUp":
+            event.preventDefault();
+            nudgeMovePreview(0, -1);
+            return;
+          case "ArrowDown":
+            event.preventDefault();
+            nudgeMovePreview(0, 1);
+            return;
+          case "ArrowLeft":
+            event.preventDefault();
+            nudgeMovePreview(-1, 0);
+            return;
+          case "ArrowRight":
+            event.preventDefault();
+            nudgeMovePreview(1, 0);
+            return;
+        }
+      }
+
+      if (
+        placementState.selection &&
+        !placementState.pastePreview &&
+        !placementState.movePreview &&
+        !mod &&
+        !event.altKey
+      ) {
+        switch (event.key) {
+          case "ArrowUp":
+            event.preventDefault();
+            nudgeSelection(0, -1);
+            return;
+          case "ArrowDown":
+            event.preventDefault();
+            nudgeSelection(0, 1);
+            return;
+          case "ArrowLeft":
+            event.preventDefault();
+            nudgeSelection(-1, 0);
+            return;
+          case "ArrowRight":
+            event.preventDefault();
+            nudgeSelection(1, 0);
             return;
         }
       }
@@ -266,6 +334,10 @@ export function useEditorShortcuts() {
     commitPaste,
     cancelPaste,
     nudgePastePreview,
+    commitMove,
+    cancelMove,
+    nudgeMovePreview,
+    nudgeSelection,
     showToast,
     setActiveColorIndex,
     setActiveTool,

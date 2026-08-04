@@ -115,6 +115,27 @@ export function isCellInEllipseSelection(
   return nx * nx + ny * ny <= 1;
 }
 
+/** True when a cell lies inside the selection mask (clipped to bbox). */
+export function isCellInSelection(
+  cell: CellCoord,
+  selection: SelectionRect,
+): boolean {
+  if (
+    cell.x < selection.x ||
+    cell.y < selection.y ||
+    cell.x >= selection.x + selection.width ||
+    cell.y >= selection.y + selection.height
+  ) {
+    return false;
+  }
+
+  if (selection.shape === "ellipse") {
+    return isCellInEllipseSelection(cell, selection);
+  }
+
+  return true;
+}
+
 /** Cells included in the selection, clipped to grid bounds when provided. */
 export function cellsInSelection(
   selection: SelectionRect,

@@ -89,6 +89,7 @@ async function requestOctetStream(path, options = {}, config = {}) {
 export function createApiClient(config = {}) {
     return {
         getHealth: () => request("/api/health", {}, config),
+        computeSelection: (body) => request("/api/compute/selection", { method: "POST", body: JSON.stringify(body) }, config),
         pickProjectPath: (body) => request("/api/dialog/pick-project-path", { method: "POST", body: JSON.stringify(body) }, config),
         createProject: (body) => request("/api/projects", { method: "POST", body: JSON.stringify(body) }, config),
         openProject: (body) => request("/api/projects/open", { method: "POST", body: JSON.stringify(body) }, config),

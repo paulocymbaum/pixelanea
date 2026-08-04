@@ -34,6 +34,10 @@ export type PickProjectPathRequest = components["schemas"]["PickProjectPathReque
 export type PickProjectPathResponse = components["schemas"]["PickProjectPathResponse"];
 export type Color = components["schemas"]["Color"];
 export type ErrorResponse = components["schemas"]["ErrorResponse"];
+export type SelectionComputeRequest = components["schemas"]["SelectionComputeRequest"];
+export type SelectionComputeResponse = components["schemas"]["SelectionComputeResponse"];
+export type SelectionRect = components["schemas"]["SelectionRect"];
+export type SelectionClipboard = components["schemas"]["SelectionClipboard"];
 
 export type ApiClientConfig = {
   baseUrl?: string;
@@ -157,6 +161,13 @@ export function createApiClient(config: ApiClientConfig = {}) {
       request<paths["/api/health"]["get"]["responses"]["200"]["content"]["application/json"]>(
         "/api/health",
         {},
+        config,
+      ),
+
+    computeSelection: (body: SelectionComputeRequest) =>
+      request<SelectionComputeResponse>(
+        "/api/compute/selection",
+        { method: "POST", body: JSON.stringify(body) },
         config,
       ),
 

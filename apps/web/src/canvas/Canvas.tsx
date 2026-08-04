@@ -1,5 +1,6 @@
 import { copy } from "@/content/copy";
 import { useCanvasRenderState, useStrokePreviewRedraw } from "@/canvas/useCanvasRenderState";
+import { useSelectionOutlineOverlay } from "@/canvas/useSelectionOutlineOverlay";
 import { useViewportStore } from "@/state/viewportStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -13,10 +14,17 @@ import { useToolInput } from "@/tools/useToolInput";
 import { useEditorStore } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { ZoomControls } from "./ZoomControls";
+import { SelectionActionBar, selectionActionBarAnchor } from "./SelectionActionBar";
+
+function isPlacementActive(): boolean {
+  const state = useEditorStore.getState();
+  return Boolean(state.pastePreview ?? state.movePreview);
+}
 
 export function Canvas() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
   const toolInput = useToolInput();
   const pixelsRef = useRef<Uint8Array>(new Uint8Array());
   const panDragRef = useRef<{
@@ -41,6 +49,10 @@ export function Canvas() {
     zoom,
     panX,
     panY,
+    selection,
+    selectionPreview,
+    pastePreview,
+    movePreview,
     setHoverCell,
     fitToView,
     addColorFilterLightingPoint,
@@ -51,6 +63,18 @@ export function Canvas() {
     canvasRef,
     renderState,
     pixelsRef,
+  });
+
+  useSelectionOutlineOverlay({
+    overlayCanvasRef,
+    containerRef,
+    selection,
+    selectionPreview,
+    movePreview,
+    pastePreview,
+    zoom,
+    panX,
+    panY,
   });
 
   useEffect(() => {
@@ -178,9 +202,9 @@ export function Canvas() {
   );
 
   const handlePointerMove = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const pasteActive = Boolean(useEditorStore.getState().pastePreview);
+    const placementActive = isPlacementActive();
 
-    if (panDragRef.current && activeTool === "hand" && !pasteActive) {
+    if (panDragRef.current && activeTool === "hand" && !placementActive) {
       const drag = panDragRef.current;
       useViewportStore.getState().setViewport({
         zoom,
@@ -195,7 +219,7 @@ export function Canvas() {
       return;
     }
 
-    if (pasteActive) {
+    if (placementActive) {
       toolInput.onPointerMove(event.nativeEvent, cell);
       return;
     }
@@ -208,9 +232,9 @@ export function Canvas() {
 
   const handlePointerDown = (event: React.PointerEvent<HTMLCanvasElement>) => {
     event.currentTarget.setPointerCapture(event.pointerId);
-    const pasteActive = Boolean(useEditorStore.getState().pastePreview);
+    const placementActive = isPlacementActive();
 
-    if (activeTool === "hand" && !readOnly && !pasteActive) {
+    if (activeTool === "hand" && !readOnly && !placementActive) {
       panDragRef.current = {
         startX: event.clientX,
         startY: event.clientY,
@@ -226,7 +250,7 @@ export function Canvas() {
       return;
     }
 
-    if (pasteActive) {
+    if (placementActive) {
       toolInput.onPointerDown(event.nativeEvent, cell);
       return;
     }
@@ -249,7 +273,7 @@ export function Canvas() {
   };
 
   const handlePointerUp = (event: React.PointerEvent<HTMLCanvasElement>) => {
-    const pasteActive = Boolean(useEditorStore.getState().pastePreview);
+    const placementActive = isPlacementActive();
 
     if (panDragRef.current) {
       panDragRef.current = null;
@@ -262,7 +286,7 @@ export function Canvas() {
       return;
     }
 
-    if (pasteActive) {
+    if (placementActive) {
       toolInput.onPointerUp(event.nativeEvent, cell);
       return;
     }
@@ -280,7 +304,10 @@ export function Canvas() {
     }
   };
 
-  const pastePreview = useEditorStore((s) => s.pastePreview);
+  const pastePreviewStore = useEditorStore((s) => s.pastePreview);
+  const movePreviewStore = useEditorStore((s) => s.movePreview);
+  const selectionStore = useEditorStore((s) => s.selection);
+  const selectionPreviewStore = useEditorStore((s) => s.selectionPreview);
   const projectId = useEditorStore((s) => s.projectId);
   const shortcutsOverlayOpen = useUiStore((s) => s.shortcutsOverlayOpen);
   const onboardingOverlayVisible = useUiStore((s) => s.onboardingOverlayVisible);
@@ -327,7 +354,7 @@ export function Canvas() {
 
   const canvasCursor = readOnly
     ? "not-allowed"
-    : pastePreview
+    : pastePreviewStore || movePreviewStore
       ? "crosshair"
       : placingLighting
       ? "crosshair"
@@ -348,10 +375,33 @@ export function Canvas() {
   const showEmptyCanvasHint =
     !readOnly && !isPlaying && !placingLighting && canvasIsBlank;
 
+  const clearSelection = useEditorStore((s) => s.clearSelection);
+
+  const handleContainerPointerDown = (
+    event: React.PointerEvent<HTMLDivElement>,
+  ) => {
+    if (event.target !== containerRef.current) {
+      return;
+    }
+    if (readOnly || isPlaying) {
+      return;
+    }
+    const state = useEditorStore.getState();
+    if (
+      state.selection &&
+      !state.pastePreview &&
+      !state.movePreview &&
+      !state.selectionPreview
+    ) {
+      clearSelection();
+    }
+  };
+
   return (
     <div
       ref={containerRef}
       className="relative flex min-h-[280px] flex-1 overflow-hidden rounded-panel border border-border bg-bg-canvas"
+      onPointerDown={handleContainerPointerDown}
     >
       <canvas
         ref={canvasRef}
@@ -368,11 +418,26 @@ export function Canvas() {
           setHoverCell(null);
         }}
       />
+      <canvas
+        ref={overlayCanvasRef}
+        className="pointer-events-none absolute inset-0 block h-full w-full"
+        aria-hidden
+      />
       {showEmptyCanvasHint ? (
         <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-base text-secondary">
           {copy.emptyCanvasHint}
         </p>
       ) : null}
+      {(() => {
+        const barAnchor = selectionActionBarAnchor(
+          selectionStore,
+          pastePreviewStore,
+          movePreviewStore,
+        );
+        return barAnchor && !selectionPreviewStore ? (
+          <SelectionActionBar selection={barAnchor} />
+        ) : null;
+      })()}
       <div className="pointer-events-none absolute bottom-3 right-3">
         <ZoomControls />
       </div>

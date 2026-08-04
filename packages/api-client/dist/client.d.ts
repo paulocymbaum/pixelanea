@@ -33,6 +33,10 @@ export type PickProjectPathRequest = components["schemas"]["PickProjectPathReque
 export type PickProjectPathResponse = components["schemas"]["PickProjectPathResponse"];
 export type Color = components["schemas"]["Color"];
 export type ErrorResponse = components["schemas"]["ErrorResponse"];
+export type SelectionComputeRequest = components["schemas"]["SelectionComputeRequest"];
+export type SelectionComputeResponse = components["schemas"]["SelectionComputeResponse"];
+export type SelectionRect = components["schemas"]["SelectionRect"];
+export type SelectionClipboard = components["schemas"]["SelectionClipboard"];
 export type ApiClientConfig = {
     baseUrl?: string;
 };
@@ -45,6 +49,10 @@ export declare function createApiClient(config?: ApiClientConfig): {
     getHealth: () => Promise<{
         status: "ok";
         version: string;
+    }>;
+    computeSelection: (body: SelectionComputeRequest) => Promise<{
+        clipboard?: components["schemas"]["SelectionClipboard"];
+        changes?: components["schemas"]["CellChange"][];
     }>;
     pickProjectPath: (body: PickProjectPathRequest) => Promise<{
         path?: string;

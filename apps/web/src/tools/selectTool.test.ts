@@ -3,6 +3,7 @@ import {
   bindSelectionModifierKeys,
   resetCKeyHeld,
 } from "@/canvas/selectionModifiers";
+import { useEditorStore } from "@/state/editorStore";
 import { resetSelectAnchor, selectTool } from "./selectTool";
 import type { ToolContext } from "./types";
 import { stubStrokeContext } from "./testContext";
@@ -163,5 +164,24 @@ describe("selectTool", () => {
 
     selectTool.onPointerDown?.(pointerDown, { x: 0, y: 0 }, ctx);
     expect(previewCleared).toBe(true);
+  });
+
+  it("deselects on click outside the active selection", () => {
+    useEditorStore.setState({
+      selection: {
+        x: 0,
+        y: 0,
+        width: 2,
+        height: 2,
+        shape: "rect",
+      },
+    });
+    const ctx = createContext({ setSelection: () => {} });
+
+    selectTool.onPointerDown?.(pointerDown, { x: 4, y: 4 }, ctx);
+    selectTool.onPointerUp?.(pointerUp, { x: 4, y: 4 }, ctx);
+
+    expect(useEditorStore.getState().selection).toBeNull();
+    useEditorStore.setState({ selection: null });
   });
 });

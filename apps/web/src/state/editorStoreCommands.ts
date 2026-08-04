@@ -26,7 +26,7 @@ export function applyCommands(
   }
 }
 
-type CommandStoreSlice = {
+export type CommandStoreSlice = {
   readOnly: boolean;
   pixels: Uint8Array;
   gridWidth: number;
@@ -38,7 +38,8 @@ type CommandStoreSlice = {
   redoStack: Command[];
 };
 
-type CommandStoreSet = (
+export type CommandStoreGet = () => CommandStoreSlice;
+export type CommandStoreSet = (
   partial:
     | Partial<
         CommandStoreSlice & {
@@ -63,8 +64,6 @@ type CommandStoreSet = (
         }
       >),
 ) => void;
-
-type CommandStoreGet = () => CommandStoreSlice;
 
 export function dispatchCommands(
   get: CommandStoreGet,

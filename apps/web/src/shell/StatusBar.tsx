@@ -7,6 +7,7 @@ import {
   useEditorStore,
   useFrameCount,
   useHoverCell,
+  useSelectionMoving,
 } from "@/state/editorStore";
 import { useApiStatus, useUiStore } from "@/state/uiStore";
 
@@ -41,6 +42,9 @@ export function StatusBar() {
   const hoverCell = useHoverCell();
   const activeTool = useActiveTool();
   const pastePreview = useEditorStore((s) => s.pastePreview);
+  const movePreview = useEditorStore((s) => s.movePreview);
+  const clipboard = useEditorStore((s) => s.clipboard);
+  const selectionMoving = useSelectionMoving();
   const frameIndex = useActiveFrameIndex();
   const frameCount = useFrameCount();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
@@ -54,11 +58,17 @@ export function StatusBar() {
     version,
   );
 
-  const toolHint = pastePreview
-    ? copy.pasteModeHint
-    : activeTool === "select"
-      ? copy.selectToolHint
-      : null;
+  const toolHint = selectionMoving
+    ? copy.selectionMoving
+    : pastePreview
+      ? copy.pasteModeHint
+      : movePreview
+        ? copy.moveModeHint
+        : clipboard
+          ? copy.clipboardReadyHint
+          : activeTool === "select"
+            ? copy.selectToolHint
+            : null;
   const statusMessage = toolHint
     ? message
       ? `${message} · ${toolHint}`

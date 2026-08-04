@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { fireEvent, render } from "@testing-library/react";
+import { fireEvent, render, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { copy } from "@/content/copy";
 import { useSessionStore } from "@/state/sessionStore";
@@ -107,7 +107,7 @@ describe("useEditorShortcuts", () => {
     expect(useEditorStore.getState().activeTool).toBe("select");
   });
 
-  it("Ctrl+C copies the current selection when not readOnly", () => {
+  it("Ctrl+C copies the current selection when not readOnly", async () => {
     const pixels = new Uint8Array(16);
     pixels[0] = 7;
     useEditorStore.setState({
@@ -118,10 +118,12 @@ describe("useEditorShortcuts", () => {
 
     fireEvent.keyDown(window, { key: "c", ctrlKey: true });
 
-    expect(useEditorStore.getState().clipboard).toEqual({
-      width: 1,
-      height: 1,
-      pixels: new Uint8Array([7]),
+    await waitFor(() => {
+      expect(useEditorStore.getState().clipboard).toEqual({
+        width: 1,
+        height: 1,
+        pixels: new Uint8Array([7]),
+      });
     });
     expect(useUiStore.getState().toastMessage).toBe(copy.selectionCopied);
   });
@@ -168,7 +170,7 @@ describe("useEditorShortcuts", () => {
     expect(useUiStore.getState().toastMessage).toBeNull();
   });
 
-  it("Ctrl+X cuts the current selection when not readOnly", () => {
+  it("Ctrl+X cuts the current selection when not readOnly", async () => {
     const pixels = new Uint8Array(16);
     pixels[0] = 7;
     useEditorStore.setState({
@@ -179,13 +181,15 @@ describe("useEditorShortcuts", () => {
 
     fireEvent.keyDown(window, { key: "x", ctrlKey: true });
 
-    expect(useEditorStore.getState().clipboard).toEqual({
-      width: 1,
-      height: 1,
-      pixels: new Uint8Array([7]),
+    await waitFor(() => {
+      expect(useEditorStore.getState().clipboard).toEqual({
+        width: 1,
+        height: 1,
+        pixels: new Uint8Array([7]),
+      });
+      expect(useEditorStore.getState().pixels[0]).toBe(0);
+      expect(useEditorStore.getState().undoStack).toHaveLength(1);
     });
-    expect(useEditorStore.getState().pixels[0]).toBe(0);
-    expect(useEditorStore.getState().undoStack).toHaveLength(1);
     expect(useUiStore.getState().toastMessage).toBe(copy.selectionCut);
   });
 
@@ -233,7 +237,7 @@ describe("useEditorShortcuts", () => {
     expect(useEditorStore.getState().pastePreview).toBeNull();
   });
 
-  it("Enter commits paste preview and Escape cancels without undo", () => {
+  it("Enter commits paste preview and Escape cancels without undo", async () => {
     const clipboard = {
       width: 1,
       height: 1,
@@ -255,9 +259,11 @@ describe("useEditorShortcuts", () => {
     });
     fireEvent.keyDown(window, { key: "Enter" });
 
-    expect(useEditorStore.getState().pastePreview).toBeNull();
-    expect(useEditorStore.getState().undoStack).toHaveLength(1);
-    expect(useEditorStore.getState().pixels[1 * 4 + 1]).toBe(5);
+    await waitFor(() => {
+      expect(useEditorStore.getState().pastePreview).toBeNull();
+      expect(useEditorStore.getState().undoStack).toHaveLength(1);
+      expect(useEditorStore.getState().pixels[1 * 4 + 1]).toBe(5);
+    });
   });
 
   it("arrow keys nudge paste preview by one cell", () => {
@@ -284,6 +290,79 @@ describe("useEditorShortcuts", () => {
 
     fireEvent.keyDown(window, { key: "ArrowUp" });
     expect(useEditorStore.getState().pastePreview?.originY).toBe(2);
+  });
+
+  it("arrow keys nudge active selection bbox before move mode", () => {
+    useEditorStore.setState({
+      selection: { x: 1, y: 1, width: 2, height: 2, shape: "rect" },
+      pastePreview: null,
+      movePreview: null,
+    });
+    render(createElement(ShortcutHarness));
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(useEditorStore.getState().selection?.x).toBe(2);
+
+    fireEvent.keyDown(window, { key: "ArrowDown" });
+    expect(useEditorStore.getState().selection?.y).toBe(2);
+  });
+
+  it("arrow keys nudge move preview by one cell", () => {
+    const pixels = new Uint8Array(16);
+    pixels[0] = 1;
+    useEditorStore.setState({
+      pixels,
+      selection: { x: 0, y: 0, width: 1, height: 1, shape: "rect" },
+      movePreview: {
+        originX: 1,
+        originY: 1,
+        clipboard: { width: 1, height: 1, pixels: new Uint8Array([1]) },
+        sourceSelection: { x: 0, y: 0, width: 1, height: 1, shape: "rect" },
+      },
+    });
+    render(createElement(ShortcutHarness));
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    expect(useEditorStore.getState().movePreview?.originX).toBe(2);
+    expect(useEditorStore.getState().movePreview?.originY).toBe(1);
+  });
+
+  it("Enter commits move preview and Escape cancels without undo", () => {
+    const pixels = new Uint8Array(16);
+    pixels[0] = 7;
+    const sourceSelection = { x: 0, y: 0, width: 1, height: 1, shape: "rect" as const };
+    useEditorStore.setState({
+      pixels,
+      selection: sourceSelection,
+      movePreview: {
+        originX: 1,
+        originY: 0,
+        clipboard: { width: 1, height: 1, pixels: new Uint8Array([7]) },
+        sourceSelection,
+      },
+      undoStack: [],
+    });
+    render(createElement(ShortcutHarness));
+
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(useEditorStore.getState().movePreview).toBeNull();
+    expect(useEditorStore.getState().undoStack).toHaveLength(0);
+
+    useEditorStore.setState({
+      movePreview: {
+        originX: 1,
+        originY: 0,
+        clipboard: { width: 1, height: 1, pixels: new Uint8Array([7]) },
+        sourceSelection,
+      },
+      undoStack: [],
+    });
+    fireEvent.keyDown(window, { key: "Enter" });
+
+    expect(useEditorStore.getState().movePreview).toBeNull();
+    expect(useEditorStore.getState().undoStack).toHaveLength(1);
+    expect(useEditorStore.getState().pixels[0]).toBe(0);
+    expect(useEditorStore.getState().pixels[1]).toBe(7);
   });
 
   it("+ and - zoom the viewport; 0 fits canvas to view", () => {

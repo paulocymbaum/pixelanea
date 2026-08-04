@@ -355,7 +355,7 @@ configure_server_if_needed() {
   if [[ -n "${VCPKG_ROOT:-}" && -f "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ]]; then
     args+=("-DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
   fi
-  if [[ -d "${ROOT_DIR}/server/build/_deps" ]] \
+  if [[ -d "${ROOT_DIR}/server/build/_deps/stb-src" ]] \
     && [[ -n "$(find "${ROOT_DIR}/server/build/_deps" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)" ]]; then
     echo "==> [server] using cached FetchContent (_deps present, disconnected mode)"
     args+=(-DFETCHCONTENT_FULLY_DISCONNECTED=ON)

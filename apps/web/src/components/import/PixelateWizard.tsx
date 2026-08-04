@@ -14,7 +14,7 @@ import { errors } from "@/content/errors";
 import { loadProjectIntoEditor } from "@/lib/loadProject";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
-import { getPalettePreset } from "@/components/palette/palettePresets";
+import { getPalettePreset, type PalettePresetId } from "@/components/palette/palettePresets";
 import { FileDropStep } from "./FileDropStep";
 import { isAcceptedImageType } from "./fileUtils";
 import { fileToBase64 } from "./fileUtils";
@@ -44,6 +44,14 @@ const DEFAULT_PROJECT = {
   loop: true,
 } as const;
 
+const DEFAULT_PALETTE_PRESET: PalettePresetId = "retro";
+
+function resolveImportPalettePreset(
+  preset: import("@/components/palette/palettePresets").PaletteSelectionId | null,
+): PalettePresetId {
+  return preset && preset !== "source" ? preset : DEFAULT_PALETTE_PRESET;
+}
+
 export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const lastResolution = useSessionStore((s) => s.lastResolution);
   const lastPalettePreset = useSessionStore((s) => s.lastPalettePreset);
@@ -67,8 +75,8 @@ export function PixelateWizard({ onComplete, onBack }: PixelateWizardProps) {
   const [file, setFile] = useState<File | null>(null);
   const [imageData, setImageData] = useState<string | null>(null);
   const [resolution, setResolution] = useState(lastResolution);
-  const [palettePreset, setPalettePreset] = useState(
-    lastPalettePreset ?? "retro",
+  const [palettePreset, setPalettePreset] = useState<PalettePresetId>(
+    () => resolveImportPalettePreset(lastPalettePreset),
   );
   const [paletteMode, setPaletteMode] = useState<ImportPaletteMode>(
     lastImportPaletteMode,

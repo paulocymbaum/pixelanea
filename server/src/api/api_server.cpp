@@ -3,6 +3,7 @@
 #include "api/api_http_helpers.hpp"
 #include "api/export_handlers.hpp"
 #include "api/file_dialog_handlers.hpp"
+#include "api/compute_handlers.hpp"
 #include "api/frame_handlers.hpp"
 #include "api/health_handlers.hpp"
 #include "api/import_handlers.hpp"
@@ -32,6 +33,11 @@ void ApiServer::register_routes(httplib::Server& server) const {
 
   server.Get("/api/health", [](const httplib::Request&, httplib::Response& res) {
     res = handle_health();
+  });
+
+  server.Post("/api/compute/selection", [deps](const httplib::Request& req,
+                                                 httplib::Response& res) {
+    res = handle_compute_selection(req, deps);
   });
 
   server.Post("/api/dialog/pick-project-path",

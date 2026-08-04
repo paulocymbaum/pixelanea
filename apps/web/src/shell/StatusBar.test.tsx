@@ -123,6 +123,26 @@ describe("StatusBar", () => {
     expect(screen.getByText(`${copy.statusSaved} · ${copy.selectToolHint}`)).toBeInTheDocument();
   });
 
+  it("shows clipboard ready hint when clipboard has content", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: null });
+    useEditorStore.setState({
+      clipboard: { width: 1, height: 1, pixels: new Uint8Array([1]) },
+    });
+    render(<StatusBar />);
+    expect(
+      screen.getByText(`${copy.statusSaved} · ${copy.clipboardReadyHint}`),
+    ).toBeInTheDocument();
+  });
+
+  it("shows selection moving hint when compute is in progress", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: null });
+    useEditorStore.setState({ selectionMoving: true });
+    render(<StatusBar />);
+    expect(
+      screen.getByText(`${copy.statusSaved} · ${copy.selectionMoving}`),
+    ).toBeInTheDocument();
+  });
+
   it("shows active frame when project has multiple frames", () => {
     useEditorStore.setState({ frameCount: 8, activeFrameIndex: 2 });
     render(<StatusBar />);

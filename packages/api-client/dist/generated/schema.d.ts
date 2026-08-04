@@ -313,6 +313,27 @@ export interface paths {
         patch: operations["patchFrameCells"];
         trace?: never;
     };
+    "/api/compute/selection": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Compute selection extract, clear, paste, or move cell changes
+         * @description Pure compute endpoint for editor responsiveness. Does not persist changes.
+         *     Mirrors frontend selection mask geometry (rect, square, ellipse).
+         */
+        post: operations["computeSelection"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -439,6 +460,45 @@ export interface components {
             previous: number;
             /** @description Palette index after the change */
             next: number;
+        };
+        SelectionRect: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+            /** @enum {string} */
+            shape: "rect" | "square" | "ellipse";
+        };
+        SelectionClipboard: {
+            width: number;
+            height: number;
+            pixels: number[];
+            /** @description Optional base64-encoded palette indices (width * height bytes) */
+            pixelsBase64?: string;
+        };
+        SelectionComputeRequest: {
+            gridWidth: number;
+            gridHeight: number;
+            /** @description Palette indices row-major (width * height) */
+            pixels?: number[];
+            /** @description Base64-encoded palette indices (alternative to pixels array) */
+            pixelsBase64?: string;
+            selection?: components["schemas"]["SelectionRect"];
+            /** @enum {string} */
+            operation: "extract" | "clear_changes" | "paste_changes" | "move_changes";
+            clipboard?: components["schemas"]["SelectionClipboard"];
+            origin?: {
+                x: number;
+                y: number;
+            };
+            delta?: {
+                x: number;
+                y: number;
+            };
+        };
+        SelectionComputeResponse: {
+            clipboard?: components["schemas"]["SelectionClipboard"];
+            changes?: components["schemas"]["CellChange"][];
         };
         DuplicateFramesRequest: {
             /** @enum {integer} */
@@ -1096,6 +1156,31 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+        };
+    };
+    computeSelection: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SelectionComputeRequest"];
+            };
+        };
+        responses: {
+            /** @description Computed clipboard or cell changes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SelectionComputeResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
         };
     };
 }

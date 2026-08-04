@@ -168,6 +168,14 @@ build_backend() {
     CMAKE_ARGS+=("-DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
   fi
 
+  local cache_file="${BUILD_DIR}/CMakeCache.txt"
+  if [[ -f "${cache_file}" ]] \
+    && grep -q 'FETCHCONTENT_FULLY_DISCONNECTED:BOOL=ON' "${cache_file}" \
+    && [[ ! -d "${BUILD_DIR}/_deps/stb-src" ]]; then
+    echo "==> FetchContent cache incomplete (stb missing) — reconfiguring with downloads enabled"
+    CMAKE_ARGS+=(-DFETCHCONTENT_FULLY_DISCONNECTED=OFF)
+  fi
+
   echo "==> Building backend..."
   "${CMAKE_BIN}" "${CMAKE_ARGS[@]}"
   "${CMAKE_BIN}" --build "${BUILD_DIR}"

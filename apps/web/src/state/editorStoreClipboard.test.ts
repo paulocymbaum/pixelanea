@@ -22,12 +22,12 @@ describe("editorStoreClipboard", () => {
     });
   });
 
-  it("copySelection stores extracted pixels for the current selection", () => {
+  it("copySelection stores extracted pixels for the current selection", async () => {
     useEditorStore.setState({
       selection: { x: 0, y: 0, width: 2, height: 2, shape: "rect" },
     });
 
-    expect(useEditorStore.getState().copySelection()).toBe(true);
+    expect(await useEditorStore.getState().copySelection()).toBe(true);
 
     const { clipboard } = useEditorStore.getState();
     expect(clipboard).toEqual({
@@ -38,10 +38,12 @@ describe("editorStoreClipboard", () => {
     expect(useEditorStore.getState().undoStack).toHaveLength(0);
   });
 
-  it("copySelection is a no-op without a selection", () => {
-    useEditorStore.setState({ clipboard: { width: 1, height: 1, pixels: new Uint8Array([9]) } });
+  it("copySelection is a no-op without a selection", async () => {
+    useEditorStore.setState({
+      clipboard: { width: 1, height: 1, pixels: new Uint8Array([9]) },
+    });
 
-    expect(useEditorStore.getState().copySelection()).toBe(false);
+    expect(await useEditorStore.getState().copySelection()).toBe(false);
     expect(useEditorStore.getState().clipboard).toEqual({
       width: 1,
       height: 1,
@@ -49,22 +51,22 @@ describe("editorStoreClipboard", () => {
     });
   });
 
-  it("copySelection is blocked when readOnly", () => {
+  it("copySelection is blocked when readOnly", async () => {
     useEditorStore.setState({
       readOnly: true,
       selection: { x: 0, y: 0, width: 2, height: 2, shape: "rect" },
     });
 
-    expect(useEditorStore.getState().copySelection()).toBe(false);
+    expect(await useEditorStore.getState().copySelection()).toBe(false);
     expect(useEditorStore.getState().clipboard).toBeNull();
   });
 
-  it("cutSelection copies to clipboard and clears source pixels in one undo step", () => {
+  it("cutSelection copies to clipboard and clears source pixels in one undo step", async () => {
     useEditorStore.setState({
       selection: { x: 0, y: 0, width: 2, height: 2, shape: "rect" },
     });
 
-    expect(useEditorStore.getState().cutSelection()).toBe(true);
+    expect(await useEditorStore.getState().cutSelection()).toBe(true);
 
     const state = useEditorStore.getState();
     expect(state.clipboard).toEqual({
@@ -72,10 +74,21 @@ describe("editorStoreClipboard", () => {
       height: 2,
       pixels: new Uint8Array([1, 2, 3, 4]),
     });
+    expect(state.selection).toBeNull();
     expect(state.pixels[0]).toBe(0);
     expect(state.pixels[1]).toBe(0);
     expect(state.pixels[4]).toBe(0);
     expect(state.pixels[5]).toBe(0);
+    expect(state.selection).toBeNull();
+    expect(state.pastePreview).toEqual({
+      originX: 0,
+      originY: 0,
+      clipboard: {
+        width: 2,
+        height: 2,
+        pixels: new Uint8Array([1, 2, 3, 4]),
+      },
+    });
     expect(state.undoStack).toHaveLength(1);
 
     useEditorStore.getState().undo();
@@ -88,18 +101,18 @@ describe("editorStoreClipboard", () => {
     });
   });
 
-  it("cutSelection is a no-op without a selection", () => {
-    expect(useEditorStore.getState().cutSelection()).toBe(false);
+  it("cutSelection is a no-op without a selection", async () => {
+    expect(await useEditorStore.getState().cutSelection()).toBe(false);
     expect(useEditorStore.getState().undoStack).toHaveLength(0);
   });
 
-  it("cutSelection is blocked when readOnly", () => {
+  it("cutSelection is blocked when readOnly", async () => {
     useEditorStore.setState({
       readOnly: true,
       selection: { x: 0, y: 0, width: 2, height: 2, shape: "rect" },
     });
 
-    expect(useEditorStore.getState().cutSelection()).toBe(false);
+    expect(await useEditorStore.getState().cutSelection()).toBe(false);
     expect(useEditorStore.getState().clipboard).toBeNull();
     expect(useEditorStore.getState().undoStack).toHaveLength(0);
   });

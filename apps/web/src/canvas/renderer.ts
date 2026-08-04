@@ -11,8 +11,14 @@ import {
   GRID_LINE_MIN_ZOOM,
   type Viewport,
 } from "./coordinates";
-import type { SelectionRect } from "./selectionGeometry";
+import {
+  cellsInSelection,
+  type SelectionRect,
+} from "./selectionGeometry";
 import type { PastePreview } from "@/state/editorStorePaste";
+import type { MovePreview } from "@/state/editorStoreMove";
+
+export type ClipboardPlacementPreview = PastePreview;
 import { DEFAULT_PALETTE_COLORS } from "./palette";
 
 export type CanvasTokens = {
@@ -50,7 +56,10 @@ export type RenderGridOptions = {
   selection?: SelectionRect | null;
   selectionPreview?: SelectionRect | null;
   selectionDashOffset?: number;
+  /** When false, outline is drawn on the overlay canvas (marching ants). */
+  drawSelectionOutline?: boolean;
   pastePreview?: PastePreview | null;
+  movePreview?: MovePreview | null;
 };
 
 export type RepaintGridCellsOptions = {
@@ -143,7 +152,7 @@ function drawCheckerboard(
   }
 }
 
-function cellKey(x: number, y: number): string {
+export function cellKey(x: number, y: number): string {
   return `${x},${y}`;
 }
 
@@ -214,8 +223,8 @@ function drawCellGridLines(
   ctx: CanvasRenderingContext2D,
   cellX: number,
   cellY: number,
-  gridWidth: number,
-  gridHeight: number,
+  _gridWidth: number,
+  _gridHeight: number,
   viewport: Viewport,
   tokens: CanvasTokens,
 ): void {
@@ -454,14 +463,14 @@ export function drawSelectionOutline(
   ctx.lineWidth = previousLineWidth;
 }
 
-export function drawPastePreview(
+export function drawClipboardPlacementPreview(
   ctx: CanvasRenderingContext2D,
-  pastePreview: PastePreview,
+  placement: ClipboardPlacementPreview,
   paletteColors: readonly string[],
   viewport: Viewport,
   opacity = PASTE_PREVIEW_OPACITY,
 ): void {
-  const { originX, originY, clipboard } = pastePreview;
+  const { originX, originY, clipboard } = placement;
   const { width, height, pixels } = clipboard;
 
   for (let ly = 0; ly < height; ly++) {
@@ -501,7 +510,9 @@ export function renderGrid({
   selection = null,
   selectionPreview = null,
   selectionDashOffset = 0,
+  drawSelectionOutline: shouldDrawSelectionOutline = true,
   pastePreview = null,
+  movePreview = null,
 }: RenderGridOptions): void {
   ctx.clearRect(0, 0, cssWidth, cssHeight);
 
@@ -531,6 +542,20 @@ export function renderGrid({
 
   drawPixels(ctx, gridWidth, gridHeight, pixels, paletteColors, viewport);
 
+  if (movePreview) {
+    repaintMoveSourceCells(
+      ctx,
+      movePreview,
+      gridWidth,
+      gridHeight,
+      paletteColors,
+      viewport,
+      tokens,
+      onionSkinPixels,
+      onionSkinOpacity,
+    );
+  }
+
   if (colorFilters && hasActiveColorFilters(colorFilters)) {
     drawFilterPreview(
       ctx,
@@ -549,18 +574,123 @@ export function renderGrid({
 
   drawGridLines(ctx, gridWidth, gridHeight, viewport, tokens);
 
-  if (pastePreview) {
-    drawPastePreview(ctx, pastePreview, paletteColors, viewport);
+  const placementPreview = pastePreview ?? movePreview;
+  if (placementPreview) {
+    drawClipboardPlacementPreview(ctx, placementPreview, paletteColors, viewport);
   }
 
   const activeSelection = selectionPreview ?? selection;
-  if (activeSelection) {
+  if (shouldDrawSelectionOutline && activeSelection) {
     drawSelectionOutline(
       ctx,
       activeSelection,
       viewport,
       selectionDashOffset,
     );
+  }
+}
+
+export function clipboardPreviewCellKeys(
+  originX: number,
+  originY: number,
+  clipboard: { width: number; height: number; pixels: Uint8Array },
+): Set<string> {
+  const keys = new Set<string>();
+  const { width, height, pixels } = clipboard;
+
+  for (let ly = 0; ly < height; ly++) {
+    for (let lx = 0; lx < width; lx++) {
+      const index = pixels[ly * width + lx] ?? TRANSPARENT_INDEX;
+      if (index === TRANSPARENT_INDEX) {
+        continue;
+      }
+      keys.add(cellKey(originX + lx, originY + ly));
+    }
+  }
+
+  return keys;
+}
+
+export function buildClipboardPreviewByKey(
+  originX: number,
+  originY: number,
+  clipboard: { width: number; height: number; pixels: Uint8Array },
+): Map<string, { next: number }> {
+  const previewByKey = new Map<string, { next: number }>();
+  const { width, height, pixels } = clipboard;
+
+  for (let ly = 0; ly < height; ly++) {
+    for (let lx = 0; lx < width; lx++) {
+      const index = pixels[ly * width + lx] ?? TRANSPARENT_INDEX;
+      if (index === TRANSPARENT_INDEX) {
+        continue;
+      }
+      previewByKey.set(cellKey(originX + lx, originY + ly), { next: index });
+    }
+  }
+
+  return previewByKey;
+}
+
+export function movePreviewAffectedCellKeys(
+  movePreview: MovePreview,
+): Set<string> {
+  const keys = clipboardPreviewCellKeys(
+    movePreview.originX,
+    movePreview.originY,
+    movePreview.clipboard,
+  );
+  for (const cell of cellsInSelection(movePreview.sourceSelection)) {
+    keys.add(cellKey(cell.x, cell.y));
+  }
+  return keys;
+}
+
+/** Destination stamp plus cleared source mask for move drag partial repaint. */
+export function buildMovePreviewByKey(
+  movePreview: MovePreview,
+): Map<string, { next: number }> {
+  const previewByKey = buildClipboardPreviewByKey(
+    movePreview.originX,
+    movePreview.originY,
+    movePreview.clipboard,
+  );
+  for (const cell of cellsInSelection(movePreview.sourceSelection)) {
+    previewByKey.set(cellKey(cell.x, cell.y), { next: TRANSPARENT_INDEX });
+  }
+  return previewByKey;
+}
+
+function repaintMoveSourceCells(
+  ctx: CanvasRenderingContext2D,
+  movePreview: MovePreview,
+  gridWidth: number,
+  gridHeight: number,
+  paletteColors: readonly string[],
+  viewport: Viewport,
+  tokens: CanvasTokens,
+  onionSkinPixels?: Uint8Array,
+  onionSkinOpacity = ONION_SKIN_OPACITY,
+): void {
+  for (const cell of cellsInSelection(movePreview.sourceSelection)) {
+    const { x, y } = cell;
+    if (x < 0 || y < 0 || x >= gridWidth || y >= gridHeight) {
+      continue;
+    }
+    drawCheckerCell(ctx, x, y, viewport, tokens);
+    if (onionSkinPixels) {
+      const onionIndex = onionSkinPixels[y * gridWidth + x] ?? TRANSPARENT_INDEX;
+      drawPixelCell(
+        ctx,
+        x,
+        y,
+        onionIndex,
+        paletteColors,
+        viewport,
+        onionSkinOpacity,
+      );
+    }
+    drawCellGridLines(ctx, x, y, gridWidth, gridHeight, viewport, tokens);
   }
 }
 

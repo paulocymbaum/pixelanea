@@ -49,6 +49,7 @@ export function LeftToolRail() {
               className={cn(toolButtonVariants({ active: isActive }))}
               aria-pressed={isActive}
               aria-label={tools[id]}
+              title={id === "select" ? copy.selectToolHint : undefined}
             >
               <Icon className="h-5 w-5" strokeWidth={1.5} />
               <span className="text-center leading-tight">{tools[id]}</span>

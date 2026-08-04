@@ -28,7 +28,7 @@ export function deriveSyncError(
 }
 
 export function withFrameSyncStatus(
-  state: LaneSyncFields,
+  _state: LaneSyncFields,
   status: SyncStatus,
   error: string | null = null,
 ): Partial<LaneSyncFields> {
@@ -39,7 +39,7 @@ export function withFrameSyncStatus(
 }
 
 export function withPaletteSyncStatus(
-  state: LaneSyncFields,
+  _state: LaneSyncFields,
   status: SyncStatus,
   error: string | null = null,
 ): Partial<LaneSyncFields> {

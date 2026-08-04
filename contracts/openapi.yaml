@@ -479,6 +479,30 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /api/compute/selection:
+    post:
+      operationId: computeSelection
+      summary: Compute selection extract, clear, paste, or move cell changes
+      description: |
+        Pure compute endpoint for editor responsiveness. Does not persist changes.
+        Mirrors frontend selection mask geometry (rect, square, ellipse).
+      tags: [Compute]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SelectionComputeRequest"
+      responses:
+        "200":
+          description: Computed clipboard or cell changes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SelectionComputeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
 components:
   headers:
     FrameIndexHeader:
@@ -765,6 +789,98 @@ components:
           minimum: 0
           maximum: 255
           description: Palette index after the change
+
+    SelectionRect:
+      type: object
+      required: [x, y, width, height, shape]
+      properties:
+        x:
+          type: integer
+        y:
+          type: integer
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        shape:
+          type: string
+          enum: [rect, square, ellipse]
+
+    SelectionClipboard:
+      type: object
+      required: [width, height, pixels]
+      properties:
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        pixels:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+        pixelsBase64:
+          type: string
+          description: Optional base64-encoded palette indices (width * height bytes)
+
+    SelectionComputeRequest:
+      type: object
+      required: [gridWidth, gridHeight, operation]
+      properties:
+        gridWidth:
+          type: integer
+          minimum: 1
+        gridHeight:
+          type: integer
+          minimum: 1
+        pixels:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 255
+          description: Palette indices row-major (width * height)
+        pixelsBase64:
+          type: string
+          description: Base64-encoded palette indices (alternative to pixels array)
+        selection:
+          $ref: "#/components/schemas/SelectionRect"
+        operation:
+          type: string
+          enum: [extract, clear_changes, paste_changes, move_changes]
+        clipboard:
+          $ref: "#/components/schemas/SelectionClipboard"
+        origin:
+          type: object
+          required: [x, y]
+          properties:
+            x:
+              type: integer
+            y:
+              type: integer
+        delta:
+          type: object
+          required: [x, y]
+          properties:
+            x:
+              type: integer
+            y:
+              type: integer
+
+    SelectionComputeResponse:
+      type: object
+      properties:
+        clipboard:
+          $ref: "#/components/schemas/SelectionClipboard"
+        changes:
+          type: array
+          items:
+            $ref: "#/components/schemas/CellChange"
 
     DuplicateFramesRequest:
       type: object

@@ -1,6 +1,8 @@
 import type { CellCoord } from "@/canvas/coordinates";
-import { PasteCellsCommand, buildPasteCellChanges } from "@/state/commands/pasteCells";
+import { PasteCellsCommand } from "@/state/commands/pasteCells";
+import { computePasteChanges } from "@/api/selectionCompute";
 import type { ClipboardData } from "@/state/editorStoreClipboard";
+import { withSelectionMovingFeedback } from "@/state/selectionComputeFeedback";
 import type { StoreApi } from "zustand";
 
 export type PastePreview = {
@@ -26,6 +28,8 @@ type PasteStore = PasteEditorSlice & {
   gridHeight: number;
   dispatch: (command: PasteCellsCommand) => void;
   clearSelection: () => void;
+  cancelMove: () => void;
+  setSelectionMoving: (moving: boolean) => void;
 };
 
 export function createPasteActions(
@@ -43,6 +47,7 @@ export function createPasteActions(
       const x = originX ?? anchor?.x ?? 0;
       const y = originY ?? anchor?.y ?? 0;
 
+      state.cancelMove();
       set({
         pastePreview: {
           originX: x,
@@ -83,20 +88,25 @@ export function createPasteActions(
       });
     },
 
-    commitPaste: (): boolean => {
+    commitPaste: async (): Promise<boolean> => {
       const state = get();
       if (state.readOnly || !state.pastePreview) {
         return false;
       }
 
       const { originX, originY, clipboard } = state.pastePreview;
-      const changes = buildPasteCellChanges(
-        clipboard,
-        originX,
-        originY,
-        state.pixels,
-        state.gridWidth,
-        state.gridHeight,
+      const changes = await withSelectionMovingFeedback(
+        () => state.setSelectionMoving(true),
+        () => state.setSelectionMoving(false),
+        () =>
+          computePasteChanges(
+            clipboard,
+            originX,
+            originY,
+            state.pixels,
+            state.gridWidth,
+            state.gridHeight,
+          ),
       );
 
       set({ pastePreview: null });

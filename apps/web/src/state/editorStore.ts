@@ -42,6 +42,15 @@ import {
   type PastePreview,
 } from "@/state/editorStorePaste";
 import {
+  createMoveActions,
+  initialMoveState,
+  type MovePreview,
+} from "@/state/editorStoreMove";
+import {
+  createSelectionFeedbackActions,
+  initialSelectionFeedbackState,
+} from "@/state/editorStoreSelectionFeedback";
+import {
   deriveSyncError,
   deriveSyncStatus,
   withPaletteSyncStatus,
@@ -165,21 +174,31 @@ type EditorState = {
   ) => Promise<{ ok: true } | { ok: false }>;
   applyFrameReorder: (fromIndex: number, toIndex: number) => number;
   applyFramePixelsAtIndex: (index: number, pixels: Uint8Array) => void;
+  selectionMoving: boolean;
+  setSelectionMoving: (moving: boolean) => void;
   selection: SelectionRect | null;
   selectionPreview: SelectionRect | null;
   setSelection: (selection: SelectionRect | null) => void;
   clearSelection: () => void;
+  nudgeSelection: (deltaX: number, deltaY: number) => void;
   setSelectionPreview: (selection: SelectionRect | null) => void;
   clipboard: ClipboardData | null;
-  copySelection: () => boolean;
-  cutSelection: () => boolean;
+  copySelection: () => Promise<boolean>;
+  cutSelection: () => Promise<boolean>;
+  duplicateSelection: () => Promise<boolean>;
   clearClipboard: () => void;
   pastePreview: PastePreview | null;
   startPastePreview: (originX?: number, originY?: number) => boolean;
   movePastePreview: (x: number, y: number) => void;
   nudgePastePreview: (deltaX: number, deltaY: number) => void;
-  commitPaste: () => boolean;
+  commitPaste: () => Promise<boolean>;
   cancelPaste: () => void;
+  movePreview: MovePreview | null;
+  startMovePreview: () => boolean;
+  moveMovePreview: (originX: number, originY: number) => void;
+  nudgeMovePreview: (deltaX: number, deltaY: number) => void;
+  commitMove: () => boolean;
+  cancelMove: () => void;
 };
 
 export const useEditorStore = create<EditorState>((set, get) => {
@@ -188,9 +207,11 @@ export const useEditorStore = create<EditorState>((set, get) => {
   const frames = createFrameActions(get, set);
   const frameSync = createFrameSyncActions(get, set);
   const playback = createPlaybackActions(get, set);
-  const selection = createSelectionActions(set);
+  const selection = createSelectionActions(get, set);
   const clipboard = createClipboardActions(get, set);
   const paste = createPasteActions(get, set);
+  const move = createMoveActions(get, set);
+  const selectionFeedback = createSelectionFeedbackActions(set);
 
   return {
     projectId: null,
@@ -231,8 +252,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
     bundlePath: null,
     assetType: DEFAULT_ASSET_TYPE,
     ...initialSelectionState,
+    ...initialSelectionFeedbackState,
     ...initialClipboardState,
     ...initialPasteState,
+    ...initialMoveState,
 
     setProject: ({
       projectId,
@@ -279,8 +302,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
         placingLighting: false,
         selection: null,
         selectionPreview: null,
+        selectionMoving: false,
         clipboard: null,
         pastePreview: null,
+        movePreview: null,
       }),
 
     setActiveTool: (tool) => set({ activeTool: tool }),
@@ -302,8 +327,10 @@ export const useEditorStore = create<EditorState>((set, get) => {
     ...playback,
     ...frameSync,
     ...selection,
+    ...selectionFeedback,
     ...clipboard,
     ...paste,
+    ...move,
 
     setOnionSkinEnabled: (onionSkinEnabled) => set({ onionSkinEnabled }),
     setOnionSkinOpacity: (opacity) =>
@@ -413,8 +440,11 @@ export const usePlacingLighting = () =>
   useEditorStore((s) => s.placingLighting);
 export const useFramePixelsByIndex = () =>
   useEditorStore((s) => s.framePixelsByIndex);
+export const useSelectionMoving = () =>
+  useEditorStore((s) => s.selectionMoving);
 export const useSelection = () => useEditorStore((s) => s.selection);
 export const useSelectionPreview = () =>
   useEditorStore((s) => s.selectionPreview);
 export const useClipboard = () => useEditorStore((s) => s.clipboard);
 export const usePastePreview = () => useEditorStore((s) => s.pastePreview);
+export const useMovePreview = () => useEditorStore((s) => s.movePreview);

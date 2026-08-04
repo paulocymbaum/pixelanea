@@ -27,4 +27,9 @@ export {
   type SaveProjectResponse,
   type Color,
   type UpdateProjectRequest,
+  type SelectionComputeRequest,
+  type SelectionComputeResponse,
+  type SelectionRect,
+  type SelectionClipboard,
+  type CellChange,
 } from "./client";

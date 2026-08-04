@@ -4,7 +4,12 @@ import { bindSelectionModifierKeys } from "@/canvas/selectionModifiers";
 import { useEditorStore } from "@/state/editorStore";
 import { buildToolContextFromStore } from "./context";
 import { getTool } from "./registry";
-import { getSelectAnchor, previewSelectionFromPointer } from "./selectTool";
+import {
+  getMoveDragAnchor,
+  getSelectAnchor,
+  previewMoveFromPointer,
+  previewSelectionFromPointer,
+} from "./selectTool";
 import { StrokeSession } from "./strokeSession";
 
 const STROKE_TOOLS = new Set(["paint", "eraser"]);
@@ -12,7 +17,7 @@ const SELECT_TOOL = "select";
 
 function handlePastePointer(
   phase: "onPointerDown" | "onPointerMove" | "onPointerUp",
-  cell: import("@/canvas/coordinates").CellCoord,
+  cell: CellCoord,
 ) {
   const state = useEditorStore.getState();
   if (!state.pastePreview) {
@@ -26,7 +31,32 @@ function handlePastePointer(
 
   if (phase === "onPointerDown") {
     state.movePastePreview(cell.x, cell.y);
-    state.commitPaste();
+    void state.commitPaste();
+    return true;
+  }
+
+  return true;
+}
+
+function handleMovePointer(
+  phase: "onPointerDown" | "onPointerMove" | "onPointerUp",
+  cell: CellCoord,
+) {
+  const state = useEditorStore.getState();
+  if (!state.movePreview) {
+    return false;
+  }
+
+  const anchor = getMoveDragAnchor();
+  if (!anchor) {
+    return true;
+  }
+
+  if (phase === "onPointerMove") {
+    const origin = previewMoveFromPointer(anchor, cell);
+    if (origin) {
+      state.moveMovePreview(origin.originX, origin.originY);
+    }
     return true;
   }
 
@@ -101,6 +131,11 @@ export function useToolInput() {
         return;
       }
 
+      if (useEditorStore.getState().movePreview) {
+        handleMovePointer(phase, cell);
+        return;
+      }
+
       if (STROKE_TOOLS.has(activeTool)) {
         if (phase === "onPointerDown") {
           lastCellRef.current = cell;
@@ -142,6 +177,18 @@ export function useToolInput() {
           if ((event.buttons & 1) === 0) {
             return;
           }
+
+          const moveAnchor = getMoveDragAnchor();
+          if (moveAnchor) {
+            const origin = previewMoveFromPointer(moveAnchor, cell);
+            if (origin) {
+              useEditorStore
+                .getState()
+                .moveMovePreview(origin.originX, origin.originY);
+            }
+            return;
+          }
+
           const anchor = getSelectAnchor();
           if (!anchor) {
             return;

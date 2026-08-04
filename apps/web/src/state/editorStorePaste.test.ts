@@ -64,9 +64,9 @@ describe("editorStore paste preview", () => {
     });
   });
 
-  it("commitPaste dispatches one command and clears selection", () => {
+  it("commitPaste dispatches one command and clears selection", async () => {
     useEditorStore.getState().startPastePreview(1, 1);
-    useEditorStore.getState().commitPaste();
+    await useEditorStore.getState().commitPaste();
 
     const state = useEditorStore.getState();
     expect(state.pastePreview).toBeNull();
@@ -86,9 +86,9 @@ describe("editorStore paste preview", () => {
     expect(useEditorStore.getState().selection).not.toBeNull();
   });
 
-  it("commitPaste with fully out-of-bounds origin clears selection without undo", () => {
+  it("commitPaste with fully out-of-bounds origin clears selection without undo", async () => {
     useEditorStore.getState().startPastePreview(10, 10);
-    useEditorStore.getState().commitPaste();
+    await useEditorStore.getState().commitPaste();
 
     expect(useEditorStore.getState().undoStack).toHaveLength(0);
     expect(useEditorStore.getState().selection).toBeNull();
