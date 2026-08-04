@@ -25,6 +25,7 @@ ASSET_FILES = (
     "packages/api-client/tsconfig.json",
     "packages/api-client/src/client.ts",
     "packages/api-client/src/index.ts",
+    "scripts/generate-brand-pngs.py",
     "server/CMakeLists.txt",
 )
 

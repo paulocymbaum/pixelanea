@@ -1,0 +1,2 @@
+# Python deps for repo scripts (brand PNG rasterization).
+Pillow>=10.4.0,<12

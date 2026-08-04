@@ -16,6 +16,7 @@ DEPENDENCY_INPUTS = (
     "package.json",
     "apps/web/package.json",
     "packages/api-client/package.json",
+    "scripts/requirements.txt",
     "server/vcpkg.json",
     "server/CMakeLists.txt",
 )

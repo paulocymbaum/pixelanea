@@ -74,6 +74,38 @@ ensure_pnpm() {
   command -v pnpm >/dev/null 2>&1
 }
 
+PYTHON_SCRIPTS_VENV="${ROOT_DIR}/.cache/venv-scripts"
+
+ensure_python_script_deps() {
+  if python3 -c "from PIL import Image" 2>/dev/null; then
+    return 0
+  fi
+  if [[ -x "${PYTHON_SCRIPTS_VENV}/bin/python3" ]] \
+    && "${PYTHON_SCRIPTS_VENV}/bin/python3" -c "from PIL import Image" 2>/dev/null; then
+    return 0
+  fi
+
+  echo "==> Installing Python script dependencies (Pillow)..."
+  if ! python3 -m venv "${PYTHON_SCRIPTS_VENV}"; then
+    echo "python3 -m venv failed (install python3-venv on Debian/Ubuntu)." >&2
+    exit 1
+  fi
+  if ! "${PYTHON_SCRIPTS_VENV}/bin/pip" install --disable-pip-version-check -q \
+    -r "${ROOT_DIR}/scripts/requirements.txt"; then
+    echo "Failed to install scripts/requirements.txt." >&2
+    exit 1
+  fi
+}
+
+python_for_brand_pngs() {
+  if python3 -c "from PIL import Image" 2>/dev/null; then
+    echo python3
+    return 0
+  fi
+  ensure_python_script_deps
+  echo "${PYTHON_SCRIPTS_VENV}/bin/python3"
+}
+
 parse_args() {
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -147,7 +179,7 @@ cmd_sync_brand() {
     cp "${ROOT_DIR}/brand/logo-glyph.svg" "${ROOT_DIR}/apps/web/public/favicon/favicon.svg"
   fi
   if [[ -f "${ROOT_DIR}/scripts/generate-brand-pngs.py" ]]; then
-    python3 "${ROOT_DIR}/scripts/generate-brand-pngs.py"
+    "$(python_for_brand_pngs)" "${ROOT_DIR}/scripts/generate-brand-pngs.py"
   fi
 }
 
