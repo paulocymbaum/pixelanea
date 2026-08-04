@@ -45,11 +45,11 @@ else()
     GIT_SHALLOW TRUE
   )
 
+  # Commit hashes require a full clone — GIT_SHALLOW cannot checkout arbitrary SHAs.
   FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
     GIT_TAG 31c1ad37456438565541f4919958214b6e762fb4
-    GIT_SHALLOW TRUE
   )
 
   FetchContent_Declare(
@@ -120,7 +120,6 @@ target_link_libraries(
     gifenc
     GIT_REPOSITORY https://github.com/lecram/gifenc.git
     GIT_TAG 87acd487dfa2f2a638eec751a1d6c2fff60822da
-    GIT_SHALLOW TRUE
   )
 FetchContent_MakeAvailable(gifenc)
 
@@ -150,11 +149,11 @@ if(NOT USE_VCPKG)
 endif()
 
 if(USE_VCPKG)
+  # Commit hashes require a full clone — GIT_SHALLOW cannot checkout arbitrary SHAs.
   FetchContent_Declare(
     stb
     GIT_REPOSITORY https://github.com/nothings/stb.git
     GIT_TAG 31c1ad37456438565541f4919958214b6e762fb4
-    GIT_SHALLOW TRUE
   )
   FetchContent_MakeAvailable(stb)
 endif()
