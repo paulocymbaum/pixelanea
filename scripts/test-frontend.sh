@@ -34,56 +34,58 @@ if ! command -v pnpm >/dev/null 2>&1; then
   exit 1
 fi
 
-# 1: install (cache-aware)
-if ./scripts/deps-cache.sh install >/dev/null 2>&1; then
-  pass "pnpm install"
+if [[ "${CI_SKIP_REDUNDANT:-}" == "1" ]]; then
+  echo "→ Skipping install/build/lint/vitest (already run in CI steps 01–07)"
+  if [[ -f apps/web/dist/index.html ]]; then
+    pass "web dist present (from CI step 07)"
+  else
+    fail "web dist missing for proxy smoke"
+  fi
 else
-  fail "pnpm install"
-fi
+  if ./scripts/deps-cache.sh install >/dev/null 2>&1; then
+    pass "pnpm install"
+  else
+    fail "pnpm install"
+  fi
 
-# 2: codegen (cache-aware)
-if ./scripts/assets-cache.sh ensure-api >/dev/null 2>&1 \
-  && [[ -f packages/api-client/src/generated/schema.ts ]]; then
-  pass "pnpm generate:api"
-else
-  fail "pnpm generate:api"
-fi
+  if ./scripts/assets-cache.sh ensure-api >/dev/null 2>&1 \
+    && [[ -f packages/api-client/src/generated/schema.ts ]]; then
+    pass "pnpm generate:api"
+  else
+    fail "pnpm generate:api"
+  fi
 
-# 3: build (cache-aware; vite only — tsc is not required for smoke tests)
-if ./scripts/assets-cache.sh ensure-web >/dev/null 2>&1 \
-  && [[ -f apps/web/dist/index.html ]]; then
-  pass "pnpm build"
-else
-  fail "pnpm build"
-fi
+  if ./scripts/assets-cache.sh ensure-web >/dev/null 2>&1 \
+    && [[ -f apps/web/dist/index.html ]]; then
+    pass "pnpm build"
+  else
+    fail "pnpm build"
+  fi
 
-# 4: lint
-if pnpm lint >/dev/null 2>&1; then
-  pass "pnpm lint"
-else
-  fail "pnpm lint"
-fi
+  if pnpm lint >/dev/null 2>&1; then
+    pass "pnpm lint"
+  else
+    fail "pnpm lint"
+  fi
 
-# 4b: vitest
-if pnpm --filter @pixelanea/web test >/dev/null 2>&1; then
-  pass "vitest unit tests"
-else
-  fail "vitest unit tests"
-fi
+  if pnpm --filter @pixelanea/web test >/dev/null 2>&1; then
+    pass "vitest unit tests"
+  else
+    fail "vitest unit tests"
+  fi
 
-# 5: api-client build
-if pnpm --filter @pixelanea/api-client build >/dev/null 2>&1 \
-  && [[ -f packages/api-client/dist/client.js ]]; then
-  pass "api-client build"
-else
-  fail "api-client build"
-fi
+  if pnpm --filter @pixelanea/api-client build >/dev/null 2>&1 \
+    && [[ -f packages/api-client/dist/client.js ]]; then
+    pass "api-client build"
+  else
+    fail "api-client build"
+  fi
 
-# 8: dev.sh build-only
-if ./scripts/dev.sh --build-only >/dev/null 2>&1; then
-  pass "dev.sh --build-only"
-else
-  fail "dev.sh --build-only"
+  if ./scripts/dev.sh --build-only >/dev/null 2>&1; then
+    pass "dev.sh --build-only"
+  else
+    fail "dev.sh --build-only"
+  fi
 fi
 
 # 9: layer structure

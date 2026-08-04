@@ -1,62 +1,80 @@
 #!/usr/bin/env bash
-# Full CI gate — mirrors .github/workflows/build.yml (build job, excluding bump-version).
-# Run from repo root before push/PR when you want the same checks as GitHub Actions.
+# Full CI gate — mirrors .github/workflows/build.yml (build job).
+#
+# Usage:
+#   ./scripts/ci.sh                    # full profile (all steps)
+#   ./scripts/ci.sh list               # step ids
+#   ./scripts/ci.sh profiles           # named profiles
+#   ./scripts/ci.sh fast               # profile: lint + typecheck + QA + unit
+#   ./scripts/ci.sh core               # profile: + builds + backend unit tests
+#   ./scripts/ci.sh e2e                # profile: + Playwright
+#   ./scripts/ci.sh 08-build-server      # single step
+#   ./scripts/ci.sh 05-test-qa 06-test-unit
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "${ROOT_DIR}"
+STEPS_DIR="${ROOT_DIR}/scripts/ci-steps"
+CI_ROOT_DIR="${ROOT_DIR}"
+# shellcheck source=ci-lib.sh
+source "${ROOT_DIR}/scripts/ci-lib.sh"
 
-CTEST="ctest"
-if ! command -v ctest >/dev/null 2>&1; then
-  CTEST="${ROOT_DIR}/.venv-build/bin/ctest"
-fi
+list_steps() {
+  echo "CI steps (run individually: ./scripts/ci.sh <id>)"
+  for step in "${STEPS_DIR}"/*.sh; do
+    basename "${step}" .sh
+  done
+}
 
-echo "=== Pixelanea CI (build job) ==="
+run_profile() {
+  local profile="$1"
+  local steps
+  if ! steps="$(ci_profile_steps "${profile}")"; then
+    echo "Unknown CI profile: ${profile}" >&2
+    ci_list_profiles >&2
+    exit 1
+  fi
+  echo "=== Pixelanea CI (profile: ${profile}) ==="
+  for id in ${steps}; do
+    ci_run_step_script "${STEPS_DIR}" "${id}"
+  done
+  echo ""
+  echo "=== Pixelanea CI passed (profile: ${profile}) ==="
+}
 
-echo "→ Install dependencies"
-./scripts/deps-cache.sh install
+run_all_steps() {
+  echo "=== Pixelanea CI (profile: full) ==="
+  for step in "${STEPS_DIR}"/*.sh; do
+    bash "${step}"
+  done
+  echo ""
+  echo "=== Pixelanea CI passed ==="
+}
 
-echo "→ Ensure API client assets"
-./scripts/assets-cache.sh ensure-api
+main() {
+  if [[ $# -eq 0 ]]; then
+    run_profile full
+    return 0
+  fi
 
-echo "→ Lint"
-pnpm lint
+  case "$1" in
+    list | --list)
+      list_steps
+      return 0
+      ;;
+    profiles | profile | --profiles)
+      ci_list_profiles
+      return 0
+      ;;
+  esac
 
-echo "→ Frontend typecheck"
-pnpm typecheck
+  if ci_profile_steps "$1" >/dev/null 2>&1; then
+    run_profile "$1"
+    return 0
+  fi
 
-echo "→ QA matrix harness"
-pnpm test:qa
+  for arg in "$@"; do
+    ci_run_step_script "${STEPS_DIR}" "${arg}"
+  done
+}
 
-echo "→ Frontend unit tests"
-pnpm test:unit
-
-echo "→ Build frontend"
-./scripts/assets-cache.sh ensure-web
-
-echo "→ Build backend"
-export CMAKE_BUILD_TYPE=Debug
-./scripts/assets-cache.sh ensure-server
-
-echo "→ Backend unit tests"
-"${CTEST}" --test-dir server/build --output-on-failure
-
-if [[ ! -x "${ROOT_DIR}/node_modules/.bin/playwright" ]]; then
-  echo "→ Playwright CLI missing — reinstalling node_modules"
-  pnpm install
-fi
-
-echo "→ Ensure Playwright Chromium browser"
-./scripts/e2e-install.sh
-
-echo "→ Playwright E2E (excl. LinkedIn media capture)"
-export CI=true
-pnpm test:e2e --grep-invert LinkedIn
-
-echo "→ Backend smoke tests"
-./scripts/test-backend.sh
-
-echo "→ Frontend smoke tests"
-./scripts/test-frontend.sh
-
-echo "=== Pixelanea CI passed ==="
+main "$@"

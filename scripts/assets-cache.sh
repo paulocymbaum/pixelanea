@@ -349,8 +349,80 @@ configure_server_if_needed() {
     if [[ -n "${VCPKG_ROOT:-}" && -f "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ]]; then
       args+=("-DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
     fi
+    echo "==> [server] cmake configure (${BUILD_TYPE})"
     "${cmake_bin}" "${args[@]}"
   fi
+}
+
+resolve_ctest_bin() {
+  if command -v ctest >/dev/null 2>&1; then
+    command -v ctest
+    return 0
+  fi
+  if [[ -x "${ROOT_DIR}/.venv-build/bin/ctest" ]]; then
+    echo "${ROOT_DIR}/.venv-build/bin/ctest"
+    return 0
+  fi
+  return 1
+}
+
+ctest_registered_test_count() {
+  local ctest_bin count
+  if ! ctest_bin="$(resolve_ctest_bin)"; then
+    return 1
+  fi
+  count="$("${ctest_bin}" --test-dir "${ROOT_DIR}/server/build" -N 2>/dev/null \
+    | awk '/Total Tests:/ {print $3}' || echo 0)"
+  [[ "${count:-0}" -gt 0 ]]
+}
+
+# Binary-only cache restores skip CTest metadata; regenerate so ctest works in CI.
+ensure_server_ctest_metadata() {
+  if ctest_registered_test_count; then
+    return 0
+  fi
+  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea_tests" ]]; then
+    return 0
+  fi
+  echo "==> [server] CTest registry empty (binary cache) — regenerating test metadata"
+  configure_server_if_needed
+  "$(resolve_cmake_bin)" --build "${ROOT_DIR}/server/build" \
+    --target pixelanea-server pixelanea_tests
+}
+
+server_archive_members() {
+  local build="${ROOT_DIR}/server/build"
+  local -a members=(pixelanea-server)
+  if [[ -x "${build}/pixelanea_tests" ]]; then
+    members+=(pixelanea_tests)
+  fi
+  if [[ -f "${build}/CTestTestfile.cmake" ]]; then
+    members+=(CTestTestfile.cmake)
+  fi
+  if [[ -f "${build}/DartConfiguration.tcl" ]]; then
+    members+=(DartConfiguration.tcl)
+  fi
+  local cmake_meta
+  for cmake_meta in "${build}"/pixelanea_tests-*_include.cmake "${build}"/pixelanea_tests-*_tests.cmake; do
+    if [[ -f "${cmake_meta}" ]]; then
+      members+=("$(basename "${cmake_meta}")")
+    fi
+  done
+  printf '%s\n' "${members[@]}"
+}
+
+save_server_archive() {
+  local cache_dir="$1"
+  local build="${ROOT_DIR}/server/build"
+  local -a members=()
+  while IFS= read -r member; do
+    members+=("${member}")
+  done < <(server_archive_members)
+  if [[ ${#members[@]} -eq 0 ]]; then
+    echo "ERROR: no server binaries to cache" >&2
+    return 1
+  fi
+  tar -czf "${cache_dir}/${SERVER_ARCHIVE}" -C "${build}" "${members[@]}"
 }
 
 cmd_ensure_server() {
@@ -365,11 +437,9 @@ cmd_ensure_server() {
     echo "==> Server binary cache hit (${hash})"
     if [[ ! -f "${cache_dir}/${SERVER_ARCHIVE}" ]]; then
       echo "==> Saving server binaries to cache (${hash})"
-      tar -czf "${cache_dir}/${SERVER_ARCHIVE}" \
-        -C "${ROOT_DIR}/server/build" pixelanea-server pixelanea_tests 2>/dev/null \
-        || tar -czf "${cache_dir}/${SERVER_ARCHIVE}" \
-          -C "${ROOT_DIR}/server/build" pixelanea-server
+      save_server_archive "${cache_dir}"
     fi
+    ensure_server_ctest_metadata
     return 0
   fi
 
@@ -377,19 +447,29 @@ cmd_ensure_server() {
     echo "==> Restoring server binaries from cache (${hash})"
     tar -xzf "${cache_dir}/${SERVER_ARCHIVE}" -C "${ROOT_DIR}/server/build"
     write_marker "${SERVER_MARKER}" "${hash}"
+    ensure_server_ctest_metadata
     return 0
   fi
 
   echo "==> Building server binaries (${hash}, ${BUILD_TYPE})"
+  echo "==> [server] phase 1/4: restore FetchContent deps"
   "${ROOT_DIR}/scripts/deps-cache.sh" restore-backend || true
+  echo "==> [server] phase 2/4: cmake configure"
   configure_server_if_needed
+  echo "==> [server] phase 3/4: cmake build"
   "$(resolve_cmake_bin)" --build "${ROOT_DIR}/server/build"
+  echo "==> [server] phase 4/4: verify binaries"
+  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea-server" ]]; then
+    echo "ERROR: pixelanea-server missing after build" >&2
+    exit 1
+  fi
+  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea_tests" ]]; then
+    echo "ERROR: pixelanea_tests missing after build" >&2
+    exit 1
+  fi
   "${ROOT_DIR}/scripts/deps-cache.sh" save-backend
   write_marker "${SERVER_MARKER}" "${hash}"
-  tar -czf "${cache_dir}/${SERVER_ARCHIVE}" \
-    -C "${ROOT_DIR}/server/build" pixelanea-server pixelanea_tests 2>/dev/null \
-    || tar -czf "${cache_dir}/${SERVER_ARCHIVE}" \
-      -C "${ROOT_DIR}/server/build" pixelanea-server
+  save_server_archive "${cache_dir}"
 }
 
 cmd_ensure_all() {

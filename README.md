@@ -98,10 +98,18 @@ pnpm test:e2e:install   # first time only
 pnpm test:e2e
 
 # Full CI gate (same as GitHub Actions build job)
-./scripts/ci.sh
+./scripts/ci.sh              # full profile (all 13 steps)
+./scripts/ci.sh profiles       # fast | core | e2e | full | sprint
+./scripts/ci.sh fast           # lint + typecheck + QA + unit only
+./scripts/ci.sh 08-build-server
 
-# Sprint 1 local gate (subset: tsc + QA matrices + unit + E2E + backend)
-./scripts/ci-sprint1.sh
+# pnpm aliases
+pnpm ci:fast
+pnpm ci:core                 # pre-push without E2E
+pnpm ci:e2e
+
+# Sprint gate (subset — see scripts/ci-steps/README.md)
+./scripts/ci-sprint1.sh      # same as ./scripts/ci.sh sprint
 ```
 
 CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, Playwright E2E (excl. LinkedIn media capture), and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
@@ -141,8 +149,10 @@ pixelanea/
     ├── build-desktop-shell.sh
     ├── package-deb.sh     # Debian installer
     ├── package-desktop-linux.sh
-    ├── ci.sh              # Full CI gate (mirrors GitHub Actions)
-    ├── ci-sprint1.sh      # Sprint 1 quality gate
+    ├── ci.sh              # CI orchestrator (profiles + per-step)
+    ├── ci-lib.sh          # shared CI helpers
+    ├── ci-steps/          # 13 observable CI steps (+ README)
+    ├── ci-sprint1.sh      # delegates to ci.sh sprint
     └── e2e-webserver.sh   # Stack for Playwright
 ```
 

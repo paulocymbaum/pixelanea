@@ -21,11 +21,13 @@ Thank you for helping build a free, local-first pixel art editor. This guide cov
 4. Run tests before opening a PR:
 
    ```bash
-   pnpm typecheck
-   pnpm test:unit
-   pnpm test:qa        # if you touched routes, guards, or I/O
-   pnpm test:smoke     # full smoke gate before merge
+   pnpm ci:fast              # lint, typecheck, QA matrix, unit tests
+   pnpm ci:core              # + builds + backend unit tests (pre-push)
+   pnpm ci:e2e               # + Playwright E2E before merge
+   ./scripts/ci.sh           # full gate (matches GitHub Actions)
    ```
+
+   Or run individual steps: `./scripts/ci.sh list` · see `scripts/ci-steps/README.md`.
 
 ## Architecture rules
 
@@ -96,12 +98,13 @@ Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). S
 | Typecheck | `pnpm typecheck` | Always |
 | Unit / integration | `pnpm test:unit` | Touched `apps/web` |
 | QA matrices | `pnpm test:qa` | Route guards, I/O, import, animation |
-| Backend unit | `ctest --test-dir server/build` | Touched `server/` |
-| Smoke gate | `pnpm test:smoke` (or `test:smoke:backend` / `test:smoke:frontend`) | Before merge; mirrors CI smoke steps |
+| Backend unit | `./scripts/ci-steps/09-test-backend-unit.sh` | Touched `server/` |
+| CI profiles | `pnpm ci:fast` / `ci:core` / `ci:e2e` / `./scripts/ci.sh` | See `scripts/ci-steps/README.md` |
+| Smoke gate | `pnpm test:smoke` | Standalone; skips redundant checks when `CI_SKIP_REDUNDANT=1` |
 | E2E | `pnpm test:e2e` | User flows; install browsers with `pnpm test:e2e:install` first |
 | Desktop package | `pnpm test:package:linux` | Touched `package-deb.sh`, `stage-linux-desktop.sh`, or `.deb` staging |
 | Desktop shell | `pnpm test:desktop-shell` | Touched `apps/desktop/` or shell launch scripts |
-| Sprint gate | `./scripts/ci-sprint1.sh` | Before sprint-close PRs |
+| Sprint gate | `./scripts/ci-sprint1.sh` or `pnpm ci:sprint` | Before sprint-close PRs |
 
 QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MVP Gherkin spec. Playwright specs in `e2e/` cover `@smoke` and `@routing` scenarios; `playwright.config.ts` starts the stack via `scripts/e2e-webserver.sh`.
 

@@ -48,6 +48,8 @@ jobs:
             apps/web/dist
             server/build/pixelanea-server
             server/build/pixelanea_tests
+            server/build/CTestTestfile.cmake
+            server/build/DartConfiguration.tcl
             .cache/assets
           key: pixelanea-assets-${{ steps.assets-hash.outputs.hash }}
 
@@ -60,47 +62,49 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        run: ./scripts/deps-cache.sh install
+        run: ./scripts/ci-steps/01-deps.sh
 
       - name: Ensure API client assets
-        run: ./scripts/assets-cache.sh ensure-api
+        run: ./scripts/ci-steps/02-api-assets.sh
 
       - name: Lint
-        run: pnpm lint
+        run: ./scripts/ci-steps/03-lint.sh
 
       - name: Frontend typecheck
-        run: pnpm typecheck
+        run: ./scripts/ci-steps/04-typecheck.sh
 
       - name: QA matrix harness
-        run: pnpm test:qa
+        run: ./scripts/ci-steps/05-test-qa.sh
 
       - name: Frontend unit tests
-        run: pnpm test:unit
+        run: ./scripts/ci-steps/06-test-unit.sh
 
       - name: Build frontend
-        run: ./scripts/assets-cache.sh ensure-web
+        run: ./scripts/ci-steps/07-build-web.sh
 
       - name: Build backend
         env:
           CMAKE_BUILD_TYPE: Debug
-        run: ./scripts/assets-cache.sh ensure-server
+        run: ./scripts/ci-steps/08-build-server.sh
 
       - name: Backend unit tests
-        run: ctest --test-dir server/build --output-on-failure
+        run: ./scripts/ci-steps/09-test-backend-unit.sh
 
       - name: Install Playwright browsers
-        run: ./scripts/e2e-install.sh --with-deps
+        env:
+          CI: true
+        run: ./scripts/ci-steps/10-e2e-install.sh
 
       - name: Playwright E2E
         env:
           CI: true
-        run: pnpm test:e2e --grep-invert LinkedIn
+        run: ./scripts/ci-steps/11-test-e2e.sh
 
       - name: Backend smoke tests
-        run: ./scripts/test-backend.sh
+        run: ./scripts/ci-steps/12-smoke-backend.sh
 
       - name: Frontend smoke tests
-        run: ./scripts/test-frontend.sh
+        run: ./scripts/ci-steps/13-smoke-frontend.sh
 
   bump-version:
     needs: build

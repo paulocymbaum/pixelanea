@@ -30,41 +30,52 @@ fi
 
 echo "=== Backend test suite ==="
 
-# 0: C++ boundary lint (fast; no compile)
-if ./scripts/lint-cpp.sh >/dev/null 2>&1; then
-  pass "cpp boundary lint"
+if [[ "${CI_SKIP_REDUNDANT:-}" == "1" ]]; then
+  echo "→ Skipping compile/lint/ctest (already run in CI steps 03–09)"
 else
-  fail "cpp boundary lint"
+  if ./scripts/lint-cpp.sh >/dev/null 2>&1; then
+    pass "cpp boundary lint"
+  else
+    fail "cpp boundary lint"
+  fi
+
+  if "${CMAKE}" -S server -B server/build \
+    -DCMAKE_BUILD_TYPE=Debug \
+    -DCMAKE_CXX_COMPILER="${CXX:-g++}" \
+    -DCMAKE_C_COMPILER="${CC:-gcc}" \
+    -G "Unix Makefiles" >/dev/null 2>&1 \
+    && "${CMAKE}" --build server/build >/dev/null 2>&1; then
+    pass "cmake build"
+  else
+    fail "cmake build"
+  fi
+
+  if [[ -x server/build/pixelanea-server ]]; then
+    pass "binary exists"
+  else
+    fail "binary exists"
+  fi
+
+  # shellcheck source=ci-lib.sh
+  source "${ROOT_DIR}/scripts/ci-lib.sh"
+  CI_ROOT_DIR="${ROOT_DIR}"
+  if ci_run_backend_unit_tests >/dev/null 2>&1; then
+    pass "ctest unit tests"
+  else
+    fail "ctest unit tests"
+  fi
+
+  if ./scripts/dev.sh --build-only >/dev/null 2>&1; then
+    pass "dev.sh --build-only"
+  else
+    fail "dev.sh --build-only"
+  fi
 fi
 
-# 1–2: build
-if "${CMAKE}" -S server -B server/build \
-  -DCMAKE_BUILD_TYPE=Debug \
-  -DCMAKE_CXX_COMPILER="${CXX:-g++}" \
-  -DCMAKE_C_COMPILER="${CC:-gcc}" \
-  -G "Unix Makefiles" >/dev/null 2>&1 \
-  && "${CMAKE}" --build server/build >/dev/null 2>&1; then
-  pass "cmake build"
-else
-  fail "cmake build"
-fi
-
-if [[ -x server/build/pixelanea-server ]]; then
-  pass "binary exists"
-else
-  fail "binary exists"
-fi
-
-if "${CTEST}" --test-dir server/build --output-on-failure >/dev/null 2>&1; then
-  pass "ctest unit tests"
-else
-  fail "ctest unit tests"
-fi
-
-if ./scripts/dev.sh --build-only >/dev/null 2>&1; then
-  pass "dev.sh --build-only"
-else
-  fail "dev.sh --build-only"
+if [[ ! -x server/build/pixelanea-server ]]; then
+  fail "server binary missing for live API smoke"
+  echo "=== Results: ${PASS} passed, ${FAIL} failed ==="
+  exit 1
 fi
 
 # 12: migration file

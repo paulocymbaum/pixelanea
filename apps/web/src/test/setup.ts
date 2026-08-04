@@ -1,14 +1,10 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
 import { afterEach, vi } from "vitest";
+import { stubCanvasEnvironment } from "@/test/canvas-mocks";
 
-class ResizeObserverMock {
-  observe = vi.fn();
-  disconnect = vi.fn();
-  unobserve = vi.fn();
-}
-
-vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+/** jsdom lacks canvas — stub globally so FrameThumbnail / editor tests stay quiet. */
+stubCanvasEnvironment();
 
 Object.defineProperty(window, "matchMedia", {
   writable: true,
