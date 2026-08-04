@@ -38,6 +38,7 @@ Install these once per development machine. Versions listed are minimum tested t
 | **OpenAPI Generator CLI** | Generate TS client from `contracts/openapi.yaml` |
 | **Docker** | Reproducible CI/dev environment |
 | **Playwright Chromium** | E2E tests (`pnpm test:e2e:install`) |
+| **Pillow** (`scripts/requirements.txt`) | Brand PNG generation (`generate-brand-pngs.py`; auto-installed via `assets-cache.sh`) |
 
 ---
 

@@ -32,6 +32,7 @@ jobs:
             packages/api-client/node_modules
             server/build/_deps
             .cache/deps
+            .cache/venv-scripts
           key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
 
       - name: Restore asset cache
@@ -54,6 +55,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+
+      - name: Install Python tooling for brand assets
+        run: sudo apt-get update && sudo apt-get install -y python3-venv
 
       - name: Install dependencies
         run: ./scripts/deps-cache.sh install
