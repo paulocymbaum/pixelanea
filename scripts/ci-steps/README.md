@@ -11,7 +11,9 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 | 05 | `05-test-qa.sh` | Vitest QA matrices (`src/qa/`) |
 | 06 | `06-test-unit.sh` | Vitest unit tests |
 | 07 | `07-build-web.sh` | Vite production build |
-| 08 | `08-build-server.sh` | C++ server + test binaries (phased logs) |
+| 08a | `08a-server-configure.sh` | FetchContent restore + cmake configure |
+| 08b | `08b-server-compile.sh` | cmake build + verify binaries |
+| 08 | `08-build-server.sh` | Wrapper: 08a + 08b |
 | 09 | `09-test-backend-unit.sh` | `ctest` or `pixelanea_tests` fallback |
 | 10 | `10-e2e-install.sh` | Playwright Chromium (`--with-deps` when `CI=true`) |
 | 11 | `11-test-e2e.sh` | Playwright E2E (excl. LinkedIn media capture) |

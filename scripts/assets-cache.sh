@@ -8,6 +8,8 @@
 #   ./scripts/assets-cache.sh ensure-python-deps
 #   ./scripts/assets-cache.sh ensure-api
 #   ./scripts/assets-cache.sh ensure-web [--build-type Debug|Release]
+#   ./scripts/assets-cache.sh configure-server [--build-type Debug|Release]
+#   ./scripts/assets-cache.sh compile-server [--build-type Debug|Release]
 #   ./scripts/assets-cache.sh ensure-server [--build-type Debug|Release]
 #   ./scripts/assets-cache.sh ensure-all [--build-type Debug|Release]
 #
@@ -333,25 +335,34 @@ cmd_ensure_web() {
 configure_server_if_needed() {
   local cmake_bin
   cmake_bin="$(resolve_cmake_bin)"
-  if [[ ! -f "${ROOT_DIR}/server/build/CMakeCache.txt" ]]; then
-    local -a args=(
-      -S "${ROOT_DIR}/server"
-      -B "${ROOT_DIR}/server/build"
-      -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
-      -DCMAKE_CXX_COMPILER="${CXX:-g++}"
-      -DCMAKE_C_COMPILER="${CC:-gcc}"
-    )
-    if command -v ninja >/dev/null 2>&1; then
-      args+=("-G" "Ninja")
-    else
-      args+=("-G" "Unix Makefiles")
-    fi
-    if [[ -n "${VCPKG_ROOT:-}" && -f "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ]]; then
-      args+=("-DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-    fi
-    echo "==> [server] cmake configure (${BUILD_TYPE})"
-    "${cmake_bin}" "${args[@]}"
+  if [[ -f "${ROOT_DIR}/server/build/CMakeCache.txt" ]]; then
+    echo "==> [server] cmake configure skipped (CMakeCache.txt present)"
+    return 0
   fi
+
+  local -a args=(
+    -S "${ROOT_DIR}/server"
+    -B "${ROOT_DIR}/server/build"
+    -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
+    -DCMAKE_CXX_COMPILER="${CXX:-g++}"
+    -DCMAKE_C_COMPILER="${CC:-gcc}"
+  )
+  if command -v ninja >/dev/null 2>&1; then
+    args+=("-G" "Ninja")
+  else
+    args+=("-G" "Unix Makefiles")
+  fi
+  if [[ -n "${VCPKG_ROOT:-}" && -f "${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" ]]; then
+    args+=("-DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+  fi
+  if [[ -d "${ROOT_DIR}/server/build/_deps" ]] \
+    && [[ -n "$(find "${ROOT_DIR}/server/build/_deps" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | head -1)" ]]; then
+    echo "==> [server] using cached FetchContent (_deps present, disconnected mode)"
+    args+=(-DFETCHCONTENT_FULLY_DISCONNECTED=ON)
+  fi
+
+  echo "==> [server] cmake configure (${BUILD_TYPE})"
+  "${cmake_bin}" "${args[@]}"
 }
 
 resolve_ctest_bin() {
@@ -425,6 +436,51 @@ save_server_archive() {
   tar -czf "${cache_dir}/${SERVER_ARCHIVE}" -C "${build}" "${members[@]}"
 }
 
+verify_server_binaries() {
+  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea-server" ]]; then
+    echo "ERROR: pixelanea-server missing after build" >&2
+    exit 1
+  fi
+  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea_tests" ]]; then
+    echo "ERROR: pixelanea_tests missing after build" >&2
+    exit 1
+  fi
+}
+
+cmd_configure_server() {
+  mkdir -p "${ROOT_DIR}/server/build"
+  echo "==> [server] configure: restore FetchContent deps"
+  if ! "${ROOT_DIR}/scripts/deps-cache.sh" restore-backend; then
+    echo "==> [server] configure: no _deps cache (will fetch via FetchContent)"
+  fi
+  echo "==> [server] configure: cmake"
+  configure_server_if_needed
+  echo "==> [server] configure: save _deps cache"
+  "${ROOT_DIR}/scripts/deps-cache.sh" save-backend
+}
+
+cmd_compile_server() {
+  local hash
+  hash="$(assets_hash)"
+  local cache_dir
+  cache_dir="$(cache_dir_for_hash "${hash}")"
+  mkdir -p "${cache_dir}" "${ROOT_DIR}/server/build"
+
+  if [[ ! -f "${ROOT_DIR}/server/build/CMakeCache.txt" ]]; then
+    echo "ERROR: CMakeCache.txt missing — run configure-server first" >&2
+    exit 1
+  fi
+
+  echo "==> [server] compile: cmake --build (${BUILD_TYPE})"
+  "$(resolve_cmake_bin)" --build "${ROOT_DIR}/server/build"
+  echo "==> [server] compile: verify binaries"
+  verify_server_binaries
+  "${ROOT_DIR}/scripts/deps-cache.sh" save-backend
+  write_marker "${SERVER_MARKER}" "${hash}"
+  save_server_archive "${cache_dir}"
+  ensure_server_ctest_metadata
+}
+
 cmd_ensure_server() {
   local hash
   hash="$(assets_hash)"
@@ -452,24 +508,8 @@ cmd_ensure_server() {
   fi
 
   echo "==> Building server binaries (${hash}, ${BUILD_TYPE})"
-  echo "==> [server] phase 1/4: restore FetchContent deps"
-  "${ROOT_DIR}/scripts/deps-cache.sh" restore-backend || true
-  echo "==> [server] phase 2/4: cmake configure"
-  configure_server_if_needed
-  echo "==> [server] phase 3/4: cmake build"
-  "$(resolve_cmake_bin)" --build "${ROOT_DIR}/server/build"
-  echo "==> [server] phase 4/4: verify binaries"
-  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea-server" ]]; then
-    echo "ERROR: pixelanea-server missing after build" >&2
-    exit 1
-  fi
-  if [[ ! -x "${ROOT_DIR}/server/build/pixelanea_tests" ]]; then
-    echo "ERROR: pixelanea_tests missing after build" >&2
-    exit 1
-  fi
-  "${ROOT_DIR}/scripts/deps-cache.sh" save-backend
-  write_marker "${SERVER_MARKER}" "${hash}"
-  save_server_archive "${cache_dir}"
+  cmd_configure_server
+  cmd_compile_server
 }
 
 cmd_ensure_all() {
@@ -500,6 +540,8 @@ main() {
     ensure-python-deps) cmd_ensure_python_deps ;;
     ensure-api) cmd_ensure_api ;;
     ensure-web) cmd_ensure_web ;;
+    configure-server) cmd_configure_server ;;
+    compile-server) cmd_compile_server ;;
     ensure-server) cmd_ensure_server ;;
     ensure-all) cmd_ensure_all ;;
     -h|--help) usage ;;

@@ -116,12 +116,12 @@ target_link_libraries(
     ${PIXELANEA_JSON_LIB}
 )
 
-FetchContent_Declare(
-  gifenc
-  GIT_REPOSITORY https://github.com/lecram/gifenc.git
-  GIT_TAG master
-  GIT_SHALLOW TRUE
-)
+  FetchContent_Declare(
+    gifenc
+    GIT_REPOSITORY https://github.com/lecram/gifenc.git
+    GIT_TAG 87acd487dfa2f2a638eec751a1d6c2fff60822da
+    GIT_SHALLOW TRUE
+  )
 FetchContent_MakeAvailable(gifenc)
 
 set(PIXELANEA_BUNDLE_SOURCES

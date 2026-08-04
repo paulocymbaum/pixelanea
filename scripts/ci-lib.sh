@@ -50,7 +50,7 @@ ci_run_backend_unit_tests() {
   local build_dir="${CI_ROOT_DIR}/server/build"
 
   if [[ ! -x "${tests_bin}" ]]; then
-    echo "ERROR: ${tests_bin} missing — run ./scripts/ci-steps/08-build-server.sh first" >&2
+    echo "ERROR: ${tests_bin} missing — run ./scripts/ci-steps/08b-server-compile.sh first" >&2
     return 1
   fi
 
@@ -77,16 +77,16 @@ ci_profile_steps() {
       echo "03-lint 04-typecheck 05-test-qa 06-test-unit"
       ;;
     core)
-      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08-build-server 09-test-backend-unit"
+      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit"
       ;;
     e2e)
-      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08-build-server 09-test-backend-unit 10-e2e-install 11-test-e2e"
+      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
       ;;
     full | all)
-      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08-build-server 09-test-backend-unit 10-e2e-install 11-test-e2e 12-smoke-backend 13-smoke-frontend"
+      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e 12-smoke-backend 13-smoke-frontend"
       ;;
     sprint | sprint1)
-      echo "04-typecheck 05-test-qa 06-test-unit 08-build-server 09-test-backend-unit 10-e2e-install 11-test-e2e"
+      echo "04-typecheck 05-test-qa 06-test-unit 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
       ;;
     *)
       return 1

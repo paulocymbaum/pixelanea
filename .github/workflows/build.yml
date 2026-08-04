@@ -24,7 +24,14 @@ jobs:
         run: echo "hash=$(python3 scripts/assets-hash.py --build-type Debug)" >> $GITHUB_OUTPUT
 
       - name: Install OS dependencies
-        run: sudo apt-get update && sudo apt-get install -y python3-venv cmake g++ gcc curl
+        run: ./scripts/install-ci-os-deps.sh
+
+      - name: Print toolchain versions
+        run: |
+          cmake --version
+          g++ --version | head -1
+          ninja --version
+          git --version
 
       - name: Restore dependency cache
         uses: actions/cache@v4
@@ -34,6 +41,7 @@ jobs:
             apps/web/node_modules
             packages/api-client/node_modules
             server/build/_deps
+            server/build/CMakeCache.txt
             .cache/deps
             .cache/venv-scripts
           key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
@@ -82,10 +90,16 @@ jobs:
       - name: Build frontend
         run: ./scripts/ci-steps/07-build-web.sh
 
-      - name: Build backend
+      - name: Build backend — cmake configure
         env:
           CMAKE_BUILD_TYPE: Debug
-        run: ./scripts/ci-steps/08-build-server.sh
+          GIT_TERMINAL_PROMPT: 0
+        run: ./scripts/ci-steps/08a-server-configure.sh
+
+      - name: Build backend — compile
+        env:
+          CMAKE_BUILD_TYPE: Debug
+        run: ./scripts/ci-steps/08b-server-compile.sh
 
       - name: Backend unit tests
         run: ./scripts/ci-steps/09-test-backend-unit.sh

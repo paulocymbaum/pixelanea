@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
+# Wrapper: configure + compile (use 08a/08b in CI for clearer logs).
 set -euo pipefail
-CI_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-# shellcheck source=ci-lib.sh
-source "${CI_ROOT_DIR}/scripts/ci-lib.sh"
-cd "${CI_ROOT_DIR}"
-
-ci_step_begin "08 — build backend"
-export CMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE:-Debug}"
-./scripts/assets-cache.sh ensure-server
-ci_step_end "08 — build backend"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+bash "${ROOT_DIR}/scripts/ci-steps/08a-server-configure.sh"
+bash "${ROOT_DIR}/scripts/ci-steps/08b-server-compile.sh"
