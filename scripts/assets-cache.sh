@@ -5,6 +5,7 @@
 #   ./scripts/assets-cache.sh hash [--build-type Debug|Release]
 #   ./scripts/assets-cache.sh status [--build-type Debug|Release]
 #   ./scripts/assets-cache.sh sync-brand
+#   ./scripts/assets-cache.sh ensure-python-deps
 #   ./scripts/assets-cache.sh ensure-api
 #   ./scripts/assets-cache.sh ensure-web [--build-type Debug|Release]
 #   ./scripts/assets-cache.sh ensure-server [--build-type Debug|Release]
@@ -75,6 +76,7 @@ ensure_pnpm() {
 }
 
 PYTHON_SCRIPTS_VENV="${ROOT_DIR}/.cache/venv-scripts"
+PYTHON_SCRIPTS_BIN=""
 
 ensure_python_script_deps() {
   if python3 -c "from PIL import Image" 2>/dev/null; then
@@ -85,7 +87,12 @@ ensure_python_script_deps() {
     return 0
   fi
 
-  echo "==> Installing Python script dependencies (Pillow)..."
+  if [[ -d "${PYTHON_SCRIPTS_VENV}" ]]; then
+    echo "==> Removing incomplete Python scripts venv..." >&2
+    rm -rf "${PYTHON_SCRIPTS_VENV}"
+  fi
+
+  echo "==> Installing Python script dependencies (Pillow)..." >&2
   if ! python3 -m venv "${PYTHON_SCRIPTS_VENV}"; then
     echo "python3 -m venv failed (install python3-venv on Debian/Ubuntu)." >&2
     exit 1
@@ -95,15 +102,34 @@ ensure_python_script_deps() {
     echo "Failed to install scripts/requirements.txt." >&2
     exit 1
   fi
+  if ! "${PYTHON_SCRIPTS_VENV}/bin/python3" -c "from PIL import Image" 2>/dev/null; then
+    echo "Pillow install did not produce a working PIL import." >&2
+    exit 1
+  fi
 }
 
-python_for_brand_pngs() {
+resolve_python_scripts_bin() {
   if python3 -c "from PIL import Image" 2>/dev/null; then
-    echo python3
+    PYTHON_SCRIPTS_BIN=python3
     return 0
   fi
+  if [[ -x "${PYTHON_SCRIPTS_VENV}/bin/python3" ]] \
+    && "${PYTHON_SCRIPTS_VENV}/bin/python3" -c "from PIL import Image" 2>/dev/null; then
+    PYTHON_SCRIPTS_BIN="${PYTHON_SCRIPTS_VENV}/bin/python3"
+    return 0
+  fi
+
   ensure_python_script_deps
-  echo "${PYTHON_SCRIPTS_VENV}/bin/python3"
+  PYTHON_SCRIPTS_BIN="${PYTHON_SCRIPTS_VENV}/bin/python3"
+  if [[ ! -x "${PYTHON_SCRIPTS_BIN}" ]]; then
+    echo "Python scripts interpreter missing: ${PYTHON_SCRIPTS_BIN}" >&2
+    exit 1
+  fi
+}
+
+cmd_ensure_python_deps() {
+  resolve_python_scripts_bin
+  echo "==> Python script deps ready (${PYTHON_SCRIPTS_BIN})"
 }
 
 parse_args() {
@@ -179,7 +205,8 @@ cmd_sync_brand() {
     cp "${ROOT_DIR}/brand/logo-glyph.svg" "${ROOT_DIR}/apps/web/public/favicon/favicon.svg"
   fi
   if [[ -f "${ROOT_DIR}/scripts/generate-brand-pngs.py" ]]; then
-    "$(python_for_brand_pngs)" "${ROOT_DIR}/scripts/generate-brand-pngs.py"
+    resolve_python_scripts_bin
+    "${PYTHON_SCRIPTS_BIN}" "${ROOT_DIR}/scripts/generate-brand-pngs.py"
   fi
 }
 
@@ -390,6 +417,7 @@ main() {
     status) cmd_status ;;
     sync-brand) cmd_sync_brand ;;
     ensure-brand) cmd_ensure_brand ;;
+    ensure-python-deps) cmd_ensure_python_deps ;;
     ensure-api) cmd_ensure_api ;;
     ensure-web) cmd_ensure_web ;;
     ensure-server) cmd_ensure_server ;;

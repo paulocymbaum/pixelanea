@@ -108,6 +108,7 @@ cmd_install() {
       echo "==> Saving frontend dependencies to cache (${hash})"
       archive_frontend_paths "${cache_dir}/${FRONTEND_ARCHIVE}"
     fi
+    "${ROOT_DIR}/scripts/assets-cache.sh" ensure-python-deps
     return 0
   fi
 
@@ -126,6 +127,7 @@ cmd_install() {
       echo "==> Saving frontend dependencies to cache (${hash})"
       archive_frontend_paths "${cache_dir}/${FRONTEND_ARCHIVE}"
     fi
+    "${ROOT_DIR}/scripts/assets-cache.sh" ensure-python-deps
     return 0
   fi
 
@@ -134,6 +136,7 @@ cmd_install() {
     restore_frontend_archive "${cache_dir}/${FRONTEND_ARCHIVE}"
     write_marker "${hash}"
     echo "==> Frontend restore complete"
+    "${ROOT_DIR}/scripts/assets-cache.sh" ensure-python-deps
     return 0
   fi
 
@@ -152,6 +155,9 @@ cmd_install() {
   echo "==> Saving frontend dependencies to cache (${hash})"
   archive_frontend_paths "${cache_dir}/${FRONTEND_ARCHIVE}"
   echo "==> Frontend install complete"
+
+  echo "==> Ensuring Python script dependencies"
+  "${ROOT_DIR}/scripts/assets-cache.sh" ensure-python-deps
 }
 
 cmd_restore_backend() {

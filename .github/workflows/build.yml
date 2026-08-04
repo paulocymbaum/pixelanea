@@ -23,6 +23,9 @@ jobs:
         id: assets-hash
         run: echo "hash=$(python3 scripts/assets-hash.py --build-type Debug)" >> $GITHUB_OUTPUT
 
+      - name: Install OS dependencies
+        run: sudo apt-get update && sudo apt-get install -y python3-venv cmake g++ gcc curl
+
       - name: Restore dependency cache
         uses: actions/cache@v4
         with:
@@ -56,9 +59,6 @@ jobs:
         with:
           node-version: 20
 
-      - name: Install Python tooling for brand assets
-        run: sudo apt-get update && sudo apt-get install -y python3-venv
-
       - name: Install dependencies
         run: ./scripts/deps-cache.sh install
 
@@ -79,11 +79,6 @@ jobs:
 
       - name: Build frontend
         run: ./scripts/assets-cache.sh ensure-web
-
-      - name: Install backend build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y cmake g++ gcc curl python3
 
       - name: Build backend
         env:
