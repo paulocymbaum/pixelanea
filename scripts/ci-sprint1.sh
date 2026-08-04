@@ -24,15 +24,14 @@ else
   echo "→ Skipping pixelanea_tests (binary not found — build server first)"
 fi
 
-if [[ -x "${ROOT_DIR}/server/build/pixelanea-server" ]] && command -v pnpm >/dev/null 2>&1; then
-  if pnpm exec playwright --version >/dev/null 2>&1; then
-    echo "→ Playwright E2E (@smoke + @routing)"
-    pnpm exec playwright test
-  else
-    echo "→ Skipping Playwright (install with: pnpm install && pnpm test:e2e:install)"
-  fi
+if [[ -x "${ROOT_DIR}/server/build/pixelanea-server" ]] && [[ -x "${ROOT_DIR}/node_modules/.bin/playwright" ]]; then
+  echo "→ Ensure Playwright Chromium browser"
+  ./scripts/e2e-install.sh
+  echo "→ Playwright E2E (excl. LinkedIn media capture)"
+  export CI=true
+  pnpm test:e2e --grep-invert LinkedIn
 else
-  echo "→ Skipping Playwright E2E (build server first: ./scripts/dev.sh --build-only)"
+  echo "→ Skipping Playwright E2E (build server + pnpm install first)"
 fi
 
 echo "=== Sprint 1 CI gate passed ==="

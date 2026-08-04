@@ -100,7 +100,7 @@ fi
 # 4: health
 EXPECTED_VERSION="$(tr -d '[:space:]' < "${ROOT_DIR}/VERSION")"
 HEALTH=$(curl -sf http://127.0.0.1:8787/api/health || true)
-if echo "${HEALTH}" | python3 -c "import sys,json,os; d=json.load(sys.stdin); assert d['status']=='ok' and d['version']==os.environ['EXPECTED_VERSION']" EXPECTED_VERSION="${EXPECTED_VERSION}"; then
+if echo "${HEALTH}" | EXPECTED_VERSION="${EXPECTED_VERSION}" python3 -c "import sys,json,os; d=json.load(sys.stdin); assert d['status']=='ok' and d['version']==os.environ['EXPECTED_VERSION']"; then
   pass "GET /api/health"
 else
   fail "GET /api/health (got: ${HEALTH})"

@@ -88,6 +88,14 @@ jobs:
       - name: Backend unit tests
         run: ctest --test-dir server/build --output-on-failure
 
+      - name: Install Playwright browsers
+        run: ./scripts/e2e-install.sh --with-deps
+
+      - name: Playwright E2E
+        env:
+          CI: true
+        run: pnpm test:e2e --grep-invert LinkedIn
+
       - name: Backend smoke tests
         run: ./scripts/test-backend.sh
 

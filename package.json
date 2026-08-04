@@ -27,7 +27,7 @@
     "test:unit:watch": "pnpm --filter @pixelanea/web test:watch",
     "test:qa": "pnpm --filter @pixelanea/web exec vitest run src/qa/",
     "test:e2e": "./scripts/e2e-playwright.sh",
-    "test:e2e:install": "playwright install chromium",
+    "test:e2e:install": "./scripts/e2e-install.sh",
     "test:smoke:backend": "./scripts/test-backend.sh",
     "test:smoke:frontend": "./scripts/test-frontend.sh",
     "test:smoke": "pnpm test:smoke:backend && pnpm test:smoke:frontend",

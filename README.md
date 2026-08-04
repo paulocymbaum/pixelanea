@@ -97,11 +97,14 @@ pnpm test                  # same as test:smoke
 pnpm test:e2e:install   # first time only
 pnpm test:e2e
 
-# Sprint 1 local gate (tsc + QA matrices + unit + optional E2E + backend)
+# Full CI gate (same as GitHub Actions build job)
+./scripts/ci.sh
+
+# Sprint 1 local gate (subset: tsc + QA matrices + unit + E2E + backend)
 ./scripts/ci-sprint1.sh
 ```
 
-CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, Playwright E2E (excl. LinkedIn media capture), and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Documentation
 
@@ -138,6 +141,7 @@ pixelanea/
     ├── build-desktop-shell.sh
     ├── package-deb.sh     # Debian installer
     ├── package-desktop-linux.sh
+    ├── ci.sh              # Full CI gate (mirrors GitHub Actions)
     ├── ci-sprint1.sh      # Sprint 1 quality gate
     └── e2e-webserver.sh   # Stack for Playwright
 ```
