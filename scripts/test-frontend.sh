@@ -226,10 +226,10 @@ else
   fail "theme persist localStorage (static)"
 fi
 
-if grep -q 'checkHealth' apps/web/src/pages/EditorPage.tsx; then
-  pass "EditorPage health check hook (static)"
+if grep -q 'checkHealth' apps/web/src/App.tsx; then
+  pass "App health check hook (static)"
 else
-  fail "EditorPage health check hook (static)"
+  fail "App health check hook (static)"
 fi
 
 # 6–7: backend + proxy (needs running services)

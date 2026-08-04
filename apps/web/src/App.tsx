@@ -46,6 +46,7 @@ export function App() {
     onNewProject: goToNewProject,
     onProjectOpened: handleProjectOpened,
   });
+  const { openProjectAtPath } = projectFileActions;
   const startupOpenHandledRef = useRef(false);
 
   useEffect(() => {
@@ -64,13 +65,13 @@ export function App() {
   useEffect(() => {
     const shellWindow = window as PixelaneaShellWindow;
     shellWindow.__pixelaneaOpenProject = (path: string) => {
-      void projectFileActions.openProjectAtPath(path);
+      void openProjectAtPath(path);
     };
 
     return () => {
       delete shellWindow.__pixelaneaOpenProject;
     };
-  }, [projectFileActions.openProjectAtPath]);
+  }, [openProjectAtPath]);
 
   useEffect(() => {
     if (startupOpenHandledRef.current) {
@@ -82,8 +83,8 @@ export function App() {
     }
     startupOpenHandledRef.current = true;
     clearStartupOpenPathFromUrl();
-    void projectFileActions.openProjectAtPath(startupPath);
-  }, [projectFileActions.openProjectAtPath]);
+    void openProjectAtPath(startupPath);
+  }, [openProjectAtPath]);
 
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {

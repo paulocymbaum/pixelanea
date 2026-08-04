@@ -1,6 +1,6 @@
 import { SkippableOverlay } from "@/components/onboarding/SkippableOverlay";
 import { ShortcutsOverlay } from "@/components/onboarding/ShortcutsOverlay";
-import { Toast } from "@/components/ui/Toast";
+import { Toast } from "@/shell/Toast";
 import { TooltipProvider } from "@/components/ui";
 import { AppHeader } from "@/shell/AppHeader";
 import { EditorLayout } from "@/shell/EditorLayout";
