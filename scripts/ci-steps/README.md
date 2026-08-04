@@ -17,6 +17,8 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 | 09 | `09-test-backend-unit.sh` | `ctest` or `pixelanea_tests` fallback |
 | 10 | `10-e2e-install.sh` | Playwright Chromium (`--with-deps` when `CI=true`) |
 | 11 | `11-test-e2e.sh` | Playwright E2E (excl. LinkedIn media capture) |
+
+On CI (`CI=true`), `e2e-webserver.sh` serves **prebuilt** `apps/web/dist` via `vite preview` (fast) instead of cold `vite dev`. Step 07 must run first.
 | 12 | `12-smoke-backend.sh` | Live API smoke + lifecycle |
 | 13 | `13-smoke-frontend.sh` | Static UI checks + Vite `/api` proxy |
 

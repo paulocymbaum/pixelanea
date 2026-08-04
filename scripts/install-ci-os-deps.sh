@@ -13,6 +13,7 @@ if [[ "$(id -u)" -eq 0 ]]; then
     git \
     ninja-build \
     pkg-config \
+    psmisc \
     python3-venv \
     zlib1g-dev
 else
@@ -26,6 +27,7 @@ else
     git \
     ninja-build \
     pkg-config \
+    psmisc \
     python3-venv \
     zlib1g-dev
 fi

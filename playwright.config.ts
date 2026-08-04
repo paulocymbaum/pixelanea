@@ -25,6 +25,6 @@ export default defineConfig({
     command: "./scripts/e2e-webserver.sh",
     url: baseURL,
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: process.env.CI ? 240_000 : 120_000,
   },
 });

@@ -7,11 +7,21 @@ cd "${ROOT_DIR}"
 
 API_PORT="${API_PORT:-8787}"
 VITE_PORT="${VITE_PORT:-5173}"
+VITE_HOST="${VITE_HOST:-127.0.0.1}"
 BINARY="${ROOT_DIR}/server/build/pixelanea-server"
+VITE_LOG="${ROOT_DIR}/.cache/e2e-vite.log"
+WEB_DIST="${ROOT_DIR}/apps/web/dist/index.html"
+
+mkdir -p "${ROOT_DIR}/.cache"
 
 if [[ ! -x "${BINARY}" ]]; then
   echo "==> Building backend for E2E..."
   ./scripts/dev.sh --build-only
+fi
+
+if [[ "${CI:-}" == "true" && ! -f "${WEB_DIST}" ]]; then
+  echo "==> CI E2E: building web dist (missing ${WEB_DIST})"
+  ./scripts/assets-cache.sh ensure-web
 fi
 
 free_port() {
@@ -21,6 +31,22 @@ free_port() {
   fi
 }
 
+wait_for_url() {
+  local url="$1"
+  local label="$2"
+  local attempts="${3:-120}"
+  local delay="${4:-0.5}"
+  for _ in $(seq 1 "${attempts}"); do
+    if curl -sf "${url}" >/dev/null 2>&1; then
+      echo "==> ${label} ready (${url})"
+      return 0
+    fi
+    sleep "${delay}"
+  done
+  echo "ERROR: ${label} failed to become ready (${url})" >&2
+  return 1
+}
+
 free_port "${API_PORT}"
 free_port "${VITE_PORT}"
 
@@ -28,31 +54,30 @@ echo "==> Starting API on :${API_PORT}"
 "${BINARY}" &
 SERVER_PID=$!
 
-for _ in $(seq 1 50); do
-  if curl -sf "http://127.0.0.1:${API_PORT}/api/health" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 0.2
-done
-
-if ! curl -sf "http://127.0.0.1:${API_PORT}/api/health" >/dev/null 2>&1; then
+if ! wait_for_url "http://127.0.0.1:${API_PORT}/api/health" "API" 60 0.5; then
   echo "ERROR: API failed to start" >&2
   exit 1
 fi
 
-echo "==> Starting Vite on :${VITE_PORT}"
-pnpm --filter @pixelanea/web exec vite --port "${VITE_PORT}" --strictPort &
+: > "${VITE_LOG}"
+if [[ "${CI:-}" == "true" && -f "${WEB_DIST}" ]]; then
+  echo "==> Starting Vite preview on ${VITE_HOST}:${VITE_PORT} (prebuilt dist)"
+  pnpm --filter @pixelanea/web exec vite preview \
+    --host "${VITE_HOST}" \
+    --port "${VITE_PORT}" \
+    --strictPort >>"${VITE_LOG}" 2>&1 &
+else
+  echo "==> Starting Vite dev server on ${VITE_HOST}:${VITE_PORT}"
+  pnpm --filter @pixelanea/web exec vite \
+    --host "${VITE_HOST}" \
+    --port "${VITE_PORT}" \
+    --strictPort >>"${VITE_LOG}" 2>&1 &
+fi
 VITE_PID=$!
 
-for _ in $(seq 1 50); do
-  if curl -sf "http://127.0.0.1:${VITE_PORT}/" >/dev/null 2>&1; then
-    break
-  fi
-  sleep 0.2
-done
-
-if ! curl -sf "http://127.0.0.1:${VITE_PORT}/" >/dev/null 2>&1; then
-  echo "ERROR: Vite failed to start" >&2
+if ! wait_for_url "http://${VITE_HOST}:${VITE_PORT}/" "Vite" 180 0.5; then
+  echo "ERROR: Vite failed to start — log tail:" >&2
+  tail -n 40 "${VITE_LOG}" >&2 || true
   exit 1
 fi
 
