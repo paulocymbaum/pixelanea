@@ -1,12 +1,19 @@
 #!/usr/bin/env bash
-# Run the full CI workflow before each commit (mirrors .github/workflows/build.yml).
+# Pre-commit gate (blocks commits only — git push is never hooked).
 #
-# Skip when needed:
-#   SKIP_PRE_COMMIT=1 git commit ...
-#   git commit --no-verify
+# Profiles:
+#   core (default) — verify VERSION, lint, typecheck, tests, web+server build
+#   full           — core + Playwright E2E + smoke scripts (same as GitHub Actions)
+#
+# Examples:
+#   git commit -m "..."                         # runs core
+#   PRE_COMMIT_CI=full git commit -m "..."      # runs full CI
+#   SKIP_PRE_COMMIT=1 git commit -m "..."       # skip hook
+#   git commit --no-verify -m "..."             # skip hook
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PROFILE="${PRE_COMMIT_CI:-core}"
 
 if [[ "${SKIP_PRE_COMMIT:-}" == "1" ]]; then
   echo "pre-commit: skipped (SKIP_PRE_COMMIT=1)"
@@ -17,5 +24,10 @@ cd "${ROOT_DIR}"
 echo "pre-commit: verifying VERSION manifests..."
 "${ROOT_DIR}/scripts/verify-version.sh"
 
-echo "pre-commit: running full CI (./scripts/ci.sh full)..."
-exec "${ROOT_DIR}/scripts/ci.sh" full
+if [[ "${PROFILE}" == "full" ]]; then
+  echo "pre-commit: freeing ports for E2E..."
+  "${ROOT_DIR}/scripts/free-ci-ports.sh"
+fi
+
+echo "pre-commit: running CI profile '${PROFILE}'..."
+exec "${ROOT_DIR}/scripts/ci.sh" "${PROFILE}"
