@@ -12,6 +12,7 @@ import { runGifExport, runPngExport, runSpritesheetExport, useOffPaletteExportGu
 import { buildFileMenuItems } from "./fileMenuItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { ViewMenu } from "./ViewMenu";
+import { HelpMenu } from "./HelpMenu";
 
 type AppHeaderProps = {
   onNewProject: () => void;
@@ -86,6 +87,7 @@ export function AppHeader({
             showTechnicalInfo={showTechnicalInfo}
             onShowTechnicalInfoChange={setShowTechnicalInfo}
           />
+          <HelpMenu />
         </nav>
 
         <div className="min-w-0 flex-1 text-center text-md text-primary">

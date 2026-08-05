@@ -2,6 +2,7 @@ mod argv;
 mod paths;
 mod port;
 mod server;
+mod updater;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
@@ -11,6 +12,10 @@ use argv::extract_bundle_path_from_args;
 use paths::{devtools_requested, resolve_paths_flexible, InstallPaths};
 use port::{app_url, find_free_port, is_pixelanea_healthy, is_port_listening};
 use server::ServerProcess;
+use updater::{
+    check_connection, check_for_updates, download_and_install, ConnectionStatus, InstallResult,
+    UpdateCheckResult,
+};
 use tauri::webview::{WebviewWindow, WebviewWindowBuilder};
 use tauri::{AppHandle, Manager, Url, WebviewUrl};
 use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind, MessageDialogResult};
@@ -195,6 +200,26 @@ fn open_main_window(
     Ok(())
 }
 
+#[tauri::command]
+fn updater_check_connection() -> ConnectionStatus {
+    check_connection()
+}
+
+#[tauri::command]
+fn updater_check_for_updates(current_version: String) -> Result<UpdateCheckResult, String> {
+    check_for_updates(&current_version)
+}
+
+#[tauri::command]
+fn updater_download_and_install(download_url: String) -> Result<InstallResult, String> {
+    download_and_install(&download_url)
+}
+
+#[tauri::command]
+fn updater_restart_app(app: AppHandle) {
+    app.restart();
+}
+
 fn initial_bundle_path() -> Option<PathBuf> {
     let args: Vec<String> = std::env::args().collect();
     let cwd = std::env::current_dir().ok();
@@ -217,6 +242,12 @@ pub fn run() {
     }
 
     builder
+        .invoke_handler(tauri::generate_handler![
+            updater_check_connection,
+            updater_check_for_updates,
+            updater_download_and_install,
+            updater_restart_app,
+        ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(
             tauri_plugin_log::Builder::default()

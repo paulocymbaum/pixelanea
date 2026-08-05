@@ -3,5 +3,13 @@
   "identifier": "default",
   "description": "Default Pixelanea shell permissions",
   "windows": ["main"],
-  "permissions": ["core:default", "dialog:default", "log:default"]
+  "permissions": [
+    "core:default",
+    "dialog:default",
+    "log:default",
+    "allow-updater-check-connection",
+    "allow-updater-check-for-updates",
+    "allow-updater-download-and-install",
+    "allow-updater-restart-app"
+  ]
 }

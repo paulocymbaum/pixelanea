@@ -1,0 +1,19 @@
+[[permission]]
+identifier = "allow-updater-check-connection"
+description = "Checks connectivity to GitHub for updates."
+commands.allow = ["updater_check_connection"]
+
+[[permission]]
+identifier = "allow-updater-check-for-updates"
+description = "Checks whether a newer Pixelanea version is on main."
+commands.allow = ["updater_check_for_updates"]
+
+[[permission]]
+identifier = "allow-updater-download-and-install"
+description = "Downloads and installs the latest Pixelanea release."
+commands.allow = ["updater_download_and_install"]
+
+[[permission]]
+identifier = "allow-updater-restart-app"
+description = "Restarts Pixelanea after an update."
+commands.allow = ["updater_restart_app"]
