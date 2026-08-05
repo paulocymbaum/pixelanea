@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { basename } from "@/components/project/pathUtils";
 import { copy } from "@/content/copy";
 import { useDerivedProjectStatus } from "@/lib/projectStatus";
@@ -6,13 +6,15 @@ import { useBundlePath, useProjectName } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { Button } from "@/components/ui";
 import { OffPaletteExportDialog } from "@/components/project/OffPaletteExportDialog";
+import { UpdateDialog } from "@/components/update/UpdateDialog";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { FileMenu } from "./FileMenu";
 import { runGifExport, runPngExport, runSpritesheetExport, useOffPaletteExportGuard } from "./exportActions";
 import { buildFileMenuItems } from "./fileMenuItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { ViewMenu } from "./ViewMenu";
-import { HelpMenu } from "./HelpMenu";
+import { isDesktopShell } from "@/lib/desktop";
+import { useApiStatus } from "@/state/uiStore";
 
 type AppHeaderProps = {
   onNewProject: () => void;
@@ -30,6 +32,13 @@ export function AppHeader({
   const projectStatus = useDerivedProjectStatus();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
   const setShowTechnicalInfo = useUiStore((s) => s.setShowTechnicalInfo);
+  const { version } = useApiStatus();
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const desktopShell = isDesktopShell();
+
+  const handleCheckForUpdates = useCallback(() => {
+    setUpdateDialogOpen(true);
+  }, []);
 
   const fileActions = useProjectFileActions({
     onNewProject,
@@ -62,6 +71,8 @@ export function AppHeader({
     onExportPng: handleExportPng,
     onExportSpritesheet: handleExportSpritesheet,
     onExportGif: handleExportGif,
+    onCheckForUpdates: handleCheckForUpdates,
+    updatesDesktopOnly: !desktopShell,
   });
 
   return (
@@ -87,7 +98,6 @@ export function AppHeader({
             showTechnicalInfo={showTechnicalInfo}
             onShowTechnicalInfoChange={setShowTechnicalInfo}
           />
-          <HelpMenu />
         </nav>
 
         <div className="min-w-0 flex-1 text-center text-md text-primary">
@@ -128,6 +138,13 @@ export function AppHeader({
         onOpenChange={offPaletteGuard.handleOpenChange}
         onConfirm={offPaletteGuard.handleConfirm}
       />
+      {desktopShell ? (
+        <UpdateDialog
+          open={updateDialogOpen}
+          onOpenChange={setUpdateDialogOpen}
+          currentVersion={version}
+        />
+      ) : null}
     </>
   );
 }

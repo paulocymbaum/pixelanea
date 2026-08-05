@@ -20,6 +20,48 @@ export type Size = {
   height: number;
 };
 
+export type CellBounds = {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+};
+
+/** Screen viewport intersected with grid — clamped cell index range (inclusive). */
+export function visibleCellBounds(
+  viewport: Viewport,
+  cssSize: Size,
+  gridWidth: number,
+  gridHeight: number,
+): CellBounds {
+  if (
+    gridWidth <= 0 ||
+    gridHeight <= 0 ||
+    cssSize.width <= 0 ||
+    cssSize.height <= 0 ||
+    viewport.zoom <= 0
+  ) {
+    return { minX: 0, minY: 0, maxX: -1, maxY: -1 };
+  }
+
+  const minX = Math.max(0, Math.floor((0 - viewport.panX) / viewport.zoom));
+  const minY = Math.max(0, Math.floor((0 - viewport.panY) / viewport.zoom));
+  const maxX = Math.min(
+    gridWidth - 1,
+    Math.ceil((cssSize.width - viewport.panX) / viewport.zoom) - 1,
+  );
+  const maxY = Math.min(
+    gridHeight - 1,
+    Math.ceil((cssSize.height - viewport.panY) / viewport.zoom) - 1,
+  );
+
+  if (minX > maxX || minY > maxY) {
+    return { minX: 0, minY: 0, maxX: -1, maxY: -1 };
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
 export function clampZoom(zoom: number): number {
   return Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, zoom));
 }

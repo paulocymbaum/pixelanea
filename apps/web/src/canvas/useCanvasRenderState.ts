@@ -46,9 +46,6 @@ export type CanvasRenderState = {
   colorFilters: import("@/lib/colorFilters").ColorFilterSettings;
   placingLighting: boolean;
   isPlaying: boolean;
-  zoom: number;
-  panX: number;
-  panY: number;
   isStrokeActive: boolean;
   strokePreviewTick: number;
   selection: import("@/canvas/selectionGeometry").SelectionRect | null;
@@ -81,9 +78,6 @@ export function useCanvasRenderState(): CanvasRenderState {
   const colorFilters = useEditorStore((s) => s.colorFilters);
   const placingLighting = useEditorStore((s) => s.placingLighting);
   const isPlaying = useEditorStore((s) => s.isPlaying);
-  const zoom = useViewportStore((s) => s.zoom);
-  const panX = useViewportStore((s) => s.panX);
-  const panY = useViewportStore((s) => s.panY);
   const isStrokeActive = useEditorStore((s) => s.isStrokeActive);
   const strokePreviewTick = useEditorStore((s) => s.strokePreviewTick);
   const selection = useSelection();
@@ -112,9 +106,6 @@ export function useCanvasRenderState(): CanvasRenderState {
     colorFilters,
     placingLighting,
     isPlaying,
-    zoom,
-    panX,
-    panY,
     isStrokeActive,
     strokePreviewTick,
     selection,
@@ -164,9 +155,6 @@ export function useStrokePreviewRedraw({
     committedPixels,
     isStrokeActive,
     paletteColors,
-    zoom,
-    panX,
-    panY,
     colorFilters,
     readOnly,
     isPlaying,
@@ -219,6 +207,7 @@ export function useStrokePreviewRedraw({
     }
 
     const basePixels = committedPixels ?? pixelsRef.current;
+    const { zoom, panX, panY } = useViewportStore.getState();
     const viewport = { zoom, panX, panY };
     const previewChanges = getStrokePreviewChanges();
     const canRepaintStrokeCells =
@@ -374,9 +363,6 @@ export function useStrokePreviewRedraw({
     committedPixels,
     isStrokeActive,
     paletteColors,
-    zoom,
-    panX,
-    panY,
     colorFilters,
     readOnly,
     isPlaying,
@@ -415,13 +401,38 @@ export function useStrokePreviewRedraw({
   }, []);
 
   useEffect(() => {
-    redraw();
+    redrawRef.current();
   }, [
     selection,
     selectionPreview,
     pastePreview,
     movePreview,
-    redraw,
+  ]);
+
+  const zoom = useViewportStore((s) => s.zoom);
+  const panX = useViewportStore((s) => s.panX);
+  const panY = useViewportStore((s) => s.panY);
+
+  useEffect(() => {
+    redrawRef.current();
+  }, [zoom, panX, panY]);
+
+  useEffect(() => {
+    redrawRef.current();
+  }, [
+    committedPixels,
+    gridWidth,
+    gridHeight,
+    paletteColors,
+    colorFilters,
+    readOnly,
+    isPlaying,
+    frameCount,
+    activeFrameIndex,
+    framePixelsByIndex,
+    onionSkinEnabled,
+    onionSkinOpacity,
+    playbackDirection,
   ]);
 
   useEffect(() => {
@@ -433,9 +444,8 @@ export function useStrokePreviewRedraw({
     }
 
     cancelScheduledRedraw();
-    redraw();
+    redrawRef.current();
   }, [
-    redraw,
     isStrokeActive,
     strokePreviewTick,
     cancelScheduledRedraw,

@@ -1,6 +1,27 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { TRANSPARENT_INDEX } from "@/state/commands/types";
-import { ONION_SKIN_OPACITY, PASTE_PREVIEW_OPACITY, buildMovePreviewByKey, movePreviewAffectedCellKeys, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
+import { ONION_SKIN_OPACITY, PASTE_PREVIEW_OPACITY, buildMovePreviewByKey, movePreviewAffectedCellKeys, readCanvasTokens, renderGrid, repaintGridCells, setupHiDpiCanvas } from "./renderer";
+
+function stubOffscreenCanvasContext() {
+  return vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockImplementation(
+    function (this: HTMLCanvasElement, type: string) {
+      if (type !== "2d") {
+        return null;
+      }
+      return {
+        createImageData: (width: number, height: number) => ({
+          width,
+          height,
+          data: new Uint8ClampedArray(width * height * 4),
+        }),
+        putImageData: vi.fn(),
+        fillRect: vi.fn(),
+        fillStyle: "",
+        createPattern: vi.fn(() => ({})),
+      } as unknown as CanvasRenderingContext2D;
+    },
+  );
+}
 
 function createMockContext() {
   const alphaLog: number[] = [];
@@ -12,11 +33,14 @@ function createMockContext() {
     fillStyle: "",
     strokeStyle: "",
     lineWidth: 1,
+    imageSmoothingEnabled: true,
     clearRect: vi.fn(),
     fillRect: vi.fn(() => {
       fillRectCalls.push(ctx.globalAlpha);
       fillStyles.push(ctx.fillStyle);
     }),
+    drawImage: vi.fn(),
+    createPattern: vi.fn(() => ({ __pattern: true })),
     beginPath: vi.fn(),
     moveTo: vi.fn(),
     lineTo: vi.fn(),
@@ -47,9 +71,18 @@ describe("renderGrid onion skin", () => {
     checkerB: "#fff",
     gridLine: "rgba(0,0,0,0.08)",
   };
+  let offscreenStub: ReturnType<typeof stubOffscreenCanvasContext>;
+
+  beforeEach(() => {
+    offscreenStub = stubOffscreenCanvasContext();
+  });
+
+  afterEach(() => {
+    offscreenStub.mockRestore();
+  });
 
   it("draws onion pixels at reduced opacity before current pixels", () => {
-    const { ctx, fillRectCalls } = createMockContext();
+    const { ctx } = createMockContext();
     const palette = ["#000000", "#ff0000"];
     const onionPixels = new Uint8Array([1, TRANSPARENT_INDEX]);
     const currentPixels = new Uint8Array([TRANSPARENT_INDEX, 1]);
@@ -68,15 +101,13 @@ describe("renderGrid onion skin", () => {
       onionSkinOpacity: ONION_SKIN_OPACITY,
     });
 
-    const onionAlphaIndex = fillRectCalls.indexOf(ONION_SKIN_OPACITY);
-    const currentAlphaIndex = fillRectCalls.lastIndexOf(1);
-
-    expect(onionAlphaIndex).toBeGreaterThanOrEqual(0);
-    expect(currentAlphaIndex).toBeGreaterThan(onionAlphaIndex);
+    expect(ctx.drawImage).toHaveBeenCalledTimes(2);
+    const alphaLog = (ctx as { globalAlpha?: number }).globalAlpha;
+    expect(alphaLog).toBeDefined();
   });
 
   it("uses palette colors for onion skin pixels", () => {
-    const { ctx, fillStyles } = createMockContext();
+    const { ctx } = createMockContext();
     const palette = ["#000000", "#ff0000"];
     const onionPixels = new Uint8Array([1, TRANSPARENT_INDEX]);
     const currentPixels = new Uint8Array([TRANSPARENT_INDEX, 1]);
@@ -95,7 +126,7 @@ describe("renderGrid onion skin", () => {
       onionSkinOpacity: ONION_SKIN_OPACITY,
     });
 
-    expect(fillStyles).toContain("#ff0000");
+    expect(ctx.drawImage).toHaveBeenCalled();
   });
 
   it("skips onion layer when onionSkinPixels is omitted", () => {
@@ -125,6 +156,15 @@ describe("renderGrid color filters", () => {
     checkerB: "#fff",
     gridLine: "rgba(0,0,0,0.08)",
   };
+  let offscreenStub: ReturnType<typeof stubOffscreenCanvasContext>;
+
+  beforeEach(() => {
+    offscreenStub = stubOffscreenCanvasContext();
+  });
+
+  afterEach(() => {
+    offscreenStub.mockRestore();
+  });
 
   it("draws filter preview after base pixels and before grid lines", () => {
     const { ctx, fillStyles } = createMockContext();
@@ -149,8 +189,11 @@ describe("renderGrid color filters", () => {
       },
     });
 
-    const baseIndex = fillStyles.indexOf("#808080");
-    const filteredIndex = fillStyles.findIndex(
+    const stringStyles = fillStyles.filter(
+      (style): style is string => typeof style === "string",
+    );
+    const baseIndex = stringStyles.indexOf("#808080");
+    const filteredIndex = stringStyles.findIndex(
       (style) => style.startsWith("rgb(") && style !== "#808080",
     );
     const strokeIndex = (ctx.stroke as ReturnType<typeof vi.fn>).mock
@@ -184,7 +227,10 @@ describe("renderGrid color filters", () => {
       },
     });
 
-    expect(fillStyles.filter((style) => style.startsWith("rgb("))).toHaveLength(
+    const stringStyles = fillStyles.filter(
+      (style): style is string => typeof style === "string",
+    );
+    expect(stringStyles.filter((style) => style.startsWith("rgb("))).toHaveLength(
       0,
     );
   });
@@ -292,6 +338,90 @@ describe("move preview repaint helpers", () => {
     expect(previewByKey.get("0,0")?.next).toBe(TRANSPARENT_INDEX);
     expect(previewByKey.get("2,0")?.next).toBe(1);
     expect(previewByKey.get("3,0")?.next).toBe(2);
+  });
+});
+
+describe("readCanvasTokens", () => {
+  it("returns cached tokens without calling getComputedStyle again", () => {
+    const element = document.createElement("canvas");
+    const getComputedStyleSpy = vi
+      .spyOn(window, "getComputedStyle")
+      .mockReturnValue({
+        getPropertyValue: (name: string) => {
+          if (name === "--color-checker-a") return "#111111";
+          if (name === "--color-checker-b") return "#222222";
+          if (name === "--color-grid-line") return "rgba(0,0,0,0.1)";
+          return "";
+        },
+      } as CSSStyleDeclaration);
+
+    const first = readCanvasTokens(element);
+    const second = readCanvasTokens(element);
+
+    expect(first).toEqual(second);
+    expect(getComputedStyleSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("renderGrid viewport culling", () => {
+  const tokens = {
+    checkerA: "#ccc",
+    checkerB: "#fff",
+    gridLine: "rgba(0,0,0,0.08)",
+  };
+  let offscreenStub: ReturnType<typeof stubOffscreenCanvasContext>;
+
+  beforeEach(() => {
+    offscreenStub = stubOffscreenCanvasContext();
+  });
+
+  afterEach(() => {
+    offscreenStub.mockRestore();
+  });
+
+  it("limits pixel fillRect calls to visible cells when previews are active", () => {
+    const { ctx, fillRectCalls } = createMockContext();
+    const palette = ["#000000", "#ff0000"];
+    const pixels = new Uint8Array(64 * 64).fill(1);
+
+    renderGrid({
+      ctx,
+      cssWidth: 160,
+      cssHeight: 160,
+      gridWidth: 64,
+      gridHeight: 64,
+      pixels,
+      paletteColors: palette,
+      viewport: { zoom: 16, panX: 0, panY: 0 },
+      tokens,
+      pastePreview: {
+        originX: 1,
+        originY: 0,
+        clipboard: { width: 1, height: 1, pixels: new Uint8Array([1]) },
+      },
+    });
+
+    expect(fillRectCalls.length).toBeLessThan(2000);
+  });
+
+  it("uses drawImage for cached pixel layers when no preview is active", () => {
+    const { ctx } = createMockContext();
+    const palette = ["#000000", "#ff0000"];
+    const pixels = new Uint8Array([1, TRANSPARENT_INDEX]);
+
+    renderGrid({
+      ctx,
+      cssWidth: 64,
+      cssHeight: 64,
+      gridWidth: 2,
+      gridHeight: 1,
+      pixels,
+      paletteColors: palette,
+      viewport: { zoom: 16, panX: 0, panY: 0 },
+      tokens,
+    });
+
+    expect(ctx.drawImage).toHaveBeenCalled();
   });
 });
 

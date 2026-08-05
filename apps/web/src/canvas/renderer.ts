@@ -9,8 +9,11 @@ import {
 } from "@/lib/colorFilters";
 import {
   GRID_LINE_MIN_ZOOM,
+  type CellBounds,
   type Viewport,
+  visibleCellBounds,
 } from "./coordinates";
+import { drawCachedPixelLayer } from "./pixelLayerCache";
 import {
   cellsInSelection,
   type SelectionRect,
@@ -77,19 +80,87 @@ export type RepaintGridCellsOptions = {
 };
 
 const CHECKER_CELL_PX = 8;
+const CHECKER_PATTERN_TILE_PX = 16;
 
 const lastHiDpiSize = new WeakMap<
   HTMLCanvasElement,
   { width: number; height: number; dpr: number }
 >();
 
+const checkerPatternByTheme = new Map<string, CanvasPattern>();
+
+function getCheckerPattern(
+  ctx: CanvasRenderingContext2D,
+  tokens: CanvasTokens,
+): CanvasPattern {
+  const themeKey = `${tokens.checkerA}|${tokens.checkerB}`;
+  const cached = checkerPatternByTheme.get(themeKey);
+  if (cached) {
+    return cached;
+  }
+
+  const tile = document.createElement("canvas");
+  tile.width = CHECKER_PATTERN_TILE_PX;
+  tile.height = CHECKER_PATTERN_TILE_PX;
+  const tileCtx = tile.getContext("2d");
+  if (!tileCtx) {
+    throw new Error("Checker pattern tile context unavailable");
+  }
+
+  tileCtx.fillStyle = tokens.checkerA;
+  tileCtx.fillRect(0, 0, CHECKER_PATTERN_TILE_PX, CHECKER_PATTERN_TILE_PX);
+  tileCtx.fillStyle = tokens.checkerB;
+  for (let py = 0; py < CHECKER_PATTERN_TILE_PX; py += CHECKER_CELL_PX) {
+    for (let px = 0; px < CHECKER_PATTERN_TILE_PX; px += CHECKER_CELL_PX) {
+      const col = Math.floor(px / CHECKER_CELL_PX);
+      const row = Math.floor(py / CHECKER_CELL_PX);
+      if ((col + row) % 2 === 1) {
+        tileCtx.fillRect(px, py, CHECKER_CELL_PX, CHECKER_CELL_PX);
+      }
+    }
+  }
+
+  const pattern = ctx.createPattern(tile, "repeat");
+  if (!pattern) {
+    throw new Error("Checker pattern creation failed");
+  }
+  checkerPatternByTheme.set(themeKey, pattern);
+  return pattern;
+}
+
+type CachedCanvasTokens = {
+  themeKey: string;
+  tokens: CanvasTokens;
+};
+
+const canvasTokenCache = new WeakMap<HTMLElement, CachedCanvasTokens>();
+
+function canvasThemeKey(): string {
+  const root = document.documentElement;
+  return `${root.className}|${root.getAttribute("data-theme") ?? ""}`;
+}
+
 export function readCanvasTokens(element: HTMLElement): CanvasTokens {
+  const themeKey = canvasThemeKey();
+  const cached = canvasTokenCache.get(element);
+  if (cached && cached.themeKey === themeKey) {
+    return cached.tokens;
+  }
+
   const style = getComputedStyle(element);
-  return {
+  const tokens: CanvasTokens = {
     checkerA: style.getPropertyValue("--color-checker-a").trim() || "#cccccc",
     checkerB: style.getPropertyValue("--color-checker-b").trim() || "#ffffff",
-    gridLine: style.getPropertyValue("--color-grid-line").trim() || "rgba(0,0,0,0.08)",
+    gridLine:
+      style.getPropertyValue("--color-grid-line").trim() ||
+      "rgba(0,0,0,0.08)",
   };
+  canvasTokenCache.set(element, { themeKey, tokens });
+  return tokens;
+}
+
+export function clearCanvasTokenCache(): void {
+  // WeakMap entries are keyed per-element; theme key mismatch handles invalidation.
 }
 
 export function setupHiDpiCanvas(
@@ -137,19 +208,8 @@ function drawCheckerboard(
   height: number,
   tokens: CanvasTokens,
 ): void {
-  ctx.fillStyle = tokens.checkerA;
+  ctx.fillStyle = getCheckerPattern(ctx, tokens);
   ctx.fillRect(x, y, width, height);
-
-  ctx.fillStyle = tokens.checkerB;
-  for (let py = 0; py < height; py += CHECKER_CELL_PX) {
-    for (let px = 0; px < width; px += CHECKER_CELL_PX) {
-      const col = Math.floor((x + px) / CHECKER_CELL_PX);
-      const row = Math.floor((y + py) / CHECKER_CELL_PX);
-      if ((col + row) % 2 === 1) {
-        ctx.fillRect(x + px, y + py, CHECKER_CELL_PX, CHECKER_CELL_PX);
-      }
-    }
-  }
 }
 
 export function cellKey(x: number, y: number): string {
@@ -164,25 +224,10 @@ function drawCheckerCell(
   tokens: CanvasTokens,
 ): void {
   const cellSize = viewport.zoom;
-  const originX = viewport.panX;
-  const originY = viewport.panY;
-  const px = originX + cellX * cellSize;
-  const py = originY + cellY * cellSize;
-
-  for (let dy = 0; dy < cellSize; dy += CHECKER_CELL_PX) {
-    for (let dx = 0; dx < cellSize; dx += CHECKER_CELL_PX) {
-      const checkerCol = Math.floor((px + dx) / CHECKER_CELL_PX);
-      const checkerRow = Math.floor((py + dy) / CHECKER_CELL_PX);
-      ctx.fillStyle =
-        (checkerCol + checkerRow) % 2 === 0 ? tokens.checkerA : tokens.checkerB;
-      ctx.fillRect(
-        px + dx,
-        py + dy,
-        Math.min(CHECKER_CELL_PX, cellSize - dx),
-        Math.min(CHECKER_CELL_PX, cellSize - dy),
-      );
-    }
-  }
+  const px = viewport.panX + cellX * cellSize;
+  const py = viewport.panY + cellY * cellSize;
+  ctx.fillStyle = getCheckerPattern(ctx, tokens);
+  ctx.fillRect(px, py, cellSize, cellSize);
 }
 
 function drawPixelCell(
@@ -271,6 +316,7 @@ function drawPixels(
   paletteColors: readonly string[],
   viewport: Viewport,
   opacity = 1,
+  bounds?: CellBounds,
 ): void {
   const cellSize = viewport.zoom;
   const originX = viewport.panX;
@@ -281,8 +327,18 @@ function drawPixels(
     ctx.globalAlpha = opacity;
   }
 
-  for (let y = 0; y < gridHeight; y++) {
-    for (let x = 0; x < gridWidth; x++) {
+  const minX = bounds?.minX ?? 0;
+  const minY = bounds?.minY ?? 0;
+  const maxX = bounds?.maxX ?? gridWidth - 1;
+  const maxY = bounds?.maxY ?? gridHeight - 1;
+
+  if (minX > maxX || minY > maxY) {
+    ctx.globalAlpha = previousAlpha;
+    return;
+  }
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
       const index = pixels[y * gridWidth + x] ?? 0;
       if (index === TRANSPARENT_INDEX) {
         continue;
@@ -307,6 +363,7 @@ function drawGridLines(
   gridHeight: number,
   viewport: Viewport,
   tokens: CanvasTokens,
+  bounds?: CellBounds,
 ): void {
   if (viewport.zoom < GRID_LINE_MIN_ZOOM) {
     return;
@@ -317,17 +374,26 @@ function drawGridLines(
   const gridPixelWidth = gridWidth * viewport.zoom;
   const gridPixelHeight = gridHeight * viewport.zoom;
 
+  const minX = bounds?.minX ?? 0;
+  const minY = bounds?.minY ?? 0;
+  const maxX = bounds?.maxX ?? gridWidth - 1;
+  const maxY = bounds?.maxY ?? gridHeight - 1;
+
+  if (minX > maxX || minY > maxY) {
+    return;
+  }
+
   ctx.strokeStyle = tokens.gridLine;
   ctx.lineWidth = 1;
   ctx.beginPath();
 
-  for (let x = 0; x <= gridWidth; x++) {
+  for (let x = minX; x <= maxX + 1; x++) {
     const lineX = originX + x * viewport.zoom + 0.5;
     ctx.moveTo(lineX, originY);
     ctx.lineTo(lineX, originY + gridPixelHeight);
   }
 
-  for (let y = 0; y <= gridHeight; y++) {
+  for (let y = minY; y <= maxY + 1; y++) {
     const lineY = originY + y * viewport.zoom + 0.5;
     ctx.moveTo(originX, lineY);
     ctx.lineTo(originX + gridPixelWidth, lineY);
@@ -344,13 +410,23 @@ function drawFilterPreview(
   paletteColors: readonly string[],
   viewport: Viewport,
   colorFilters: ColorFilterSettings,
+  bounds?: CellBounds,
 ): void {
   const cellSize = viewport.zoom;
   const originX = viewport.panX;
   const originY = viewport.panY;
 
-  for (let y = 0; y < gridHeight; y++) {
-    for (let x = 0; x < gridWidth; x++) {
+  const minX = bounds?.minX ?? 0;
+  const minY = bounds?.minY ?? 0;
+  const maxX = bounds?.maxX ?? gridWidth - 1;
+  const maxY = bounds?.maxY ?? gridHeight - 1;
+
+  if (minX > maxX || minY > maxY) {
+    return;
+  }
+
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
       const index = pixels[y * gridWidth + x] ?? TRANSPARENT_INDEX;
       if (index === TRANSPARENT_INDEX) {
         continue;
@@ -518,6 +594,16 @@ export function renderGrid({
 
   const gridPixelWidth = gridWidth * viewport.zoom;
   const gridPixelHeight = gridHeight * viewport.zoom;
+  const bounds = visibleCellBounds(
+    viewport,
+    { width: cssWidth, height: cssHeight },
+    gridWidth,
+    gridHeight,
+  );
+  const canUsePixelCache =
+    !pastePreview &&
+    !movePreview &&
+    (!colorFilters || !hasActiveColorFilters(colorFilters));
 
   drawCheckerboard(
     ctx,
@@ -529,18 +615,46 @@ export function renderGrid({
   );
 
   if (onionSkinPixels) {
-    drawPixels(
-      ctx,
-      gridWidth,
-      gridHeight,
-      onionSkinPixels,
-      paletteColors,
-      viewport,
-      onionSkinOpacity,
-    );
+    if (canUsePixelCache) {
+      drawCachedPixelLayer(
+        ctx,
+        onionSkinPixels,
+        paletteColors,
+        gridWidth,
+        gridHeight,
+        viewport.panX,
+        viewport.panY,
+        viewport.zoom,
+        onionSkinOpacity,
+      );
+    } else {
+      drawPixels(
+        ctx,
+        gridWidth,
+        gridHeight,
+        onionSkinPixels,
+        paletteColors,
+        viewport,
+        onionSkinOpacity,
+        bounds,
+      );
+    }
   }
 
-  drawPixels(ctx, gridWidth, gridHeight, pixels, paletteColors, viewport);
+  if (canUsePixelCache) {
+    drawCachedPixelLayer(
+      ctx,
+      pixels,
+      paletteColors,
+      gridWidth,
+      gridHeight,
+      viewport.panX,
+      viewport.panY,
+      viewport.zoom,
+    );
+  } else {
+    drawPixels(ctx, gridWidth, gridHeight, pixels, paletteColors, viewport, 1, bounds);
+  }
 
   if (movePreview) {
     repaintMoveSourceCells(
@@ -565,6 +679,7 @@ export function renderGrid({
       paletteColors,
       viewport,
       colorFilters,
+      bounds,
     );
   }
 
@@ -572,7 +687,7 @@ export function renderGrid({
     drawLightingMarkers(ctx, colorFilters.lightingPoints, viewport);
   }
 
-  drawGridLines(ctx, gridWidth, gridHeight, viewport, tokens);
+  drawGridLines(ctx, gridWidth, gridHeight, viewport, tokens, bounds);
 
   const placementPreview = pastePreview ?? movePreview;
   if (placementPreview) {

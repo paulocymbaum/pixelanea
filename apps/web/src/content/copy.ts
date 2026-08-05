@@ -146,6 +146,8 @@ export const copy = {
   fileMenuExportPng: "PNG (current frame)",
   fileMenuExportSpritesheet: "Spritesheet (all frames)",
   fileMenuExportGif: "GIF animation",
+  fileMenuCheckForUpdates: "Check for updates…",
+  fileMenuCheckForUpdatesDesktopOnly: "Check for updates (desktop app only)",
   exportOffPaletteTitle: "Some pixels are off-palette",
   exportOffPaletteDescription: (cellCount: number, frameCount: number) =>
     frameCount === 1

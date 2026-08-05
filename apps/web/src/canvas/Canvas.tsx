@@ -1,13 +1,12 @@
 import { copy } from "@/content/copy";
 import { useCanvasRenderState, useStrokePreviewRedraw } from "@/canvas/useCanvasRenderState";
 import { useSelectionOutlineOverlay } from "@/canvas/useSelectionOutlineOverlay";
+import { useViewportInteraction } from "@/canvas/useViewportInteraction";
 import { useViewportStore } from "@/state/viewportStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   isCellInBounds,
   screenToCell,
-  zoomAtPoint,
-  ZOOM_STEP,
 } from "./coordinates";
 import { getToolCursor } from "@/tools/registry";
 import { useToolInput } from "@/tools/useToolInput";
@@ -32,10 +31,21 @@ export function Canvas() {
     startY: number;
     panX: number;
     panY: number;
+    zoom: number;
   } | null>(null);
   const [isPanning, setIsPanning] = useState(false);
 
+  const {
+    onPanMove,
+    onPanCommit,
+    onPanPreviewEnd,
+    isWheelZooming,
+  } = useViewportInteraction(canvasRef, overlayCanvasRef);
+
   const renderState = useCanvasRenderState();
+  const zoom = useViewportStore((s) => s.zoom);
+  const panX = useViewportStore((s) => s.panX);
+  const panY = useViewportStore((s) => s.panY);
   const {
     activeTool,
     readOnly,
@@ -46,9 +56,6 @@ export function Canvas() {
     framePixelsByIndex,
     placingLighting,
     isPlaying,
-    zoom,
-    panX,
-    panY,
     selection,
     selectionPreview,
     pastePreview,
@@ -75,6 +82,7 @@ export function Canvas() {
     zoom,
     panX,
     panY,
+    isViewportInteracting: isPanning || isWheelZooming,
   });
 
   useEffect(() => {
@@ -151,33 +159,6 @@ export function Canvas() {
     );
   }, [fitToView, gridWidth, gridHeight]);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) {
-      return;
-    }
-
-    const handleWheel = (event: WheelEvent) => {
-      event.preventDefault();
-      const rect = canvas.getBoundingClientRect();
-      const anchorX = event.clientX - rect.left;
-      const anchorY = event.clientY - rect.top;
-      const viewport = useViewportStore.getState();
-      const factor = event.deltaY < 0 ? ZOOM_STEP : 1 / ZOOM_STEP;
-      const nextZoom = viewport.zoom * factor;
-      const next = zoomAtPoint(
-        { zoom: viewport.zoom, panX: viewport.panX, panY: viewport.panY },
-        anchorX,
-        anchorY,
-        nextZoom,
-      );
-      useViewportStore.getState().setViewport(next);
-    };
-
-    canvas.addEventListener("wheel", handleWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", handleWheel);
-  }, []);
-
   const updateHoverFromPointer = useCallback(
     (clientX: number, clientY: number) => {
       const canvas = canvasRef.current;
@@ -205,12 +186,7 @@ export function Canvas() {
     const placementActive = isPlacementActive();
 
     if (panDragRef.current && activeTool === "hand" && !placementActive) {
-      const drag = panDragRef.current;
-      useViewportStore.getState().setViewport({
-        zoom,
-        panX: drag.panX + (event.clientX - drag.startX),
-        panY: drag.panY + (event.clientY - drag.startY),
-      });
+      onPanMove(event.clientX, event.clientY, panDragRef.current);
       return;
     }
 
@@ -240,6 +216,7 @@ export function Canvas() {
         startY: event.clientY,
         panX,
         panY,
+        zoom,
       };
       setIsPanning(true);
       return;
@@ -276,8 +253,10 @@ export function Canvas() {
     const placementActive = isPlacementActive();
 
     if (panDragRef.current) {
+      const drag = panDragRef.current;
       panDragRef.current = null;
       setIsPanning(false);
+      onPanCommit(event.clientX, event.clientY, drag);
       return;
     }
 
@@ -301,6 +280,7 @@ export function Canvas() {
     if (panDragRef.current) {
       panDragRef.current = null;
       setIsPanning(false);
+      onPanPreviewEnd();
     }
   };
 

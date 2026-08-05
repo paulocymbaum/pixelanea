@@ -19,6 +19,7 @@ type SelectionOutlineOverlayParams = {
   zoom: number;
   panX: number;
   panY: number;
+  isViewportInteracting?: boolean;
 };
 
 /** Animated marching ants on a lightweight overlay — never repaints the pixel grid. */
@@ -32,6 +33,7 @@ export function useSelectionOutlineOverlay({
   zoom,
   panX,
   panY,
+  isViewportInteracting = false,
 }: SelectionOutlineOverlayParams): void {
   const reducedMotion = usePrefersReducedMotion();
   const dashOffsetRef = useRef(0);
@@ -42,7 +44,8 @@ export function useSelectionOutlineOverlay({
   const animateAnts =
     Boolean(activeSelection) &&
     !placementActive &&
-    !reducedMotion;
+    !reducedMotion &&
+    !isViewportInteracting;
 
   const clearOverlay = useCallback(() => {
     const overlay = overlayCanvasRef.current;
@@ -123,6 +126,7 @@ export function useSelectionOutlineOverlay({
     clearOverlay,
     drawOutline,
     placementActive,
+    isViewportInteracting,
   ]);
 
   useEffect(() => {
@@ -130,5 +134,5 @@ export function useSelectionOutlineOverlay({
       return;
     }
     drawOutline(0);
-  }, [activeSelection, animateAnts, drawOutline, placementActive, zoom, panX, panY]);
+  }, [activeSelection, animateAnts, drawOutline, placementActive, zoom, panX, panY, isViewportInteracting]);
 }

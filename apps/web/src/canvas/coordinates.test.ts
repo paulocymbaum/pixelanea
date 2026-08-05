@@ -11,6 +11,7 @@ import {
   zoomAtPoint,
   zoomIn,
   zoomOut,
+  visibleCellBounds,
 } from "./coordinates";
 
 describe("clampZoom", () => {
@@ -115,5 +116,28 @@ describe("formatZoomPercent", () => {
     expect(formatZoomPercent(1)).toBe("100%");
     expect(formatZoomPercent(0.25)).toBe("25%");
     expect(formatZoomPercent(8)).toBe("800%");
+  });
+});
+
+describe("visibleCellBounds", () => {
+  it("returns the full grid when zoomed out to fit", () => {
+    const viewport = fitToView({ width: 200, height: 200 }, 16, 16);
+    const bounds = visibleCellBounds(viewport, { width: 200, height: 200 }, 16, 16);
+    expect(bounds).toEqual({ minX: 0, minY: 0, maxX: 15, maxY: 15 });
+  });
+
+  it("returns a subset when zoomed in", () => {
+    const viewport = { zoom: 16, panX: 0, panY: 0 };
+    const bounds = visibleCellBounds(viewport, { width: 200, height: 160 }, 32, 32);
+    expect(bounds.minX).toBe(0);
+    expect(bounds.minY).toBe(0);
+    expect(bounds.maxX).toBeLessThan(31);
+    expect(bounds.maxY).toBeLessThan(31);
+  });
+
+  it("returns empty bounds when grid is off-screen", () => {
+    const viewport = { zoom: 4, panX: 500, panY: 500 };
+    const bounds = visibleCellBounds(viewport, { width: 200, height: 200 }, 32, 32);
+    expect(bounds.maxX).toBeLessThan(bounds.minX);
   });
 });

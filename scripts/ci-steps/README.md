@@ -4,6 +4,7 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 
 | Step | Script | What it checks |
 |------|--------|----------------|
+| 00 | `00-verify-version.sh` | `VERSION` matches all propagated manifests |
 | 01 | `01-deps.sh` | `pnpm install` (hash cache) |
 | 02 | `02-api-assets.sh` | OpenAPI codegen + api-client build |
 | 03 | `03-lint.sh` | ESLint (web) + C++ layer boundaries |

@@ -74,16 +74,16 @@ ci_run_backend_unit_tests() {
 ci_profile_steps() {
   case "$1" in
     fast)
-      echo "03-lint 04-typecheck 05-test-qa 06-test-unit"
+      echo "00-verify-version 03-lint 04-typecheck 05-test-qa 06-test-unit"
       ;;
     core)
-      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit"
+      echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit"
       ;;
     e2e)
-      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
+      echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
       ;;
     full | all)
-      echo "01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e 12-smoke-backend 13-smoke-frontend"
+      echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e 12-smoke-backend 13-smoke-frontend"
       ;;
     sprint | sprint1)
       echo "04-typecheck 05-test-qa 06-test-unit 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"

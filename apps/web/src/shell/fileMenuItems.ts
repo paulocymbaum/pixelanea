@@ -30,6 +30,8 @@ export type BuildFileMenuItemsParams = {
   onExportPng: () => void;
   onExportSpritesheet?: () => void;
   onExportGif?: () => void;
+  onCheckForUpdates?: () => void;
+  updatesDesktopOnly?: boolean;
 };
 
 export function buildFileMenuItems({
@@ -38,6 +40,8 @@ export function buildFileMenuItems({
   onExportPng,
   onExportSpritesheet,
   onExportGif,
+  onCheckForUpdates,
+  updatesDesktopOnly = false,
 }: BuildFileMenuItemsParams): FileMenuEntry[] {
   const exportDisabled = !fileActions.canSave;
   const exportItems: FileMenuLeaf[] = [
@@ -109,6 +113,20 @@ export function buildFileMenuItems({
       items: exportItems,
     },
   ];
+
+  if (onCheckForUpdates) {
+    entries.push(
+      { type: "separator" },
+      {
+        type: "item",
+        label: updatesDesktopOnly
+          ? copy.fileMenuCheckForUpdatesDesktopOnly
+          : copy.fileMenuCheckForUpdates,
+        action: onCheckForUpdates,
+        disabled: updatesDesktopOnly,
+      },
+    );
+  }
 
   return entries;
 }
