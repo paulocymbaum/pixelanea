@@ -23,7 +23,7 @@ Thank you for helping build a free, local-first pixel art editor. This guide cov
    ```bash
    pnpm ci:fast              # lint, typecheck, QA matrix, unit tests
    pnpm ci:core              # + builds + backend unit tests (pre-push)
-   pnpm ci:e2e               # + Playwright E2E before merge
+   pnpm ci:e2e               # optional Playwright E2E (not in GitHub Actions)
    ./scripts/ci.sh           # full gate (matches GitHub Actions)
    ```
 

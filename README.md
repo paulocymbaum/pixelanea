@@ -112,7 +112,7 @@ pnpm ci:e2e
 ./scripts/ci-sprint1.sh      # same as ./scripts/ci.sh sprint
 ```
 
-CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, Playwright E2E (excl. LinkedIn media capture), and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Playwright E2E is optional (`pnpm ci:e2e`). Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Documentation
 

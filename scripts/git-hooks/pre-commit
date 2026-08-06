@@ -3,7 +3,7 @@
 #
 # Profiles:
 #   core (default) — verify VERSION, lint, typecheck, tests, web+server build
-#   full           — core + Playwright E2E + smoke scripts (same as GitHub Actions)
+#   full           — core + smoke scripts (same as GitHub Actions build job)
 #
 # Examples:
 #   git commit -m "..."                         # runs core
@@ -23,11 +23,6 @@ fi
 cd "${ROOT_DIR}"
 echo "pre-commit: verifying VERSION manifests..."
 "${ROOT_DIR}/scripts/verify-version.sh"
-
-if [[ "${PROFILE}" == "full" ]]; then
-  echo "pre-commit: freeing ports for E2E..."
-  "${ROOT_DIR}/scripts/free-ci-ports.sh"
-fi
 
 echo "pre-commit: running CI profile '${PROFILE}'..."
 exec "${ROOT_DIR}/scripts/ci.sh" "${PROFILE}"

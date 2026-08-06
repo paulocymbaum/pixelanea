@@ -83,10 +83,10 @@ ci_profile_steps() {
       echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
       ;;
     full | all)
-      echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e 12-smoke-backend 13-smoke-frontend"
+      echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 12-smoke-backend 13-smoke-frontend"
       ;;
     sprint | sprint1)
-      echo "04-typecheck 05-test-qa 06-test-unit 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
+      echo "04-typecheck 05-test-qa 06-test-unit 08a-server-configure 08b-server-compile 09-test-backend-unit"
       ;;
     *)
       return 1
@@ -98,9 +98,9 @@ ci_list_profiles() {
   echo "CI profiles (run: ./scripts/ci.sh <profile>)"
   echo "  fast    — lint, typecheck, QA matrix, unit tests"
   echo "  core    — fast + web/server build + backend unit tests"
-  echo "  e2e     — core + Playwright E2E"
-  echo "  full    — e2e + smoke scripts (GitHub Actions build job)"
-  echo "  sprint  — typecheck, QA, unit, server build, backend tests, E2E"
+  echo "  e2e     — core + Playwright E2E (manual only; not in GitHub Actions)"
+  echo "  full    — core + smoke scripts (GitHub Actions build job)"
+  echo "  sprint  — typecheck, QA, unit, server build, backend tests"
 }
 
 ci_run_step_script() {
