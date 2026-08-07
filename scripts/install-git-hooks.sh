@@ -15,7 +15,9 @@ if ! git -C "${ROOT_DIR}" rev-parse --git-dir >/dev/null 2>&1; then
   exit 0
 fi
 
-chmod +x "${HOOKS_DIR}/pre-commit"
+for hook in pre-commit pre-push post-commit; do
+  [[ -f "${HOOKS_DIR}/${hook}" ]] && chmod +x "${HOOKS_DIR}/${hook}"
+done
 git -C "${ROOT_DIR}" config core.hooksPath "${HOOKS_DIR}"
 
 echo "Git hooks installed: core.hooksPath=${HOOKS_DIR}"

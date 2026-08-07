@@ -1,19 +1,20 @@
 #!/usr/bin/env bash
-# Pre-commit gate (blocks commits only — git push is never hooked).
+# Pre-commit gate (blocks commits only — push uses pre-push).
 #
 # Profiles:
-#   core (default) — verify VERSION, lint, typecheck, tests, web+server build
+#   fast (default) — VERSION check, lint, typecheck, QA matrix, unit tests
+#   core           — fast + web/server build + backend unit tests
 #   full           — core + smoke scripts (same as GitHub Actions build job)
 #
 # Examples:
-#   git commit -m "..."                         # runs core
-#   PRE_COMMIT_CI=full git commit -m "..."      # runs full CI
+#   git commit -m "..."                         # runs fast
+#   PRE_COMMIT_CI=core git commit -m "..."      # stricter
 #   SKIP_PRE_COMMIT=1 git commit -m "..."       # skip hook
 #   git commit --no-verify -m "..."             # skip hook
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PROFILE="${PRE_COMMIT_CI:-core}"
+PROFILE="${PRE_COMMIT_CI:-fast}"
 
 if [[ "${SKIP_PRE_COMMIT:-}" == "1" ]]; then
   echo "pre-commit: skipped (SKIP_PRE_COMMIT=1)"
