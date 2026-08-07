@@ -26,6 +26,7 @@ for (const relativePath of [
   "package.json",
   "apps/web/package.json",
   "packages/api-client/package.json",
+  "apps/desktop/src-tauri/tauri.conf.json",
 ]) {
   const filePath = path.join(root, relativePath);
   const json = JSON.parse(fs.readFileSync(filePath, "utf8"));

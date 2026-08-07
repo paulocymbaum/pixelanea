@@ -24,7 +24,8 @@ json_version() {
 for json_file in \
   "${ROOT_DIR}/package.json" \
   "${ROOT_DIR}/apps/web/package.json" \
-  "${ROOT_DIR}/packages/api-client/package.json"; do
+  "${ROOT_DIR}/packages/api-client/package.json" \
+  "${ROOT_DIR}/apps/desktop/src-tauri/tauri.conf.json"; do
   actual="$(json_version "${json_file}")"
   if [[ "${actual}" != "${VERSION}" ]]; then
     echo "ERROR: ${json_file} version is ${actual}, expected ${VERSION}" >&2

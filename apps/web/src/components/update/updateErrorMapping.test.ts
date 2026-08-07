@@ -18,6 +18,21 @@ describe("updateErrorMapping", () => {
     );
   });
 
+  it("maps permission_denied on macOS installs to Gatekeeper copy", () => {
+    expect(
+      mapInstallErrorMessage("ERROR_PERMISSION: denied", "permission_denied", "mac_app_bundle"),
+    ).toBe(copy.updateErrorGatekeeper);
+    expect(
+      mapInstallErrorMessage("write failed", "permission_denied", "mac_portable"),
+    ).toBe(copy.updateErrorGatekeeper);
+  });
+
+  it("maps permission_denied on Windows portable to UAC copy", () => {
+    expect(
+      mapInstallErrorMessage("write failed", "permission_denied", "windows_portable"),
+    ).toBe(copy.updateErrorUac);
+  });
+
   it("maps ERROR_GATEKEEPER prefix to Gatekeeper copy", () => {
     expect(mapInstallErrorMessage("ERROR_GATEKEEPER: dmg failed")).toBe(
       copy.updateErrorGatekeeper,

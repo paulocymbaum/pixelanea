@@ -450,11 +450,56 @@ sudo apt install libssl-dev
 
 ### macOS
 
+**OS floor:** macOS 12 (Monterey) or later — matches `tauri.conf.json` `minimumSystemVersion`.
+
 ```bash
 xcode-select --install
 brew install cmake ninja pkg-config openssl
 export VCPKG_ROOT=~/.vcpkg
 ```
+
+**vcpkg triplet** (pick one; must match the build host):
+
+| Host | `VCPKG_TARGET_TRIPLET` | Notes |
+|------|------------------------|-------|
+| Apple Silicon (M1/M2/M3) | `arm64-osx` | Default on `macos-14` CI (`release-macos`) |
+| Intel Mac | `x64-osx` | Legacy hardware; local builds only unless CI matrix expands |
+
+```bash
+git clone https://github.com/microsoft/vcpkg.git ~/.vcpkg
+~/.vcpkg/bootstrap-vcpkg.sh
+export VCPKG_ROOT=~/.vcpkg
+
+cmake -S server -B server/build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
+  -DVCPKG_TARGET_TRIPLET=arm64-osx
+cmake --build server/build --config Release --target pixelanea-server
+```
+
+**Desktop shell / DMG packaging:**
+
+| Requirement | Purpose |
+|-------------|---------|
+| Xcode Command Line Tools | `clang`, `hdiutil`, codesign stubs |
+| Rust stable + Tauri CLI 2.x | `pixelanea-shell` DMG bundle (`cargo tauri build --bundles dmg`) |
+| `scripts/package-dmg.sh` | Produces `dist/pixelanea-{version}-macos-{arch}.dmg` + portable `.app` zip |
+| `scripts/test-package-macos.sh` | CI smoke: artifact layout + optional install health check |
+
+```bash
+./scripts/deps-cache.sh install
+./scripts/package-dmg.sh
+./scripts/test-package-macos.sh --skip-build --install-test
+```
+
+**GitHub Release asset contract (macOS):**
+
+| Install kind | Filename pattern |
+|--------------|------------------|
+| DMG installer | `pixelanea-{version}-macos-arm64.dmg` |
+| Portable `.app` zip | `pixelanea-{version}-macos-arm64.zip` |
+
+**Unsigned pilot builds:** Notarization and stapling are deferred (Batch 3 signing). Gatekeeper may block first launch — users can allow via System Settings → Privacy & Security or download manually from releases.
 
 ### Windows
 

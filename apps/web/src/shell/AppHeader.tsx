@@ -2,7 +2,8 @@ import { useCallback, useState } from "react";
 import { basename } from "@/components/project/pathUtils";
 import { copy } from "@/content/copy";
 import { useDerivedProjectStatus } from "@/lib/projectStatus";
-import { useBundlePath, useEditorStore, useProjectName } from "@/state/editorStore";
+import { needsNavigationGuard } from "@/lib/unsavedGuard";
+import { useBundlePath, useEditorStore, useProjectName, useSyncStatus } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { Button } from "@/components/ui";
 import { OffPaletteExportDialog } from "@/components/project/OffPaletteExportDialog";
@@ -29,7 +30,10 @@ export function AppHeader({
 }: AppHeaderProps) {
   const projectName = useProjectName();
   const bundlePath = useBundlePath();
+  const isDirty = useEditorStore((s) => s.isDirty);
+  const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
   const bundleDirty = useEditorStore((s) => s.bundleDirty);
+  const syncStatus = useSyncStatus();
   const projectStatus = useDerivedProjectStatus();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
   const setShowTechnicalInfo = useUiStore((s) => s.setShowTechnicalInfo);
@@ -65,7 +69,6 @@ export function AppHeader({
       // Export errors surface via sync/toast layers; header stays non-blocking.
     });
   }, [offPaletteGuard.runGuardedExport]);
-
   const fileItems = buildFileMenuItems({
     fileActions,
     onImportImage,
@@ -145,7 +148,12 @@ export function AppHeader({
           onOpenChange={setUpdateDialogOpen}
           currentVersion={version}
           showTechnicalInfo={showTechnicalInfo}
-          hasUnsavedWork={projectStatus.kind === "unsaved" || bundleDirty}
+          hasUnsavedWork={needsNavigationGuard({
+            isDirty,
+            isPaletteDirty,
+            bundleDirty,
+            syncStatus,
+          })}
           canSave={fileActions.canSave}
           isSaving={fileActions.isSaving}
           onSave={fileActions.onSave}

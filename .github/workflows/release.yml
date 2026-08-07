@@ -16,7 +16,22 @@ env:
   TAURI_CLI_VERSION: "2.0.0"
 
 jobs:
+  release-preflight:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify version manifests
+        run: ./scripts/verify-version.sh
+
+      - name: Export release version
+        id: version
+        run: echo "version=$(tr -d '[:space:]' < VERSION)" >> $GITHUB_OUTPUT
+
   release-linux:
+    needs: release-preflight
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
@@ -98,6 +113,7 @@ jobs:
           generate_release_notes: true
 
   release-windows:
+    needs: release-preflight
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -172,6 +188,9 @@ jobs:
       - name: Smoke test Windows packages
         run: .\scripts\test-package-windows.ps1 -SkipBuild
 
+      - name: Install smoke test Windows packages
+        run: .\scripts\test-package-windows.ps1 -SkipBuild -InstallTest
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
@@ -180,6 +199,7 @@ jobs:
             dist/pixelanea-*-windows-x64.zip
 
   release-macos:
+    needs: release-preflight
     runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
@@ -240,6 +260,9 @@ jobs:
       - name: Build macOS packages
         run: ./scripts/package-dmg.sh
 
+      - name: Smoke test macOS packages
+        run: ./scripts/test-package-macos.sh --skip-build --install-test
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
@@ -249,6 +272,7 @@ jobs:
 
   release-linux-arm64:
     name: Build arm64 .deb (verify only)
+    needs: release-preflight
     runs-on: ubuntu-22.04-arm
     steps:
       - uses: actions/checkout@v4
