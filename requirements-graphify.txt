@@ -1,0 +1,2 @@
+# Local venv for graphify CLI (.venv-graphify). PyPI package is graphifyy; CLI is graphify.
+graphifyy==0.9.35

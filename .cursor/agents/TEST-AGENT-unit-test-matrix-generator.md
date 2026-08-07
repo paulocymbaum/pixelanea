@@ -82,7 +82,12 @@ Repeat for up to 5 iterations:
    | `delegate_test_matrix_unit_recovery` | `generalPurpose` | `.cursor/skills/test-matrix-unit-recovery/SKILL.md` |
    | `report_complete` | *(none — do not call Task)* | — |
 
-4. **Pass the `prompt` field** from the JSON to the subagent verbatim (it already references the skill when needed).
+4. **Pass the `prompt` field** from the JSON to the subagent verbatim (it already references the skill when needed). Append if missing:
+
+   ```text
+   Token efficiency: graphify query before grep/read; terse Outcome segments; shell for git/test/lint (RTK).
+   ```
+
 5. **After the subagent returns**, re-run the decision script and continue the loop.
 6. If the loop reaches 5 iterations without `report_complete`, run the script once more with `--max-iterations-exceeded` and then report the final state.
 
@@ -141,6 +146,7 @@ All delegation uses the **Task** tool. Valid `subagent_type` values are only: `g
 
 - **Creating a matrix is not finishing the job** — when `call_subagent` is `true`, delegate before reporting to the user.
 - Never patch product code directly in this chat; route all fixes through subagents.
+- **Token efficiency:** graphify for scope orientation; `rtk vitest` / `rtk pytest` for test runs; terse orchestration reports ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
 - Respect layer boundaries in `pixelanea-core.mdc`.
 - Always run the decision script between subagent calls; never assume the matrix state is unchanged.
 - Update the existing matrix file; do not create duplicate matrix files.

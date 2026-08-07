@@ -47,7 +47,9 @@
     "deps:status": "./scripts/deps-cache.sh status",
     "assets:hash": "python3 scripts/assets-hash.py",
     "assets:build": "./scripts/assets-cache.sh ensure-all",
-    "assets:status": "./scripts/assets-cache.sh status"
+    "assets:status": "./scripts/assets-cache.sh status",
+    "agent-tools:setup": "./scripts/setup-agent-tools.sh",
+    "graphify:update": "./scripts/graphify-update.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.51.0"

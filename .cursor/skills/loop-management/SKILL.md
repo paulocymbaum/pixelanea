@@ -32,6 +32,8 @@ All loop conditions and orchestration state live under `.cursor/skill-outputs/` 
 6. **After each agent step** — Save the agent output to `loop/last_agent_response.md`, then run the decision tool.
 7. **Act on JSON** — If `continue_loop` is `true`, delegate again with `prompt`; if `false`, report to the user.
 
+**Token efficiency:** orchestrators pass the standard line in every worker Task prompt; workers use graphify → layer search → Read ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
+
 ## Bash check script contract
 
 Every `loop/check_condition.sh` must follow this contract:

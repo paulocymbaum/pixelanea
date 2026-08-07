@@ -1,0 +1,46 @@
+---
+description: Token-efficient agent workflow — graphify read path, RTK shell, terse prose
+alwaysApply: true
+---
+
+# Token efficiency
+
+Three complementary layers. Setup: `pnpm agent-tools:setup`. Refresh graph: `pnpm graphify:update`.
+
+| Layer | Tool | What it saves |
+|-------|------|----------------|
+| **Code read** | graphify | Grep/read tokens on exploration |
+| **Shell output** | RTK | Verbose git/test/lint output (Cursor hook on Shell) |
+| **Prose** | caveman | Filler in chat and summaries |
+
+## Read path (exploration)
+
+Use this cascade — do not skip to Read/Grep/Glob for orientation:
+
+1. **`./.venv-graphify/bin/graphify query "<question>"`** — scoped subgraph (`path`, `explain` for traces)
+2. **Layer search** — [pixelanea-agent-tools.mdc](./pixelanea-agent-tools.mdc) when you know the layer
+3. **Targeted Read** — only files graphify/search already identified
+
+After code edits: `pnpm graphify:update` (or `./scripts/graphify-update.sh`).
+
+## Shell path
+
+RTK rewrites Shell tool calls globally. Prefer shell for git, tests, lint, docker — not raw Read/Grep for the same data.
+
+Explicit when needed: `rtk git status`, `rtk vitest`, `rtk cargo test`, `rtk pytest`.
+
+## Prose path
+
+- **Chat:** terse fragments per [caveman.mdc](./caveman.mdc) — no tool-call narration, no decorative tables
+- **Step files** (`01_*.md`, …): structured segments (Goal / Outcome / Files) but concise — link paths, no code dumps
+- **Persisted product text:** commits, code, Gherkin, API specs — normal prose (caveman off)
+
+## Subagents
+
+Every Task prompt that explores code or runs shell must include:
+
+```text
+Token efficiency: graphify query before grep/read; layer search when layer known; terse Outcome segments; shell for git/test/lint (RTK).
+```
+
+Orchestrators: pass the line above in every worker delegation.

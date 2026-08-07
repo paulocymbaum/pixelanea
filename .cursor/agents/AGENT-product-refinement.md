@@ -264,6 +264,7 @@ Do not dump the full markdown table into chat unless the user asks.
 - Skip the Jordan ↔ Sam dialogue in chat.
 - Omit RICE, risk matrix, or scope-separated batch tables.
 - Use risk or impact scales other than **0–100** integers in the matrix.
+- **Token efficiency:** graphify for codebase scope; terse executive chat; normal prose in persisted `loop-backlog.md` ([pixelanea-token-efficiency.mdc](../rules/pixelanea-token-efficiency.mdc)).
 
 ---
 

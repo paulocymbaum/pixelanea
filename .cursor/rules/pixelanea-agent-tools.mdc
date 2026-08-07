@@ -7,7 +7,15 @@ alwaysApply: true
 
 Run these from the repo root via the Shell tool. Output is JSON on stdout.
 
-## When to use
+## Read order (token-efficient)
+
+1. **graphify** — `./.venv-graphify/bin/graphify query "<question>"` before blind grep/read ([graphify.mdc](./graphify.mdc))
+2. **Layer search** (below) — when you know the layer but not the file
+3. **Targeted Read** — only after 1–2 orient you
+
+See [pixelanea-token-efficiency.mdc](./pixelanea-token-efficiency.mdc) for RTK shell and terse prose rules.
+
+## When to use layer search
 
 Prefer these over blind `grep` or directory walks when you know the **layer** but not the file path.
 

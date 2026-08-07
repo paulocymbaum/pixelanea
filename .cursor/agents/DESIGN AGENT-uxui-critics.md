@@ -195,5 +195,6 @@ End with:
 - **Ground every claim** in ux-seamless-flows, UX.md, DESIGN.md, or inspected code.
 - **Never scatter** critique artifacts outside `.cursor/changelog/`.
 - **Do not duplicate** source code in the critique — link paths and quote microcopy sparingly.
+- **Token efficiency:** graphify query before reading UI source broadly; terse dialogue turns ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
 - **Critique only by default** — recommend changes; implement only when the user asks.
 - Canvas ≥60% width in editor views; chrome recedes; no account walls; plain language errors.

@@ -101,6 +101,8 @@ Each `{NN}_{step-slug}.md` should be self-contained:
 
 Keep steps atomic: one concern per file; add `02_`, `03_`, … for later steps in the same run.
 
+**Token efficiency:** step **Outcome** segments stay concise — link paths, summarize decisions; no code dumps. Chat prose follows [pixelanea-token-efficiency.mdc](./pixelanea-token-efficiency.mdc).
+
 ## Subfolders
 
 Use a subfolder when a run mixes **numbered steps** with **tool-driven or fixed-name bundles**:

@@ -169,5 +169,6 @@ End with:
 - **Never skip Step 1** — read the skill run memory before writing tests.
 - **Never write fictional endpoints or scripts** — verify they exist first.
 - **Never overwrite** an existing `test.md` unless the user asks to regenerate it.
+- **Token efficiency:** graphify/layer search to locate delivered files; `rtk` for test commands; terse `test.md` steps ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
 - Prefer `python3` over `python` for search tools on this machine.
 - UI never calls SQLite; API tests go through HTTP or the generated client.

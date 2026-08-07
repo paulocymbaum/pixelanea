@@ -7,6 +7,8 @@ description: Enforces Pixelanea React frontend architecture, editor shell layout
 
 Standards for `apps/web` derived from [ARCHITECTURE.md](../../../ARCHITECTURE.md), [DESIGN.md](../../../DESIGN.md), and [UX.md](../../../UX.md). Apply on every frontend change.
 
+**Before investigating:** `./.venv-graphify/bin/graphify query "<topic>"` then `search_frontend_elements.py` — see [pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc).
+
 ## Dependency rule (non-negotiable)
 
 ```text

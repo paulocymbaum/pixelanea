@@ -15,8 +15,18 @@ apps/web/node_modules/.tmp/
 
 # Local tooling
 .venv-build/
+.venv-graphify/
 .cache/deps/
 .cache/assets/
+
+# graphify knowledge graph (regenerate: ./scripts/setup-agent-tools.sh or ./scripts/graphify-update.sh)
+graphify-out/
+
+# Local Cursor usage logs (machine-specific, not product config)
+.cursor/cursor-cost-log.json
+.cursor/cursor-cost-log.md
+.cursor/cursor-prompts-log.json
+.cursor/cursor-prompts-log.md
 
 # Environment
 .env

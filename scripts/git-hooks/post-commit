@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Post-commit: incrementally refresh graphify graph (AST-only, fast).
+#
+# Skip:
+#   SKIP_GRAPHIFY_UPDATE=1 git commit ...
+set -euo pipefail
+
+if [[ "${SKIP_GRAPHIFY_UPDATE:-}" == "1" ]]; then
+  exit 0
+fi
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+UPDATE="${ROOT_DIR}/scripts/graphify-update.sh"
+
+if [[ -x "${UPDATE}" ]]; then
+  SKIP_GRAPHIFY_CLUSTER=1 "${UPDATE}" >/dev/null 2>&1 || true
+fi

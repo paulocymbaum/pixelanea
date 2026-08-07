@@ -3,6 +3,15 @@
 
 .cursor/changelog/
 
+# graphify build artifacts (large cache; agents use CLI query, not raw graph.json)
+graphify-out/
+
+# Local usage logs
+.cursor/cursor-cost-log.json
+.cursor/cursor-cost-log.md
+.cursor/cursor-prompts-log.json
+.cursor/cursor-prompts-log.md
+
 # .gitignore hides skill-outputs from git — re-include for Cursor agents.
 !.cursor/skill-outputs/
 !.cursor/skill-outputs/**

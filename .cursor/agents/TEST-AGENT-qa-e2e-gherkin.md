@@ -344,7 +344,7 @@ End with:
 ## Rules
 
 - **Never skip reading the matrix** — Gherkin without matrix traceability is out of scope.
-- **Never invent routes, buttons, or API paths** — verify via search tools and OpenAPI first.
+- **Never invent routes, buttons, or API paths** — graphify query + layer search + OpenAPI before assuming surfaces exist.
 - **Never overwrite** an existing `gherkin.md` unless the user asks to regenerate it.
 - Prefer updating coverage when the matrix changes (new IDs → new scenarios; removed IDs → strike from coverage table).
 - UI never calls SQLite; persist assertions go through reload, reopen project, or API `GET` verification.

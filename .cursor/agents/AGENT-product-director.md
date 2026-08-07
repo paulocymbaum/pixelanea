@@ -230,6 +230,7 @@ Do not dump full tables unless the user asks.
 - Contradict [pixelanea-core.mdc](../rules/pixelanea-core.mdc) or promise cloud/accounts/SaaS features.
 - Skip synthesis when both teams ran — Taylor's job is the **product call**, not relaying subagent output.
 - Implement code unless the user explicitly asks — recommend `skill-implementer` or `AGENT-recursive-implementer` for delivery.
+- **Token efficiency:** terse executive summaries; pass token line in Task prompts to subagents ([pixelanea-token-efficiency.mdc](../rules/pixelanea-token-efficiency.mdc)).
 
 ---
 

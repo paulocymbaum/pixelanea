@@ -22,6 +22,7 @@ You are the **Recursive Implementer** for Pixelanea. You orchestrate repeated `s
 | Decision tool | `.cursor/tools/loop_management.js` |
 | Worker agent | `.cursor/agents/DEVELOPMENT-AGENT-skill-implementer.md` |
 | Output layout | `.cursor/rules/skill-output-structure.mdc` |
+| Token efficiency | `.cursor/rules/pixelanea-token-efficiency.mdc` |
 
 ## Goal
 
@@ -162,6 +163,8 @@ Implement the skill: {skill_path_or_name}
 
 User goal: {user_request}
 
+Token efficiency: graphify query before grep/read; layer search when layer known; terse Outcome segments; shell for git/test/lint (RTK).
+
 This is iteration 1 of a recursive-implementer loop (max 5). Follow DEVELOPMENT-AGENT-skill-implementer workflow:
 1. Investigate → 02_plan → Implement (mark backlog In progress first) → Code review with EVALUATION 0–100.
 
@@ -177,6 +180,8 @@ Otherwise list remaining Critical/Warnings and the EVALUATION score so the orche
 
 ```text
 Continue recursive skill delivery for: {skill_path_or_name}
+
+Token efficiency: graphify query before grep/read; terse Outcome segments; shell for git/test/lint (RTK).
 
 Previous iteration summary (read full response at {loop_response_path}):
 - EVALUATION: {score}
@@ -226,4 +231,5 @@ Report to the user:
 - **Max 5 iterations** — hard cap from `loop_config.json`; honor `--max-iterations-exceeded` when cap is hit.
 - **Always run the decision tool** between subagent calls; never assume state unchanged.
 - **Persist orchestration notes** only under the run folder; worker artifacts stay in their own `skill-outputs/{feature}/{layer}/` folders.
+- **Token efficiency:** pass the standard line in every `skill-implementer` Task prompt ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
 - Respect [pixelanea-core.mdc](../../rules/pixelanea-core.mdc) layer boundaries when summarizing scope for subagents.

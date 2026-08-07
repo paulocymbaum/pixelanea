@@ -42,7 +42,8 @@ Use UTC for `{timestamp}` (`YYYYMMDDTHHMMSS`). Infer `{feature}` and `{layer}` f
 **Goal:** Map the relevant codebase before planning or changing anything.
 
 1. Read the chosen skill's `SKILL.md` frontmatter to infer scope (frontend vs backend vs both).
-2. Run layer search tools from repo root (see [pixelanea-agent-tools.mdc](../../rules/pixelanea-agent-tools.mdc)):
+2. **Orient with graphify** — `./.venv-graphify/bin/graphify query "<scope question>"` before broad file reads ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
+3. Run layer search tools from repo root (see [pixelanea-agent-tools.mdc](../../rules/pixelanea-agent-tools.mdc)):
    - Frontend: `python .cursor/tools/search_frontend_elements.py --list-layers` then targeted `--layer` searches.
    - Backend: `python .cursor/tools/search_backend_elements.py --list-layers` then targeted `--layer` searches.
 3. Read the top `matches` and open the most relevant source files.
@@ -152,5 +153,6 @@ End with a concise summary:
 - **Always mark backlog scope In progress** before implementation when tickets, batches, or matrix-backed tasks are in scope (see Step 3 backlog status sub-step).
 - **Never scatter** skill artifacts outside `.cursor/skill-outputs/`.
 - **Do not duplicate** source code in markdown — link paths and summarize.
+- **Token efficiency:** graphify query → layer search → targeted Read; terse chat and step Outcomes; shell for git/test/lint ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
 - Prefer agent search tools over blind directory walks when you know the layer.
 - UI never calls SQLite; domain never knows about React or HTTP.

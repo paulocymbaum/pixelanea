@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Full CI gate — mirrors .github/workflows/build.yml (build job).
+# Playwright E2E is manual only: ./scripts/ci.sh e2e or pnpm ci:e2e
 #
 # Usage:
 #   ./scripts/ci.sh                    # full profile (all steps)
@@ -42,12 +43,7 @@ run_profile() {
 }
 
 run_all_steps() {
-  echo "=== Pixelanea CI (profile: full) ==="
-  for step in "${STEPS_DIR}"/*.sh; do
-    bash "${step}"
-  done
-  echo ""
-  echo "=== Pixelanea CI passed ==="
+  run_profile full
 }
 
 main() {

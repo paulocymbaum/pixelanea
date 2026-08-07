@@ -7,6 +7,8 @@ description: Enforces Pixelanea C++ server architecture, performance patterns, a
 
 Standards for `server/` derived from [ARCHITECTURE.md](../../../ARCHITECTURE.md). Apply on every C++ change.
 
+**Before investigating:** `./.venv-graphify/bin/graphify query "<topic>"` then `search_backend_elements.py` — see [pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc).
+
 ## Dependency rule (non-negotiable)
 
 ```

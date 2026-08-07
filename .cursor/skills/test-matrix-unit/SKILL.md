@@ -17,8 +17,10 @@ Systematic test coverage for a single feature or unit under test. Output lives b
    ```
 
    Replace `{UNIT}`, `{SCOPE}`, and placeholder rows with real cases.
-3. **Execute** — Run each case in ID order; update its **Status** cell immediately after the run (never batch updates).
+3. **Execute** — Run each case in ID order; update its **Status** cell immediately after the run (never batch updates). Use `rtk vitest`, `rtk pytest`, or `rtk cargo test` for shell runs (RTK compresses output).
 4. **Escalate** — On failure caused by product/code instability, delegate to `skill-implementer` (single failure) or `test-matrix-unit-recovery` (multiple related failures). Do not patch production code inline in the test pass unless the user explicitly asked for a fix in this chat.
+
+**Investigation:** `./.venv-graphify/bin/graphify query "<feature scope>"` before broad file reads ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
 
 ## Case categories (required)
 

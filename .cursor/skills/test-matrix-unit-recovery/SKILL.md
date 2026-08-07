@@ -148,5 +148,6 @@ NN_summary.md
 - Batch by layer and dependency, not by arbitrary splitting
 - Re-run only the affected case IDs after each batch returns
 - If a batch fails to resolve its cases, escalate back to `skill-implementer` with the new failure notes
+- **Token efficiency:** graphify for failure scope; `rtk` for test reruns; pass token line in skill-implementer delegations ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc))
 - Respect dependency direction in `pixelanea-core.mdc`
 - Do not create a new test matrix file; update the existing `test_matrix_unit.md`

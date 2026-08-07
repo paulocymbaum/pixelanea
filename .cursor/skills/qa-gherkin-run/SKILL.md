@@ -9,6 +9,8 @@ Execute **Gherkin scenarios** authored by `qa-e2e-gherkin` and produce a **flagg
 
 **You run and judge scenarios** — you do not rewrite `gherkin.md` unless the user asks to fix specs.
 
+**Shell:** use `rtk` for Playwright/test output (`rtk vitest`, `./scripts/e2e-playwright.sh` via shell). **Explore:** graphify before broad UI reads ([pixelanea-token-efficiency.mdc](../../rules/pixelanea-token-efficiency.mdc)).
+
 ---
 
 ## Quick start
