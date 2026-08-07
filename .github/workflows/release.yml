@@ -97,6 +97,156 @@ jobs:
             dist/pixelanea-*-linux-*.tar.gz
           generate_release_notes: true
 
+  release-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        shell: bash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        shell: bash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build
+            .cache/assets
+          key: pixelanea-assets-release-windows-${{ steps.assets-hash.outputs.hash }}
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\vcpkg
+          key: pixelanea-vcpkg-${{ hashFiles('server/vcpkg.json') }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Install dependencies
+        shell: bash
+        run: ./scripts/deps-cache.sh install
+
+      - name: Build Windows packages
+        env:
+          VCPKG_ROOT: ${{ runner.temp }}\vcpkg
+        run: .\scripts\package-windows.ps1
+
+      - name: Smoke test Windows packages
+        run: .\scripts\test-package-windows.ps1 -SkipBuild
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/pixelanea-*-windows-x64-setup.exe
+            dist/pixelanea-*-windows-x64.zip
+
+  release-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build
+            .cache/assets
+          key: pixelanea-assets-release-macos-${{ steps.assets-hash.outputs.hash }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Install dependencies
+        run: ./scripts/deps-cache.sh install
+
+      - name: Build macOS packages
+        run: ./scripts/package-dmg.sh
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/pixelanea-*-macos-*.dmg
+            dist/pixelanea-*-macos-*.zip
+
   release-linux-arm64:
     name: Build arm64 .deb (verify only)
     runs-on: ubuntu-22.04-arm

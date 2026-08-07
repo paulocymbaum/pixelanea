@@ -16,6 +16,10 @@ if ! command -v cargo >/dev/null 2>&1; then
 fi
 
 echo "==> Building pixelanea-shell (release)..."
+mkdir -p "${TAURI_DIR}/bundle-resources/pixelanea"
+# shellcheck source=stage-desktop-assets.sh
+source "${ROOT_DIR}/scripts/stage-desktop-assets.sh"
+stage_desktop_core_assets "${TAURI_DIR}/bundle-resources/pixelanea"
 (cd "${TAURI_DIR}" && cargo tauri build)
 
 echo ""

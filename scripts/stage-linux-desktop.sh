@@ -14,14 +14,11 @@ set -euo pipefail
 
 _STAGE_ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# shellcheck source=stage-desktop-assets.sh
+source "${_STAGE_ROOT_DIR}/scripts/stage-desktop-assets.sh"
+
 stage_linux_desktop_assets() {
-  local target_dir="$1"
-  mkdir -p "${target_dir}/web"
-  install -m 755 "${_STAGE_ROOT_DIR}/server/build/pixelanea-server" "${target_dir}/pixelanea-server"
-  (tar -C "${_STAGE_ROOT_DIR}/apps/web/dist" --exclude='.pixelanea-assets-hash' -cf - .) \
-    | tar -C "${target_dir}/web" -xf -
-  install -m 644 "${_STAGE_ROOT_DIR}/brand/logo-glyph.svg" "${target_dir}/logo-glyph.svg"
-  install -m 644 "${_STAGE_ROOT_DIR}/brand/app-icon.svg" "${target_dir}/app-icon.svg"
+  stage_desktop_core_assets "$1"
 }
 
 # Install Freedesktop hicolor icons (app launcher + .pixelanea MIME type).

@@ -21,7 +21,14 @@ async function invokeDesktop<T>(
   return invoke<T>(command, args);
 }
 
-export type InstallKind = "user_local" | "portable" | "system_deb";
+export type InstallKind =
+  | "user_local"
+  | "portable"
+  | "system_deb"
+  | "windows_installer"
+  | "windows_portable"
+  | "mac_app_bundle"
+  | "mac_portable";
 
 export type ConnectionStatus = {
   connected: boolean;
@@ -37,10 +44,17 @@ export type UpdateCheckResult = {
   installKind: InstallKind;
 };
 
+export type UpdateErrorCode =
+  | "permission_denied"
+  | "gatekeeper"
+  | "partial"
+  | "generic";
+
 export type InstallResult = {
   success: boolean;
   message: string;
   requiresRestart: boolean;
+  errorCode?: UpdateErrorCode | null;
 };
 
 export function checkUpdateConnection(): Promise<ConnectionStatus> {

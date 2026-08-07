@@ -15,7 +15,14 @@ import {
   downloadAndInstallDesktopUpdate,
   restartDesktopShell,
   type UpdateCheckResult,
+  type UpdateErrorCode,
 } from "@/lib/desktop";
+import {
+  mapInstallErrorMessage,
+  shouldOfferReleasePage,
+} from "./updateErrorMapping";
+
+const RELEASE_PAGE_URL = "https://github.com/pixelanea/pixelanea/releases";
 
 type UpdatePhase =
   | "idle"
@@ -31,21 +38,37 @@ type UpdateDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currentVersion: string | null;
+  showTechnicalInfo?: boolean;
+  hasUnsavedWork?: boolean;
+  canSave?: boolean;
+  isSaving?: boolean;
+  onSave?: () => void;
 };
 
 export function UpdateDialog({
   open,
   onOpenChange,
   currentVersion,
+  showTechnicalInfo = false,
+  hasUnsavedWork = false,
+  canSave = false,
+  isSaving = false,
+  onSave,
 }: UpdateDialogProps) {
   const [phase, setPhase] = useState<UpdatePhase>("idle");
   const [message, setMessage] = useState("");
+  const [rawErrorMessage, setRawErrorMessage] = useState("");
+  const [errorCode, setErrorCode] = useState<UpdateErrorCode | null>(null);
   const [updateInfo, setUpdateInfo] = useState<UpdateCheckResult | null>(null);
+  const [restartWithoutSaving, setRestartWithoutSaving] = useState(false);
 
   const reset = useCallback(() => {
     setPhase("idle");
     setMessage("");
+    setRawErrorMessage("");
+    setErrorCode(null);
     setUpdateInfo(null);
+    setRestartWithoutSaving(false);
   }, []);
 
   const runCheck = useCallback(async () => {
@@ -72,29 +95,31 @@ export function UpdateDialog({
       const result = await checkForDesktopUpdates(currentVersion);
       setUpdateInfo(result);
 
+      const commit = showTechnicalInfo ? result.mainCommit : undefined;
+
       if (result.updateAvailable) {
         setPhase("update_available");
         setMessage(
           copy.updateDialogUpdateAvailable(
             result.currentVersion,
             result.latestVersion,
-            result.mainCommit,
+            commit,
           ),
         );
         return;
       }
 
       setPhase("up_to_date");
-      setMessage(
-        copy.updateDialogUpToDate(result.latestVersion, result.mainCommit),
-      );
+      setMessage(copy.updateDialogUpToDate(result.latestVersion, commit));
     } catch (error) {
       setPhase("error");
-      setMessage(
-        error instanceof Error ? error.message : copy.updateDialogCheckFailed,
-      );
+      const text =
+        error instanceof Error ? error.message : copy.updateDialogCheckFailed;
+      setRawErrorMessage(text);
+      setErrorCode(null);
+      setMessage(mapInstallErrorMessage(text, null, null));
     }
-  }, [currentVersion]);
+  }, [currentVersion, showTechnicalInfo]);
 
   useEffect(() => {
     if (!open) {
@@ -118,7 +143,11 @@ export function UpdateDialog({
       const result = await downloadAndInstallDesktopUpdate(updateInfo.downloadUrl);
       if (!result.success) {
         setPhase("error");
-        setMessage(result.message);
+        setRawErrorMessage(result.message);
+        setErrorCode(result.errorCode ?? null);
+        setMessage(
+          mapInstallErrorMessage(result.message, result.errorCode, updateInfo?.installKind),
+        );
         return;
       }
 
@@ -126,13 +155,18 @@ export function UpdateDialog({
       setMessage(result.message);
     } catch (error) {
       setPhase("error");
-      setMessage(
-        error instanceof Error ? error.message : copy.updateDialogInstallFailed,
-      );
+      const text =
+        error instanceof Error ? error.message : copy.updateDialogInstallFailed;
+      setRawErrorMessage(text);
+      setErrorCode(null);
+      setMessage(mapInstallErrorMessage(text, null, updateInfo?.installKind));
     }
   };
 
   const handleRestart = async () => {
+    if (hasUnsavedWork && !restartWithoutSaving) {
+      return;
+    }
     await restartDesktopShell();
   };
 
@@ -140,6 +174,9 @@ export function UpdateDialog({
     phase === "checking_connection" ||
     phase === "checking_updates" ||
     phase === "downloading";
+
+  const showReleasePage = shouldOfferReleasePage(phase, errorCode, rawErrorMessage || message);
+  const restartBlocked = phase === "restart_ready" && hasUnsavedWork && !restartWithoutSaving;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -151,9 +188,17 @@ export function UpdateDialog({
           </DialogDescription>
         </DialogHeader>
 
+        <p className="text-sm text-secondary">{copy.updateDialogTrustBlock}</p>
+
         <p className="text-base text-primary" role="status" aria-live="polite">
           {message}
         </p>
+
+        {restartBlocked ? (
+          <p className="text-sm text-warning" role="alert">
+            {copy.updateDialogUnsavedWarning}
+          </p>
+        ) : null}
 
         <DialogFooter>
           {phase === "update_available" ? (
@@ -184,18 +229,47 @@ export function UpdateDialog({
               >
                 {copy.updateDialogLater}
               </Button>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => void handleRestart()}
-              >
-                {copy.updateDialogRestart}
-              </Button>
+              {restartBlocked ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setRestartWithoutSaving(true)}
+                  >
+                    {copy.updateDialogRestartWithoutSaving}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="primary"
+                    onClick={onSave}
+                    disabled={!canSave || isSaving}
+                  >
+                    {copy.updateDialogSaveBeforeRestart}
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  type="button"
+                  variant="primary"
+                  onClick={() => void handleRestart()}
+                >
+                  {copy.updateDialogRestart}
+                </Button>
+              )}
             </>
           ) : null}
 
           {phase === "error" || phase === "up_to_date" ? (
             <>
+              {showReleasePage ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => window.open(RELEASE_PAGE_URL, "_blank", "noopener,noreferrer")}
+                >
+                  {copy.updateDialogOpenReleasePage}
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"

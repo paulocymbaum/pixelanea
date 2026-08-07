@@ -28,6 +28,36 @@ Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder 
 
 **Open a project from the file manager:** double-click a `.pixelanea` file (if your desktop registered the MIME type during install) or use **File → Open** inside the app.
 
+## Install (Windows)
+
+### NSIS installer (recommended)
+
+1. Download `pixelanea-{version}-windows-x64-setup.exe` from the [GitHub Release](https://github.com/pixelanea/pixelanea/releases).
+2. Double-click the installer and follow the wizard (default location: `C:\Program Files\Pixelanea`).
+3. Launch **Pixelanea** from the Start menu or desktop shortcut.
+4. A **native Pixelanea window** opens. Draw, save, and close when finished.
+
+**OS requirement:** Windows 10 x64 or later. **WebView2** (Microsoft Edge runtime) is required for the native window — it is preinstalled on current Windows 10/11 builds.
+
+**Unsigned builds:** CI and pilot releases may be unsigned. Windows SmartScreen may show “Windows protected your PC” — choose **More info → Run anyway** for local testing. Signed installers ship in a later release train.
+
+### Portable zip (no install)
+
+1. Download `pixelanea-{version}-windows-x64.zip`.
+2. Extract the folder anywhere (e.g. Desktop or USB drive).
+3. Run `pixelanea-shell.exe` inside the extracted folder.
+
+Portable layout mirrors the Linux `.tar.gz`: `pixelanea-server.exe`, `pixelanea-shell.exe`, and `web/` sit in the same directory.
+
+### Release asset naming
+
+| Install kind | Filename pattern | Example (v1.1.0) |
+|--------------|------------------|--------------------|
+| Installer | `pixelanea-{version}-windows-x64-setup.exe` | `pixelanea-1.1.0-windows-x64-setup.exe` |
+| Portable | `pixelanea-{version}-windows-x64.zip` | `pixelanea-1.1.0-windows-x64.zip` |
+
+Linux assets use the same version tag with `pixelanea_{version}_{arch}.deb` and `pixelanea-{version}-linux-{arch}.tar.gz`.
+
 ## Getting started
 
 When you open Pixelanea, you see two equal choices:

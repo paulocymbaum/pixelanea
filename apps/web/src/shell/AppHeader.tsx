@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { basename } from "@/components/project/pathUtils";
 import { copy } from "@/content/copy";
 import { useDerivedProjectStatus } from "@/lib/projectStatus";
-import { useBundlePath, useProjectName } from "@/state/editorStore";
+import { useBundlePath, useEditorStore, useProjectName } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { Button } from "@/components/ui";
 import { OffPaletteExportDialog } from "@/components/project/OffPaletteExportDialog";
@@ -29,6 +29,7 @@ export function AppHeader({
 }: AppHeaderProps) {
   const projectName = useProjectName();
   const bundlePath = useBundlePath();
+  const bundleDirty = useEditorStore((s) => s.bundleDirty);
   const projectStatus = useDerivedProjectStatus();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
   const setShowTechnicalInfo = useUiStore((s) => s.setShowTechnicalInfo);
@@ -143,6 +144,11 @@ export function AppHeader({
           open={updateDialogOpen}
           onOpenChange={setUpdateDialogOpen}
           currentVersion={version}
+          showTechnicalInfo={showTechnicalInfo}
+          hasUnsavedWork={projectStatus.kind === "unsaved" || bundleDirty}
+          canSave={fileActions.canSave}
+          isSaving={fileActions.isSaving}
+          onSave={fileActions.onSave}
         />
       ) : null}
     </>

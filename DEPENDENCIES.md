@@ -458,15 +458,40 @@ export VCPKG_ROOT=~/.vcpkg
 
 ### Windows
 
-- Use **Visual Studio 2022** with "Desktop development with C++"
+- **OS floor:** Windows 10 x64 or later
+- **Toolchain:** Visual Studio 2022 with “Desktop development with C++”
+- **Shell runtime:** WebView2 (preinstalled on current Windows 10/11)
 - vcpkg integrates via `CMAKE_TOOLCHAIN_FILE`
 - Prefer **static linking** triplet for single-binary distribution: `x64-windows-static`
+- **Packaging scripts:** `scripts/build-desktop-windows.ps1`, `scripts/package-windows.ps1`
+- **CI:** `release-windows` job on `windows-latest` (native MSVC — no cross-compile from Linux)
 
-```bash
-cmake -S server -B server/build \
-  -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-  -DVCPKG_TARGET_TRIPLET=x64-windows-static
+```powershell
+# One-time vcpkg setup
+git clone https://github.com/microsoft/vcpkg.git $env:USERPROFILE\vcpkg
+& $env:USERPROFILE\vcpkg\bootstrap-vcpkg.bat
+$env:VCPKG_ROOT = "$env:USERPROFILE\vcpkg"
+
+# Build server + web, then package NSIS installer + portable zip
+.\scripts\package-windows.ps1
 ```
+
+```powershell
+cmake -S server -B server/build `
+  -G "Visual Studio 17 2022" -A x64 `
+  -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT\scripts\buildsystems\vcpkg.cmake" `
+  -DVCPKG_TARGET_TRIPLET=x64-windows-static
+cmake --build server/build --config Release --target pixelanea-server
+```
+
+**GitHub Release asset contract (Windows):**
+
+| Install kind | Filename pattern |
+|--------------|------------------|
+| Installer | `pixelanea-{version}-windows-x64-setup.exe` |
+| Portable | `pixelanea-{version}-windows-x64.zip` |
+
+**Unsigned pilot builds:** Authenticode signing is deferred (Batch 3). Expect SmartScreen warnings until signed installers ship. Do not mass-deploy unsigned `.exe` files to student labs without IT review.
 
 ---
 

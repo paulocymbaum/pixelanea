@@ -1,6 +1,6 @@
 [package]
 name = "pixelanea-shell"
-version = "1.0.0"
+version = "1.1.0"
 description = "Pixelanea native desktop shell"
 authors = ["Pixelanea contributors"]
 license = "MIT"
@@ -27,4 +27,5 @@ tauri-plugin-dialog = "2"
 tauri-plugin-log = "2"
 tauri-plugin-single-instance = "2"
 ureq = { version = "2.10", default-features = false }
+zip = { version = "2.2", default-features = false, features = ["deflate"] }
 libc = "0.2"

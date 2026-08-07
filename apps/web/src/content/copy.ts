@@ -164,6 +164,9 @@ export const copy = {
   updateDialogTitle: "Check for updates",
   updateDialogDescription:
     "Pixelanea checks GitHub for the latest version on the main branch and installs the matching release.",
+  updateDialogTrustBlock:
+    "Downloads from github.com/pixelanea/pixelanea/releases. Your projects stay on this device.",
+  updateDialogOpenReleasePage: "Open release page",
   updateDialogCheckingConnection: "Checking connection to GitHub…",
   updateDialogCheckingUpdates: "Checking the latest version on main…",
   updateDialogConnectionFailed: "Could not connect to GitHub. Check your internet connection and try again.",
@@ -172,16 +175,32 @@ export const copy = {
   updateDialogNoDownloadUrl: "No download is available for this update yet.",
   updateDialogDownloading: "Downloading and installing the update…",
   updateDialogInstallFailed: "Could not install the update.",
+  updateErrorUac:
+    "Windows needs permission to install the update. Allow the prompt, run as administrator, or download the installer manually.",
+  updateErrorGatekeeper:
+    "macOS blocked the update. Open System Settings → Privacy & Security to allow Pixelanea, or download the update manually.",
+  updateErrorPermission:
+    "Pixelanea could not write the update files. Check folder permissions or install manually from the release page.",
+  updateErrorPartial:
+    "The update did not finish. You are still on your current version. Try again or install manually.",
+  updateDialogUnsavedWarning:
+    "You have unsaved changes. Save your project before restarting so you do not lose work.",
+  updateDialogSaveBeforeRestart: "Save project",
+  updateDialogRestartWithoutSaving: "Restart without saving",
   updateDialogWorking: "Working…",
   updateDialogLater: "Later",
   updateDialogClose: "Close",
   updateDialogRetry: "Retry",
   updateDialogInstall: "Install update",
   updateDialogRestart: "Restart now",
-  updateDialogUpToDate: (version: string, commit: string) =>
-    `You're up to date. Main is at v${version} (${commit}).`,
-  updateDialogUpdateAvailable: (current: string, latest: string, commit: string) =>
-    `A newer version is available. You have v${current}; main is at v${latest} (${commit}).`,
+  updateDialogUpToDate: (version: string, commit?: string) =>
+    commit
+      ? `You're up to date. Main is at v${version} (${commit}).`
+      : `You're up to date. Latest is v${version}.`,
+  updateDialogUpdateAvailable: (current: string, latest: string, commit?: string) =>
+    commit
+      ? `A newer version is available. You have v${current}; main is at v${latest} (${commit}).`
+      : `A newer version is available. You have v${current}; latest is v${latest}.`,
   shortcutsOverlayTitle: "Keyboard shortcuts",
   shortcutsOverlayDescription: "Press Escape or click outside to close.",
   shortcutsOverlayClose: "Close",
