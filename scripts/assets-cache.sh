@@ -66,6 +66,18 @@ write_marker() {
   echo "${hash}" > "${marker}"
 }
 
+# Snapshot a directory before tar so vite/IDE watchers cannot race the archive step.
+archive_directory_snapshot() {
+  local source_dir="$1"
+  local archive_path="$2"
+  local staging
+  staging="$(mktemp -d)"
+  cp -a "${source_dir}/." "${staging}/"
+  mkdir -p "$(dirname "${archive_path}")"
+  tar -czf "${archive_path}" -C "${staging}" .
+  rm -rf "${staging}"
+}
+
 ensure_pnpm() {
   if command -v pnpm >/dev/null 2>&1; then
     return 0
@@ -306,7 +318,7 @@ cmd_ensure_web() {
     echo "==> Web dist cache hit (${hash})"
     if [[ ! -f "${cache_dir}/${WEB_ARCHIVE}" ]]; then
       echo "==> Saving web dist to cache (${hash})"
-      tar -czf "${cache_dir}/${WEB_ARCHIVE}" -C "${ROOT_DIR}/apps/web" dist
+      archive_directory_snapshot "${ROOT_DIR}/apps/web/dist" "${cache_dir}/${WEB_ARCHIVE}"
     fi
     return 0
   fi
@@ -328,8 +340,8 @@ cmd_ensure_web() {
     cd "${ROOT_DIR}"
     pnpm --filter @pixelanea/web exec vite build
   )
+  archive_directory_snapshot "${ROOT_DIR}/apps/web/dist" "${cache_dir}/${WEB_ARCHIVE}"
   write_marker "${WEB_DIST_MARKER}" "${hash}"
-  tar -czf "${cache_dir}/${WEB_ARCHIVE}" -C "${ROOT_DIR}/apps/web" dist
 }
 
 configure_server_if_needed() {
