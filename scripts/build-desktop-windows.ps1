@@ -30,16 +30,24 @@ function Ensure-Vcpkg {
         $Root = Join-Path $env:USERPROFILE "vcpkg"
     }
 
-    if (-not (Test-Path (Join-Path $Root "vcpkg.exe"))) {
+    $vcpkgExe = Join-Path $Root "vcpkg.exe"
+    if (-not (Test-Path $vcpkgExe)) {
         if (-not (Test-Path (Join-Path $Root ".git"))) {
             Write-Host "==> Cloning vcpkg to $Root"
-            git clone https://github.com/microsoft/vcpkg.git $Root
+            & git clone https://github.com/microsoft/vcpkg.git $Root 2>&1 | Write-Host
+            if ($LASTEXITCODE -ne 0) {
+                throw "git clone vcpkg failed"
+            }
         }
         Write-Host "==> Bootstrapping vcpkg"
-        & (Join-Path $Root "bootstrap-vcpkg.bat") -disableMetrics
+        $bootstrap = Join-Path $Root "bootstrap-vcpkg.bat"
+        cmd /c "`"$bootstrap`" -disableMetrics"
+        if ($LASTEXITCODE -ne 0) {
+            throw "vcpkg bootstrap failed (exit $LASTEXITCODE)"
+        }
     }
 
-    if (-not (Test-Path (Join-Path $Root "vcpkg.exe"))) {
+    if (-not (Test-Path $vcpkgExe)) {
         throw "vcpkg bootstrap failed at $Root"
     }
 
@@ -61,6 +69,10 @@ function Ensure-Pnpm {
 
 Ensure-Bash
 $VcpkgRoot = Ensure-Vcpkg -Root $VcpkgRoot
+if ($VcpkgRoot -is [array]) {
+    $VcpkgRoot = $VcpkgRoot[-1]
+}
+$VcpkgRoot = [string]$VcpkgRoot.Trim()
 $env:VCPKG_ROOT = $VcpkgRoot
 $env:VCPKG_DEFAULT_TRIPLET = $Triplet
 $env:CMAKE_BUILD_TYPE = "Release"
