@@ -118,9 +118,13 @@ cmd_install() {
       exit 1
     fi
     echo "==> Verifying restored node_modules (${hash})"
+    local -a pnpm_flags=(--frozen-lockfile --prefer-offline)
+    if [[ "${CI:-}" == "true" ]]; then
+      pnpm_flags+=(--ignore-scripts)
+    fi
     (
       cd "${ROOT_DIR}"
-      pnpm install --frozen-lockfile --prefer-offline
+      pnpm install "${pnpm_flags[@]}"
     )
     write_marker "${hash}"
     if [[ ! -f "${cache_dir}/${FRONTEND_ARCHIVE}" ]]; then
@@ -146,9 +150,13 @@ cmd_install() {
   fi
 
   echo "==> Dependency cache miss (${hash}) — running pnpm install"
+  local -a pnpm_flags=(--frozen-lockfile)
+  if [[ "${CI:-}" == "true" ]]; then
+    pnpm_flags+=(--ignore-scripts)
+  fi
   (
     cd "${ROOT_DIR}"
-    pnpm install --frozen-lockfile
+    pnpm install "${pnpm_flags[@]}"
   )
 
   write_marker "${hash}"
