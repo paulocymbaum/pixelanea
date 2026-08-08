@@ -206,10 +206,13 @@ set(PIXELANEA_SERVER_SOURCES
   src/api/import_handlers.cpp
   src/api/export_handlers.cpp
   src/api/file_dialog_handlers.cpp
-  src/api/zenity_file_dialog_provider.cpp
   src/api/web_static.cpp
   src/logging/http_request_log.cpp
 )
+
+if(NOT WIN32)
+  list(APPEND PIXELANEA_SERVER_SOURCES src/api/zenity_file_dialog_provider.cpp)
+endif()
 
 add_executable(pixelanea-server ${PIXELANEA_SERVER_SOURCES})
 target_link_libraries(

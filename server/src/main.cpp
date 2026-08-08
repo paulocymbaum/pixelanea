@@ -1,6 +1,9 @@
 #include "api/api_server.hpp"
+#include "api/file_dialog_provider.hpp"
 #include "api/web_static.hpp"
+#ifndef _WIN32
 #include "api/zenity_file_dialog_provider.hpp"
+#endif
 
 #include "logging/log_config.hpp"
 
@@ -121,7 +124,10 @@ int main(int argc, char** argv) {
   pixelanea::db::ProjectRepository projects(*logger);
   pixelanea::db::FrameRepository frames(projects, *logger);
   pixelanea::db::PaletteRepository palettes(projects, *logger);
-  auto file_dialog = std::make_unique<pixelanea::api::ZenityFileDialogProvider>(*logger);
+  std::unique_ptr<pixelanea::api::FileDialogProvider> file_dialog;
+#ifndef _WIN32
+  file_dialog = std::make_unique<pixelanea::api::ZenityFileDialogProvider>(*logger);
+#endif
   pixelanea::api::ApiServer api(projects, frames, palettes, *logger, std::move(file_dialog));
 
   httplib::Server server;
