@@ -341,6 +341,11 @@ jobs:
         shell: bash
         run: ./scripts/deps-cache.sh install
 
+      - name: Setup MSVC dev environment
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
       - name: Build Windows packages
         env:
           VCPKG_ROOT: ${{ runner.temp }}\vcpkg

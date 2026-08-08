@@ -70,6 +70,50 @@ function Ensure-Vcpkg {
     $script:ResolvedVcpkgRoot = $Root
 }
 
+function Test-StaleCMakeCache {
+    param([string]$Dir)
+
+    $cache = Join-Path $Dir "CMakeCache.txt"
+    if (-not (Test-Path $cache)) {
+        return $false
+    }
+    if (Test-Path (Join-Path $Dir "build.ninja")) {
+        return $false
+    }
+    if (Test-Path (Join-Path $Dir "Makefile")) {
+        return $false
+    }
+    $vcProj = Get-ChildItem -Path $Dir -Filter "*.vcxproj" -File -ErrorAction SilentlyContinue
+    if ($vcProj) {
+        return $false
+    }
+    return $true
+}
+
+function Get-CMakeGeneratorArgs {
+    if (Get-Command ninja -ErrorAction SilentlyContinue) {
+        return @("-G", "Ninja")
+    }
+
+    $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+    if (Test-Path $vswhere) {
+        return @("-G", "Visual Studio 17 2022", "-A", "x64")
+    }
+
+    throw "CMake requires ninja or Visual Studio 2022 (Desktop C++)"
+}
+
+function Invoke-ServerCMakeBuild {
+    param([string]$Dir)
+
+    if (Test-Path (Join-Path $Dir "build.ninja")) {
+        cmake --build $Dir --target pixelanea-server
+    }
+    else {
+        cmake --build $Dir --config Release --target pixelanea-server
+    }
+}
+
 function Ensure-Pnpm {
     if (Get-Command pnpm -ErrorAction SilentlyContinue) {
         return
@@ -117,7 +161,7 @@ try {
         $cacheFile = Join-Path $BuildDir "CMakeCache.txt"
         if (Test-Path $cacheFile) {
             $cache = Get-Content $cacheFile -Raw
-            if ($cache -notmatch [regex]::Escape($Triplet)) {
+            if ((Test-StaleCMakeCache $BuildDir) -or $cache -notmatch [regex]::Escape($Triplet)) {
                 Remove-Item -Recurse -Force $BuildDir
             }
         }
@@ -128,15 +172,17 @@ try {
 
     if (-not (Test-Path (Join-Path $BuildDir "CMakeCache.txt"))) {
         Write-Host "==> Configuring pixelanea-server ($Triplet, Release)"
-        cmake -S (Join-Path $RootDir "server") -B $BuildDir `
-            -G "Visual Studio 17 2022" -A x64 `
+        $generatorArgs = Get-CMakeGeneratorArgs
+        cmake @generatorArgs `
+            -S (Join-Path $RootDir "server") `
+            -B $BuildDir `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_TOOLCHAIN_FILE="$Toolchain" `
             -DVCPKG_TARGET_TRIPLET="$Triplet"
     }
 
     Write-Host "==> Compiling pixelanea-server"
-    cmake --build $BuildDir --config Release --target pixelanea-server
+    Invoke-ServerCMakeBuild -Dir $BuildDir
 
     $ServerExe = Join-Path $BuildDir "pixelanea-server.exe"
     if (-not (Test-Path $ServerExe)) {
