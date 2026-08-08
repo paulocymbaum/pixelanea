@@ -30,8 +30,9 @@ impl ServerProcess {
             .stderr(Stdio::null());
         unsafe {
             command.pre_exec(|| {
-                // When the shell exits abruptly, terminate the server too (Linux).
+                // When the shell exits abruptly, terminate the server too (Linux only).
                 // SAFETY: prctl runs in the child immediately before exec; no other threads.
+                #[cfg(target_os = "linux")]
                 libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
                 Ok(())
             });
