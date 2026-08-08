@@ -16,6 +16,7 @@ $ErrorActionPreference = "Stop"
 $RootDir = Split-Path -Parent $PSScriptRoot
 $BuildDir = Join-Path $RootDir "server\build"
 $WebDist = Join-Path $RootDir "apps\web\dist"
+$ResolvedVcpkgRoot = ""
 
 function Ensure-Bash {
     if (-not (Get-Command bash -ErrorAction SilentlyContinue)) {
@@ -34,16 +35,31 @@ function Ensure-Vcpkg {
     if (-not (Test-Path $vcpkgExe)) {
         if (-not (Test-Path (Join-Path $Root ".git"))) {
             Write-Host "==> Cloning vcpkg to $Root"
-            & git clone https://github.com/microsoft/vcpkg.git $Root 2>&1 | Write-Host
+            $cloneOutput = & git clone https://github.com/microsoft/vcpkg.git $Root 2>&1
+            $cloneOutput | Write-Host
             if ($LASTEXITCODE -ne 0) {
                 throw "git clone vcpkg failed"
             }
         }
         Write-Host "==> Bootstrapping vcpkg"
         $bootstrap = Join-Path $Root "bootstrap-vcpkg.bat"
-        cmd /c "`"$bootstrap`" -disableMetrics"
-        if ($LASTEXITCODE -ne 0) {
-            throw "vcpkg bootstrap failed (exit $LASTEXITCODE)"
+        $bootstrapLog = Join-Path $env:TEMP "pixelanea-vcpkg-bootstrap.log"
+        $bootstrapErr = Join-Path $env:TEMP "pixelanea-vcpkg-bootstrap.err"
+        if (Test-Path $bootstrapLog) { Remove-Item -Force $bootstrapLog }
+        if (Test-Path $bootstrapErr) { Remove-Item -Force $bootstrapErr }
+        $proc = Start-Process -FilePath $bootstrap `
+            -ArgumentList "-disableMetrics" `
+            -Wait -PassThru -NoNewWindow `
+            -RedirectStandardOutput $bootstrapLog `
+            -RedirectStandardError $bootstrapErr
+        if (Test-Path $bootstrapLog) {
+            Get-Content $bootstrapLog | Write-Host
+        }
+        if (Test-Path $bootstrapErr) {
+            Get-Content $bootstrapErr | Write-Host
+        }
+        if ($proc.ExitCode -ne 0) {
+            throw "vcpkg bootstrap failed (exit $($proc.ExitCode))"
         }
     }
 
@@ -51,7 +67,7 @@ function Ensure-Vcpkg {
         throw "vcpkg bootstrap failed at $Root"
     }
 
-    return $Root
+    $script:ResolvedVcpkgRoot = $Root
 }
 
 function Ensure-Pnpm {
@@ -68,11 +84,11 @@ function Ensure-Pnpm {
 }
 
 Ensure-Bash
-$VcpkgRoot = Ensure-Vcpkg -Root $VcpkgRoot
-if ($VcpkgRoot -is [array]) {
-    $VcpkgRoot = $VcpkgRoot[-1]
+Ensure-Vcpkg -Root $VcpkgRoot
+if ([string]::IsNullOrWhiteSpace($script:ResolvedVcpkgRoot)) {
+    throw "Ensure-Vcpkg did not resolve VCPKG_ROOT"
 }
-$VcpkgRoot = [string]$VcpkgRoot.Trim()
+$VcpkgRoot = $script:ResolvedVcpkgRoot
 $env:VCPKG_ROOT = $VcpkgRoot
 $env:VCPKG_DEFAULT_TRIPLET = $Triplet
 $env:CMAKE_BUILD_TYPE = "Release"
