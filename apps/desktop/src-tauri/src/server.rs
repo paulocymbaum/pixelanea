@@ -1,3 +1,4 @@
+#[cfg(unix)]
 use std::os::unix::process::CommandExt;
 use std::path::Path;
 use std::process::{Child, Command, Stdio};
@@ -28,15 +29,20 @@ impl ServerProcess {
             .stdin(Stdio::null())
             .stdout(Stdio::null())
             .stderr(Stdio::null());
-        unsafe {
-            command.pre_exec(|| {
-                // When the shell exits abruptly, terminate the server too (Linux only).
-                // SAFETY: prctl runs in the child immediately before exec; no other threads.
-                #[cfg(target_os = "linux")]
-                libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
-                Ok(())
-            });
+
+        #[cfg(unix)]
+        {
+            unsafe {
+                command.pre_exec(|| {
+                    // When the shell exits abruptly, terminate the server too (Linux only).
+                    // SAFETY: prctl runs in the child immediately before exec; no other threads.
+                    #[cfg(target_os = "linux")]
+                    libc::prctl(libc::PR_SET_PDEATHSIG, libc::SIGTERM);
+                    Ok(())
+                });
+            }
         }
+
         let child = command
             .spawn()
             .map_err(|error| format!("failed to start pixelanea-server: {error}"))?;
