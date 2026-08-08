@@ -1,6 +1,6 @@
 [package]
 name = "pixelanea-shell"
-version = "1.8.0"
+version = "1.9.0"
 description = "Pixelanea native desktop shell"
 authors = ["Pixelanea contributors"]
 license = "MIT"
