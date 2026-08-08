@@ -16,7 +16,7 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "@/App";
 import { SkippableOverlay } from "@/components/onboarding/SkippableOverlay";
-import { getPalettePreset } from "@/components/palette/palettePresets";
+import { getPalettePreset } from "@/components/palette/palettePresetCatalog";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";

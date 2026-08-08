@@ -1,4 +1,4 @@
-import type { PalettePresetId } from "@/components/palette/palettePresets";
+import type { PalettePresetId } from "@/components/palette/palettePresetCatalog";
 import type { ResolutionPreset } from "./resolutionPresets";
 
 export type ImportWizardStep = "file" | "resolution" | "palette" | "preview";

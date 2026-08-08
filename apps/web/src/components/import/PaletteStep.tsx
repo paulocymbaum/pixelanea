@@ -1,5 +1,5 @@
 import { PalettePresetGrid } from "@/components/palette/PalettePresetGrid";
-import type { PalettePresetId } from "@/components/palette/palettePresets";
+import type { PalettePresetId } from "@/components/palette/palettePresetCatalog";
 import { Button } from "@/components/ui/Button";
 import { copy } from "@/content/copy";
 import { cn } from "@/lib/cn";

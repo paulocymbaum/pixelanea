@@ -5,7 +5,7 @@ import type {
   ImportColorCount,
   ImportPaletteMode,
 } from "@/components/import/paletteImportOptions";
-import type { PaletteSelectionId } from "@/components/palette/palettePresets";
+import type { PaletteSelectionId } from "@/components/palette/palettePresetCatalog";
 import type { ResolutionPreset } from "@/components/import/resolutionPresets";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
 import type { CanvasSize } from "@/components/project/canvasSize";

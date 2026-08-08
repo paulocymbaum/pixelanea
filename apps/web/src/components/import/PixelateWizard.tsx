@@ -14,7 +14,7 @@ import { errors } from "@/content/errors";
 import { loadProjectIntoEditor } from "@/lib/loadProject";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
-import { getPalettePreset, type PalettePresetId } from "@/components/palette/palettePresets";
+import { getPalettePreset, type PalettePresetId } from "@/components/palette/palettePresetCatalog";
 import { FileDropStep } from "./FileDropStep";
 import { isAcceptedImageType } from "./fileUtils";
 import { fileToBase64 } from "./fileUtils";
@@ -47,7 +47,7 @@ const DEFAULT_PROJECT = {
 const DEFAULT_PALETTE_PRESET: PalettePresetId = "retro";
 
 function resolveImportPalettePreset(
-  preset: import("@/components/palette/palettePresets").PaletteSelectionId | null,
+  preset: import("@/components/palette/palettePresetCatalog").PaletteSelectionId | null,
 ): PalettePresetId {
   return preset && preset !== "source" ? preset : DEFAULT_PALETTE_PRESET;
 }

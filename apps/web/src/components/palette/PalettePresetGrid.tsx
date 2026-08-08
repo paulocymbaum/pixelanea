@@ -6,7 +6,7 @@ import {
   palettePresetLabel,
   type PalettePreset,
   type PaletteSelectionId,
-} from "./palettePresets";
+} from "./palettePresetCatalog";
 
 export type PalettePresetGridProps = {
   selectedId?: PaletteSelectionId | null;

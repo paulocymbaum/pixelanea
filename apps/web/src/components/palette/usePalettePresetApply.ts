@@ -4,7 +4,7 @@ import {
   useSourcePaletteColors,
 } from "@/state/editorStore";
 import { useSessionStore } from "@/state/sessionStore";
-import type { PalettePresetId, PaletteSelectionId } from "./palettePresets";
+import type { PalettePresetId, PaletteSelectionId } from "./palettePresetCatalog";
 
 export function usePalettePresetApply() {
   const locked = usePaletteLocked();

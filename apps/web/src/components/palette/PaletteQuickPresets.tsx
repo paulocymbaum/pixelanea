@@ -6,7 +6,7 @@ import {
   getQuickPalettePresets,
   palettePresetLabel,
   type PalettePreset,
-} from "./palettePresets";
+} from "./palettePresetCatalog";
 import { usePalettePresetApply } from "./usePalettePresetApply";
 
 type PaletteQuickPresetsProps = {

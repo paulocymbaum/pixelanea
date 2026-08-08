@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getQuickPalettePresets,
   QUICK_PALETTE_PRESET_IDS,
-} from "./palettePresets";
+} from "./palettePresetCatalog";
 
 describe("getQuickPalettePresets", () => {
   it("returns all curated presets when no last preset", () => {
