@@ -344,6 +344,34 @@ cmd_ensure_web() {
   write_marker "${WEB_DIST_MARKER}" "${hash}"
 }
 
+default_c_compiler() {
+  if [[ -n "${CC:-}" ]]; then
+    printf '%s' "${CC}"
+    return 0
+  fi
+  if command -v clang >/dev/null 2>&1; then
+    echo clang
+  elif command -v gcc >/dev/null 2>&1; then
+    echo gcc
+  else
+    echo cc
+  fi
+}
+
+default_cxx_compiler() {
+  if [[ -n "${CXX:-}" ]]; then
+    printf '%s' "${CXX}"
+    return 0
+  fi
+  if command -v clang++ >/dev/null 2>&1; then
+    echo clang++
+  elif command -v g++ >/dev/null 2>&1; then
+    echo g++
+  else
+    echo c++
+  fi
+}
+
 configure_server_if_needed() {
   local cmake_bin
   cmake_bin="$(resolve_cmake_bin)"
@@ -356,8 +384,8 @@ configure_server_if_needed() {
     -S "${ROOT_DIR}/server"
     -B "${ROOT_DIR}/server/build"
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE}"
-    -DCMAKE_CXX_COMPILER="${CXX:-g++}"
-    -DCMAKE_C_COMPILER="${CC:-gcc}"
+    -DCMAKE_CXX_COMPILER="$(default_cxx_compiler)"
+    -DCMAKE_C_COMPILER="$(default_c_compiler)"
   )
   if command -v ninja >/dev/null 2>&1; then
     args+=("-G" "Ninja")

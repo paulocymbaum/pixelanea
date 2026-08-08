@@ -34,6 +34,17 @@ for json_file in \
   fi
 done
 
+cargo_version="$(
+  grep -E '^version = ' "${ROOT_DIR}/apps/desktop/src-tauri/Cargo.toml" \
+    | head -1 \
+    | sed 's/version = "\(.*\)"/\1/'
+)"
+if [[ "${cargo_version}" != "${VERSION}" ]]; then
+  echo "ERROR: apps/desktop/src-tauri/Cargo.toml version is ${cargo_version}, expected ${VERSION}" >&2
+  echo "Run: ./scripts/sync-version.sh" >&2
+  exit 1
+fi
+
 openapi_version="$(
   awk '/^info:/ { in_info=1; next } in_info && /^[^ ]/ { in_info=0 } in_info && /^  version:/ { print $2; exit }' \
     "${ROOT_DIR}/contracts/openapi.yaml"

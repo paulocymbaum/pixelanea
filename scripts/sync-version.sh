@@ -43,4 +43,7 @@ sed -i "s|inline constexpr const char\\* kServerVersion = \".*\";|inline constex
 sed -i "s/\"version-string\": \".*\"/\"version-string\": \"${VERSION}\"/" \
   "${ROOT_DIR}/server/vcpkg.json"
 
+sed -i "s/^version = \"[^\"]*\"/version = \"${VERSION}\"/" \
+  "${ROOT_DIR}/apps/desktop/src-tauri/Cargo.toml"
+
 echo "Synced version ${VERSION}"

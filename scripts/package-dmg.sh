@@ -12,6 +12,12 @@
 # Requires: macOS host, Xcode CLT, Rust, Tauri CLI.
 set -euo pipefail
 
+if [[ "$(uname -s)" != "Darwin" ]]; then
+  echo "ERROR: DMG packaging requires a macOS (Darwin) host" >&2
+  echo "Use GitHub Actions workflow package-macos.yml or release-macos on macos-14." >&2
+  exit 1
+fi
+
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # shellcheck source=stage-macos-desktop.sh
 source "${ROOT_DIR}/scripts/stage-macos-desktop.sh"

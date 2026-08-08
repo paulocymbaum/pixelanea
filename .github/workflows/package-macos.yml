@@ -1,0 +1,97 @@
+name: Package macOS
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'scripts/package-dmg.sh'
+      - 'scripts/test-package-macos.sh'
+      - 'scripts/stage-macos-desktop.sh'
+      - 'scripts/stage-desktop-assets.sh'
+      - '.github/workflows/package-macos.yml'
+
+concurrency:
+  group: package-macos-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TAURI_CLI_VERSION: "2.0.0"
+
+jobs:
+  package-macos:
+    name: Build DMG + smoke test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build
+            .cache/assets
+          key: pixelanea-assets-release-macos-${{ steps.assets-hash.outputs.hash }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Verify VERSION manifests
+        run: ./scripts/verify-version.sh
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Install dependencies
+        run: ./scripts/deps-cache.sh install
+
+      - name: Build macOS packages
+        run: ./scripts/package-dmg.sh
+
+      - name: Smoke test macOS packages
+        run: ./scripts/test-package-macos.sh --skip-build --install-test
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelanea-macos-${{ github.run_id }}
+          path: |
+            dist/pixelanea-*-macos-*.dmg
+            dist/pixelanea-*-macos-*.zip
+          retention-days: 14
