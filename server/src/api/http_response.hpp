@@ -5,7 +5,7 @@
 
 namespace pixelanea::api {
 
-inline constexpr const char* kServerVersion = "1.5.0";
+inline constexpr const char* kServerVersion = "1.6.0";
 
 inline httplib::Response json_response(int status, const nlohmann::json& body) {
   httplib::Response response;
