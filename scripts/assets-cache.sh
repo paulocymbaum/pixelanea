@@ -92,16 +92,39 @@ ensure_pnpm() {
 PYTHON_SCRIPTS_VENV="${ROOT_DIR}/.cache/venv-scripts"
 PYTHON_SCRIPTS_BIN=""
 
-ensure_python_script_deps() {
-  if python3 -c "from PIL import Image" 2>/dev/null; then
+venv_scripts_python() {
+  local venv="${PYTHON_SCRIPTS_VENV}"
+  if [[ -x "${venv}/bin/python3" ]]; then
+    echo "${venv}/bin/python3"
     return 0
   fi
-  if [[ -x "${PYTHON_SCRIPTS_VENV}/bin/python3" ]] \
-    && "${PYTHON_SCRIPTS_VENV}/bin/python3" -c "from PIL import Image" 2>/dev/null; then
+  if [[ -x "${venv}/Scripts/python.exe" ]]; then
+    echo "${venv}/Scripts/python.exe"
+    return 0
+  fi
+  return 1
+}
+
+python_has_pillow() {
+  local py="$1"
+  "$py" -c "from PIL import Image" 2>/dev/null
+}
+
+venv_scripts_incomplete() {
+  [[ -d "${PYTHON_SCRIPTS_VENV}" ]] && ! venv_scripts_python >/dev/null 2>&1
+}
+
+ensure_python_script_deps() {
+  if python_has_pillow python3; then
     return 0
   fi
 
-  if [[ -d "${PYTHON_SCRIPTS_VENV}" ]]; then
+  local venv_py=""
+  if venv_py="$(venv_scripts_python 2>/dev/null)" && python_has_pillow "${venv_py}"; then
+    return 0
+  fi
+
+  if venv_scripts_incomplete || [[ -d "${PYTHON_SCRIPTS_VENV}" ]]; then
     echo "==> Removing incomplete Python scripts venv..." >&2
     rm -rf "${PYTHON_SCRIPTS_VENV}"
   fi
@@ -111,32 +134,35 @@ ensure_python_script_deps() {
     echo "python3 -m venv failed (install python3-venv on Debian/Ubuntu)." >&2
     exit 1
   fi
-  if ! "${PYTHON_SCRIPTS_VENV}/bin/pip" install --disable-pip-version-check -q \
+
+  venv_py="$(venv_scripts_python)"
+  if ! "${venv_py}" -m pip install --disable-pip-version-check -q \
     -r "${ROOT_DIR}/scripts/requirements.txt"; then
     echo "Failed to install scripts/requirements.txt." >&2
     exit 1
   fi
-  if ! "${PYTHON_SCRIPTS_VENV}/bin/python3" -c "from PIL import Image" 2>/dev/null; then
+  if ! python_has_pillow "${venv_py}"; then
     echo "Pillow install did not produce a working PIL import." >&2
     exit 1
   fi
 }
 
 resolve_python_scripts_bin() {
-  if python3 -c "from PIL import Image" 2>/dev/null; then
+  if python_has_pillow python3; then
     PYTHON_SCRIPTS_BIN=python3
     return 0
   fi
-  if [[ -x "${PYTHON_SCRIPTS_VENV}/bin/python3" ]] \
-    && "${PYTHON_SCRIPTS_VENV}/bin/python3" -c "from PIL import Image" 2>/dev/null; then
-    PYTHON_SCRIPTS_BIN="${PYTHON_SCRIPTS_VENV}/bin/python3"
+
+  local venv_py=""
+  if venv_py="$(venv_scripts_python 2>/dev/null)" && python_has_pillow "${venv_py}"; then
+    PYTHON_SCRIPTS_BIN="${venv_py}"
     return 0
   fi
 
   ensure_python_script_deps
-  PYTHON_SCRIPTS_BIN="${PYTHON_SCRIPTS_VENV}/bin/python3"
-  if [[ ! -x "${PYTHON_SCRIPTS_BIN}" ]]; then
-    echo "Python scripts interpreter missing: ${PYTHON_SCRIPTS_BIN}" >&2
+  PYTHON_SCRIPTS_BIN="$(venv_scripts_python)"
+  if [[ -z "${PYTHON_SCRIPTS_BIN}" ]] || ! python_has_pillow "${PYTHON_SCRIPTS_BIN}"; then
+    echo "Python scripts interpreter missing or Pillow unavailable: ${PYTHON_SCRIPTS_BIN:-<none>}" >&2
     exit 1
   fi
 }
