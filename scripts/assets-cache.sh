@@ -375,9 +375,14 @@ default_cxx_compiler() {
 configure_server_if_needed() {
   local cmake_bin
   cmake_bin="$(resolve_cmake_bin)"
-  if [[ -f "${ROOT_DIR}/server/build/CMakeCache.txt" ]]; then
-    echo "==> [server] cmake configure skipped (CMakeCache.txt present)"
-    return 0
+  local build_dir="${ROOT_DIR}/server/build"
+  if [[ -f "${build_dir}/CMakeCache.txt" ]]; then
+    if [[ -f "${build_dir}/build.ninja" || -f "${build_dir}/Makefile" ]]; then
+      echo "==> [server] cmake configure skipped (build tree present)"
+      return 0
+    fi
+    echo "==> [server] stale CMake cache (no build files) — reconfiguring"
+    rm -f "${build_dir}/CMakeCache.txt"
   fi
 
   local -a args=(

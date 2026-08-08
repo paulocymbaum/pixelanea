@@ -7,7 +7,7 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 | 00 | `00-verify-version.sh` | `VERSION` matches all propagated manifests |
 | 01 | `01-deps.sh` | `pnpm install` (hash cache) |
 | 02 | `02-api-assets.sh` | OpenAPI codegen + api-client build |
-| 03 | `03-lint.sh` | ESLint (web) + C++ layer boundaries |
+| 03 | `03-lint.sh` | ESLint (web), C++ layer boundaries, project lint (deps / imports / packaging) |
 | 04 | `04-typecheck.sh` | `tsc --noEmit` |
 | 05 | `05-test-qa.sh` | Vitest QA matrices (`src/qa/`) |
 | 06 | `06-test-unit.sh` | Vitest unit tests |

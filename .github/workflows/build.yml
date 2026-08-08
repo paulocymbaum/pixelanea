@@ -5,9 +5,15 @@ on:
     branches: [develop, main, master]
   pull_request:
 
+permissions:
+  contents: read
+
 concurrency:
   group: build-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+env:
+  TAURI_CLI_VERSION: "2.0.0"
 
 jobs:
   build:
@@ -41,7 +47,6 @@ jobs:
             apps/web/node_modules
             packages/api-client/node_modules
             server/build/_deps
-            server/build/CMakeCache.txt
             .cache/deps
             .cache/venv-scripts
           key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
@@ -112,6 +117,246 @@ jobs:
 
       - name: Frontend smoke tests
         run: ./scripts/ci-steps/13-smoke-frontend.sh
+
+  package-linux:
+    name: Package Linux (.deb)
+    needs: build
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build/pixelanea-server
+            .cache/assets
+          key: pixelanea-assets-release-${{ steps.assets-hash.outputs.hash }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: ./scripts/deps-cache.sh install
+
+      - name: Install packaging tools
+        run: sudo apt-get update && sudo apt-get install -y dpkg-dev
+
+      - name: Install desktop shell build dependencies
+        run: ./scripts/install-desktop-shell-build-deps.sh
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Build Debian package
+        run: ./scripts/package-deb.sh
+
+      - name: Smoke test Debian package
+        run: ./scripts/test-package-linux.sh --skip-build
+
+      - name: Upload Linux package
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelanea-linux-${{ github.run_id }}
+          path: dist/pixelanea_*.deb
+          retention-days: 7
+
+  package-macos:
+    name: Package macOS (DMG)
+    needs: build
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build
+            .cache/assets
+          key: pixelanea-assets-release-macos-${{ steps.assets-hash.outputs.hash }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Install dependencies
+        run: ./scripts/deps-cache.sh install
+
+      - name: Build macOS packages
+        run: ./scripts/package-dmg.sh
+
+      - name: Smoke test macOS packages
+        run: ./scripts/test-package-macos.sh --skip-build --install-test
+
+      - name: Upload macOS packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelanea-macos-${{ github.run_id }}
+          path: |
+            dist/pixelanea-*-macos-*.dmg
+            dist/pixelanea-*-macos-*.zip
+          retention-days: 7
+
+  package-windows:
+    name: Package Windows (installer)
+    needs: build
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        shell: bash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        shell: bash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Release)" >> $GITHUB_OUTPUT
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build
+            .cache/assets
+          key: pixelanea-assets-release-windows-${{ steps.assets-hash.outputs.hash }}
+
+      - name: Restore vcpkg cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\vcpkg
+          key: pixelanea-vcpkg-${{ hashFiles('server/vcpkg.json') }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: apps/desktop/src-tauri
+
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
+
+      - name: Install dependencies
+        shell: bash
+        run: ./scripts/deps-cache.sh install
+
+      - name: Build Windows packages
+        env:
+          VCPKG_ROOT: ${{ runner.temp }}\vcpkg
+        run: .\scripts\package-windows.ps1
+
+      - name: Smoke test Windows packages
+        run: .\scripts\test-package-windows.ps1 -SkipBuild
+
+      - name: Upload Windows packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: pixelanea-windows-${{ github.run_id }}
+          path: |
+            dist/pixelanea-*-windows-x64-setup.exe
+            dist/pixelanea-*-windows-x64.zip
+          retention-days: 7
 
   bump-version:
     needs: build

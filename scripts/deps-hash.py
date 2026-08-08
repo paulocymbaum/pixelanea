@@ -19,6 +19,7 @@ DEPENDENCY_INPUTS = (
     "scripts/requirements.txt",
     "server/vcpkg.json",
     "server/CMakeLists.txt",
+    "apps/desktop/src-tauri/Cargo.toml",
 )
 
 

@@ -37,20 +37,128 @@ Regenerate demos locally: `./scripts/record-linkedin-media.sh` (outputs GIFs onl
 | Desktop shell | Tauri 2 + WebKitGTK (`apps/desktop/`) |
 | Contract | OpenAPI → TypeScript client (`contracts/`, `packages/api-client`) |
 
-## Desktop install (recommended)
+## Install from the repository (terminal)
 
-**End users (workshops):** install the `.deb` from [Releases](https://github.com/pixelanea/pixelanea/releases) — it ships `pixelanea-shell`, a native window backed by WebKitGTK (no browser chrome). Launch **Pixelanea** from the app menu or run `pixelanea`. Optional: `sudo apt install zenity` for native File Open/Save dialogs. Fallback: `pixelanea-browser` opens the editor in your default browser.
-
-**Developers (browser launcher, no Rust required):**
+Build and install on your machine from a clone — no pre-built download required. For pre-built installers, see [Releases](https://github.com/pixelanea/pixelanea/releases).
 
 ```bash
+git clone https://github.com/pixelanea/pixelanea.git
+cd pixelanea
+```
+
+Set the version once (used in paths below):
+
+```bash
+VERSION=$(tr -d '[:space:]' < VERSION)
+```
+
+Full toolchain details: [DEPENDENCIES.md](./DEPENDENCIES.md).
+
+### Linux (Debian / Ubuntu)
+
+**Native app (`.deb`, system-wide)** — recommended. Installs `pixelanea-shell` (Tauri + WebKitGTK). Launch from the app menu or run `pixelanea` / `pixelanea-shell`.
+
+```bash
+# One-time: Node 20+, pnpm, and native shell build dependencies
+corepack enable && corepack prepare pnpm@9.15.4 --activate
+sudo apt install dpkg-dev curl git build-essential cmake g++ ninja-build pkg-config
+./scripts/install-desktop-shell-build-deps.sh
+
+# Rust (if needed): https://rustup.rs
+# cargo install tauri-cli --version 2.0.0 --locked
+
+# Build the .deb and install it
+./scripts/package-deb.sh
+ARCH=$(dpkg-architecture -qDEB_BUILD_ARCH 2>/dev/null || echo amd64)
+sudo apt install "./dist/pixelanea_${VERSION}_${ARCH}.deb"
+
+pixelanea-shell
+```
+
+Optional: `sudo apt install zenity` for native File Open/Save dialogs. If `apt` reports dependency errors: `sudo apt-get install -f`.
+
+**Browser launcher (user install, no root, no Rust)** — opens the editor in your default browser at `http://127.0.0.1:8787`:
+
+```bash
+corepack enable && corepack prepare pnpm@9.15.4 --activate
+sudo apt install curl git build-essential cmake g++ ninja-build
 ./scripts/install-desktop-linux.sh
 pixelanea
 ```
 
-**Developers (native shell):** install Rust stable + WebKitGTK dev packages ([DEPENDENCIES.md](./DEPENDENCIES.md)), then `pnpm build:desktop-shell` or `pnpm package:deb` for a `.deb` in `dist/`. `pnpm package:desktop` builds a portable `.tar.gz` (shell primary, browser fallback). Build artifacts are gitignored — never commit `dist/`.
+**Portable folder (no install)** — extract and run, or install to `~/.local`:
 
-See [docs/user-guide.md](./docs/user-guide.md) and [docs/workshop/teacher-guide.md](./docs/workshop/teacher-guide.md) for install details.
+```bash
+./scripts/package-desktop-linux.sh
+LINUX_ARCH=$(uname -m | sed 's/x86_64/amd64/;s/aarch64/arm64/')
+tar -xzf "dist/pixelanea-${VERSION}-linux-${LINUX_ARCH}.tar.gz" -C dist
+cd "dist/pixelanea-${VERSION}-linux-${LINUX_ARCH}"
+./pixelanea-shell          # native window
+# or: ./install.sh         # copies to ~/.local and adds menu entry
+```
+
+### macOS
+
+**DMG installer + portable `.app` zip** — requires macOS host, Xcode Command Line Tools, Rust, and Tauri CLI.
+
+```bash
+# One-time: Xcode CLT
+xcode-select --install
+
+corepack enable && corepack prepare pnpm@9.15.4 --activate
+# Rust: https://rustup.rs
+
+MAC_ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/')
+
+./scripts/package-dmg.sh
+
+# Install from DMG (GUI)
+open "dist/pixelanea-${VERSION}-macos-${MAC_ARCH}.dmg"
+
+# Or install from terminal
+MOUNT=$(mktemp -d)
+hdiutil attach -nobrowse -mountpoint "$MOUNT" "dist/pixelanea-${VERSION}-macos-${MAC_ARCH}.dmg"
+cp -R "$MOUNT/Pixelanea.app" /Applications/
+hdiutil detach "$MOUNT"
+open -a Pixelanea
+```
+
+Portable (no install): unzip `dist/pixelanea-${VERSION}-macos-${MAC_ARCH}.zip` and open `Pixelanea.app`.
+
+On Apple Silicon use `arm64` in the filename; on Intel Mac use `x64`. Unsigned builds may need **System Settings → Privacy & Security** approval on first launch.
+
+### Windows
+
+**NSIS installer + portable zip** — Windows 10/11 x64, Visual Studio 2022 (Desktop development with C++), Git for Windows, Rust, WebView2.
+
+```powershell
+# One-time: enable pnpm (in PowerShell)
+corepack enable
+corepack prepare pnpm@9.15.4 --activate
+
+# Build installer + portable zip (bootstraps vcpkg if VCPKG_ROOT is unset)
+.\scripts\package-windows.ps1
+
+# Install (GUI installer)
+.\dist\pixelanea-$((Get-Content -Raw VERSION).Trim())-windows-x64-setup.exe
+
+# Portable (no install)
+Expand-Archive -Force "dist\pixelanea-$((Get-Content -Raw VERSION).Trim())-windows-x64.zip" "$env:LOCALAPPDATA\Pixelanea"
+cd "$env:LOCALAPPDATA\Pixelanea\pixelanea-$((Get-Content -Raw VERSION).Trim())-windows-x64"
+.\pixelanea-shell.exe
+```
+
+Unsigned installers may trigger SmartScreen — choose **More info → Run anyway** for local builds.
+
+### pnpm shortcuts (Linux)
+
+| Command | What it does |
+|---------|----------------|
+| `pnpm package:deb` | Build `.deb` → `dist/` |
+| `pnpm package:desktop` | Build portable `tar.gz` → `dist/` |
+| `pnpm install:desktop` | User-level browser launcher (`install-desktop-linux.sh`) |
+
+See [docs/user-guide.md](./docs/user-guide.md) and [docs/workshop/teacher-guide.md](./docs/workshop/teacher-guide.md) for classroom setup.
 
 ## Developer quick start
 
@@ -112,7 +220,7 @@ pnpm ci:e2e
 ./scripts/ci-sprint1.sh      # same as ./scripts/ci.sh sprint
 ```
 
-CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, and smoke scripts on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Playwright E2E is optional (`pnpm ci:e2e`). Tagged releases build `.deb` and `.tar.gz` artifacts — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke scripts, and **desktop packaging** (`.deb`, DMG, Windows installer) on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Playwright E2E is optional (`pnpm ci:e2e`). Tagged releases upload the same artifacts to GitHub Releases — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Documentation
 
@@ -147,7 +255,9 @@ pixelanea/
 └── scripts/
     ├── dev.sh             # Start API + Vite with proxy
     ├── build-desktop-shell.sh
-    ├── package-deb.sh     # Debian installer
+    ├── package-deb.sh         # Debian installer
+    ├── package-dmg.sh         # macOS DMG + portable zip
+    ├── package-windows.ps1    # Windows NSIS + portable zip
     ├── package-desktop-linux.sh
     ├── ci.sh              # CI orchestrator (profiles + per-step)
     ├── ci-lib.sh          # shared CI helpers
