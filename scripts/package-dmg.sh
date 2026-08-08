@@ -59,19 +59,35 @@ find_dmg_artifact() {
   printf '%s' "${dmg}"
 }
 
-find_app_bundle() {
-  local bundle_dir="${TAURI_DIR}/target/release/bundle/macos"
-  if [[ ! -d "${bundle_dir}" ]]; then
-    echo "macOS app bundle directory missing: ${bundle_dir}" >&2
+create_portable_zip_from_dmg() {
+  local dmg_path="$1"
+  local app_name="Pixelanea.app"
+  local mount_dir
+  mount_dir="$(mktemp -d "${TMPDIR:-/tmp}/pixelanea-dmg-mount-XXXXXX")"
+
+  if ! hdiutil attach -nobrowse -quiet -mountpoint "${mount_dir}" "${dmg_path}"; then
+    rm -rf "${mount_dir}"
+    echo "ERROR: could not mount DMG: ${dmg_path}" >&2
     return 1
   fi
-  local app
-  app="$(find "${bundle_dir}" -maxdepth 1 -name '*.app' -type d | head -n 1)"
-  if [[ -z "${app}" ]]; then
-    echo "No .app bundle found under ${bundle_dir}" >&2
+
+  if [[ ! -d "${mount_dir}/${app_name}" ]]; then
+    hdiutil detach -quiet "${mount_dir}" 2>/dev/null || true
+    rm -rf "${mount_dir}"
+    echo "ERROR: DMG did not contain ${app_name}" >&2
     return 1
   fi
-  printf '%s' "${app}"
+
+  if [[ -f "${PORTABLE_ZIP}" ]]; then
+    rm -f "${PORTABLE_ZIP}"
+  fi
+  (
+    cd "${mount_dir}"
+    zip -r -q "${PORTABLE_ZIP}" "${app_name}"
+  )
+
+  hdiutil detach -quiet "${mount_dir}" || true
+  rm -rf "${mount_dir}"
 }
 
 if [[ "${SKIP_BUILD}" -eq 0 ]]; then
@@ -95,14 +111,8 @@ mkdir -p "${DIST_DIR}"
 DMG_SOURCE="$(find_dmg_artifact)"
 cp -f "${DMG_SOURCE}" "${DMG_FILE}"
 
-APP_SOURCE="$(find_app_bundle)"
-if [[ -f "${PORTABLE_ZIP}" ]]; then
-  rm -f "${PORTABLE_ZIP}"
-fi
-(
-  cd "$(dirname "${APP_SOURCE}")"
-  zip -r -q "${PORTABLE_ZIP}" "$(basename "${APP_SOURCE}")"
-)
+echo "==> Creating portable zip from DMG"
+create_portable_zip_from_dmg "${DMG_FILE}"
 
 echo ""
 echo "macOS release package ready:"
