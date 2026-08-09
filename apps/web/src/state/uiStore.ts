@@ -13,6 +13,8 @@ type UiState = {
   shortcutsOverlayOpen: boolean;
   onboardingOverlayVisible: boolean;
   paletteMoreToolsExpanded: boolean;
+  updateDialogOpen: boolean;
+  startupUpdateDismissedVersion: string | null;
   setPaletteCollapsed: (collapsed: boolean) => void;
   setShowTechnicalInfo: (show: boolean) => void;
   setApiStatus: (status: UiState["apiStatus"], version?: string | null) => void;
@@ -25,6 +27,8 @@ type UiState = {
   setShortcutsOverlayOpen: (open: boolean) => void;
   setOnboardingOverlayVisible: (visible: boolean) => void;
   setPaletteMoreToolsExpanded: (expanded: boolean) => void;
+  setUpdateDialogOpen: (open: boolean) => void;
+  setStartupUpdateDismissedVersion: (version: string | null) => void;
 };
 
 export const useUiStore = create<UiState>((set) => ({
@@ -39,6 +43,8 @@ export const useUiStore = create<UiState>((set) => ({
   shortcutsOverlayOpen: false,
   onboardingOverlayVisible: false,
   paletteMoreToolsExpanded: false,
+  updateDialogOpen: false,
+  startupUpdateDismissedVersion: null,
   setPaletteCollapsed: (collapsed) => set({ paletteCollapsed: collapsed }),
   setShowTechnicalInfo: (show) => set({ showTechnicalInfo: show }),
   setApiStatus: (status, version = null) =>
@@ -55,6 +61,9 @@ export const useUiStore = create<UiState>((set) => ({
     set({ onboardingOverlayVisible: visible }),
   setPaletteMoreToolsExpanded: (expanded) =>
     set({ paletteMoreToolsExpanded: expanded }),
+  setUpdateDialogOpen: (open) => set({ updateDialogOpen: open }),
+  setStartupUpdateDismissedVersion: (startupUpdateDismissedVersion) =>
+    set({ startupUpdateDismissedVersion }),
 }));
 
 export const usePaletteCollapsed = () => useUiStore((s) => s.paletteCollapsed);

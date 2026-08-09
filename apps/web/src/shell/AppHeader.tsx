@@ -1,13 +1,11 @@
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import { basename } from "@/components/project/pathUtils";
 import { copy } from "@/content/copy";
 import { useDerivedProjectStatus } from "@/lib/projectStatus";
-import { needsNavigationGuard } from "@/lib/unsavedGuard";
-import { useBundlePath, useEditorStore, useProjectName, useSyncStatus } from "@/state/editorStore";
+import { useBundlePath, useProjectName } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 import { Button } from "@/components/ui";
 import { OffPaletteExportDialog } from "@/components/project/OffPaletteExportDialog";
-import { UpdateDialog } from "@/components/update/UpdateDialog";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { FileMenu } from "./FileMenu";
 import { runGifExport, runPngExport, runSpritesheetExport, useOffPaletteExportGuard } from "./exportActions";
@@ -15,7 +13,6 @@ import { buildFileMenuItems } from "./fileMenuItems";
 import { ThemeToggle } from "./ThemeToggle";
 import { ViewMenu } from "./ViewMenu";
 import { isDesktopShell } from "@/lib/desktop";
-import { useApiStatus } from "@/state/uiStore";
 
 type AppHeaderProps = {
   onNewProject: () => void;
@@ -30,20 +27,15 @@ export function AppHeader({
 }: AppHeaderProps) {
   const projectName = useProjectName();
   const bundlePath = useBundlePath();
-  const isDirty = useEditorStore((s) => s.isDirty);
-  const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
-  const bundleDirty = useEditorStore((s) => s.bundleDirty);
-  const syncStatus = useSyncStatus();
   const projectStatus = useDerivedProjectStatus();
   const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
   const setShowTechnicalInfo = useUiStore((s) => s.setShowTechnicalInfo);
-  const { version } = useApiStatus();
-  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+  const setUpdateDialogOpen = useUiStore((s) => s.setUpdateDialogOpen);
   const desktopShell = isDesktopShell();
 
   const handleCheckForUpdates = useCallback(() => {
     setUpdateDialogOpen(true);
-  }, []);
+  }, [setUpdateDialogOpen]);
 
   const fileActions = useProjectFileActions({
     onNewProject,
@@ -142,23 +134,6 @@ export function AppHeader({
         onOpenChange={offPaletteGuard.handleOpenChange}
         onConfirm={offPaletteGuard.handleConfirm}
       />
-      {desktopShell ? (
-        <UpdateDialog
-          open={updateDialogOpen}
-          onOpenChange={setUpdateDialogOpen}
-          currentVersion={version}
-          showTechnicalInfo={showTechnicalInfo}
-          hasUnsavedWork={needsNavigationGuard({
-            isDirty,
-            isPaletteDirty,
-            bundleDirty,
-            syncStatus,
-          })}
-          canSave={fileActions.canSave}
-          isSaving={fileActions.isSaving}
-          onSave={fileActions.onSave}
-        />
-      ) : null}
     </>
   );
 }

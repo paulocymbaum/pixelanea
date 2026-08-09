@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { checkHealth } from "@/api/health";
+import { UpdateDialog } from "@/components/update/UpdateDialog";
 import { useProjectFileActions } from "@/components/project/useProjectFileActions";
 import { UnsavedChangesDialog } from "@/components/project/UnsavedChangesDialog";
 import { applyHealthCheckResult } from "@/lib/apiHealth";
@@ -12,13 +13,15 @@ import {
   getEditorNavigationGuardState,
   needsNavigationGuard,
 } from "@/lib/unsavedGuard";
+import { isDesktopShell } from "@/lib/desktop";
+import { useStartupDesktopUpdateCheck } from "@/hooks/useStartupDesktopUpdateCheck";
 import { EditorPage } from "@/pages/EditorPage";
 import { ImportWizardPage } from "@/pages/ImportWizardPage";
 import { NewProjectPage } from "@/pages/NewProjectPage";
 import { ConnectionBanner } from "@/shell/ConnectionBanner";
 import { useThemeBootstrap } from "@/shell/useThemeBootstrap";
-import { useEditorStore } from "@/state/editorStore";
-import { useUiStore } from "@/state/uiStore";
+import { useEditorStore, useSyncStatus } from "@/state/editorStore";
+import { useUiStore, useApiStatus } from "@/state/uiStore";
 
 export type AppRoute = "new-project" | "import-wizard" | "editor";
 
@@ -32,6 +35,21 @@ export function App() {
   const projectId = useEditorStore((s) => s.projectId);
   const setApiStatus = useUiStore((s) => s.setApiStatus);
   const resetImportWizard = useUiStore((s) => s.resetImportWizard);
+  const updateDialogOpen = useUiStore((s) => s.updateDialogOpen);
+  const setUpdateDialogOpen = useUiStore((s) => s.setUpdateDialogOpen);
+  const startupUpdateDismissedVersion = useUiStore(
+    (s) => s.startupUpdateDismissedVersion,
+  );
+  const setStartupUpdateDismissedVersion = useUiStore(
+    (s) => s.setStartupUpdateDismissedVersion,
+  );
+  const showTechnicalInfo = useUiStore((s) => s.showTechnicalInfo);
+  const { version } = useApiStatus();
+  const desktopShell = isDesktopShell();
+  const isDirty = useEditorStore((s) => s.isDirty);
+  const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
+  const bundleDirty = useEditorStore((s) => s.bundleDirty);
+  const syncStatus = useSyncStatus();
 
   const goToNewProject = useCallback(() => {
     setRoute("new-project");
@@ -48,6 +66,23 @@ export function App() {
   });
   const { openProjectAtPath } = projectFileActions;
   const startupOpenHandledRef = useRef(false);
+  const onNewProjectRoute = route === "new-project";
+  const startupUpdateCheck = useStartupDesktopUpdateCheck(onNewProjectRoute);
+  const startupUpdate =
+    startupUpdateCheck &&
+    startupUpdateCheck.latestVersion !== startupUpdateDismissedVersion
+      ? startupUpdateCheck
+      : null;
+
+  const handleStartupUpdateInstall = useCallback(() => {
+    setUpdateDialogOpen(true);
+  }, [setUpdateDialogOpen]);
+
+  const handleStartupUpdateDismiss = useCallback(() => {
+    if (startupUpdateCheck) {
+      setStartupUpdateDismissedVersion(startupUpdateCheck.latestVersion);
+    }
+  }, [setStartupUpdateDismissedVersion, startupUpdateCheck]);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,6 +232,10 @@ export function App() {
         onOpenEditor={openEditor}
         onStartImport={startImport}
         onOpenExisting={projectFileActions.onOpenProject}
+        startupUpdate={startupUpdate}
+        showTechnicalInfo={showTechnicalInfo}
+        onStartupUpdateInstall={handleStartupUpdateInstall}
+        onStartupUpdateDismiss={handleStartupUpdateDismiss}
       />
     );
   }
@@ -207,6 +246,27 @@ export function App() {
       {page}
       {route !== "import-wizard" ? projectFileActions.dialogs : null}
       {routeGuardDialog}
+      {desktopShell ? (
+        <UpdateDialog
+          open={updateDialogOpen}
+          onOpenChange={setUpdateDialogOpen}
+          currentVersion={version}
+          showTechnicalInfo={showTechnicalInfo}
+          hasUnsavedWork={
+            projectId
+              ? needsNavigationGuard({
+                  isDirty,
+                  isPaletteDirty,
+                  bundleDirty,
+                  syncStatus,
+                })
+              : false
+          }
+          canSave={projectFileActions.canSave}
+          isSaving={projectFileActions.isSaving}
+          onSave={projectFileActions.onSave}
+        />
+      ) : null}
     </div>
   );
 }

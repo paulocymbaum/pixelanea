@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { FolderOpen, ImagePlus, Pencil } from "lucide-react";
 import { createBlankProject } from "@/api/projects";
+import { StartupUpdateBanner } from "@/components/update/StartupUpdateBanner";
 import { Button } from "@/components/ui/Button";
 import type { AnimationFramePreset } from "@/components/project/animationFramePresets";
 import { CanvasSizeStep } from "@/components/project/CanvasSizeStep";
@@ -10,6 +11,7 @@ import { copy } from "@/content/copy";
 import { errors } from "@/content/errors";
 import { loadProjectIntoEditor } from "@/lib/loadProject";
 import { cn } from "@/lib/cn";
+import type { UpdateCheckResult } from "@/lib/desktop";
 import { useSessionStore } from "@/state/sessionStore";
 import { useUiStore } from "@/state/uiStore";
 
@@ -17,6 +19,10 @@ type NewProjectPageProps = {
   onOpenEditor: (entryPath: "blank" | "import") => void;
   onStartImport: () => void;
   onOpenExisting?: () => void;
+  startupUpdate?: UpdateCheckResult | null;
+  showTechnicalInfo?: boolean;
+  onStartupUpdateInstall?: () => void;
+  onStartupUpdateDismiss?: () => void;
 };
 
 function newProjectEntryCardClass(selected: boolean): string {
@@ -30,6 +36,10 @@ export function NewProjectPage({
   onOpenEditor,
   onStartImport,
   onOpenExisting,
+  startupUpdate,
+  showTechnicalInfo = false,
+  onStartupUpdateInstall,
+  onStartupUpdateDismiss,
 }: NewProjectPageProps) {
   const hasVisited = useSessionStore((s) => s.hasVisited);
   const lastEntryPath = useSessionStore((s) => s.lastEntryPath);
@@ -127,6 +137,15 @@ export function NewProjectPage({
             {copy.newProjectSubtitle}
           </p>
         </header>
+
+        {startupUpdate && onStartupUpdateInstall && onStartupUpdateDismiss ? (
+          <StartupUpdateBanner
+            updateInfo={startupUpdate}
+            showTechnicalInfo={showTechnicalInfo}
+            onInstall={onStartupUpdateInstall}
+            onDismiss={onStartupUpdateDismiss}
+          />
+        ) : null}
 
         {hasVisited ? (
           <div className="mb-8 flex flex-col items-center gap-3">

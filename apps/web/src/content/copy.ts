@@ -161,6 +161,7 @@ export const copy = {
   helpMenuLabel: "Help",
   helpMenuCheckForUpdates: "Check for updates…",
   helpMenuDesktopOnly: "Updates (desktop app only)",
+  startupUpdateBannerTitle: "A newer Pixelanea build is available",
   updateDialogTitle: "Check for updates",
   updateDialogDescription:
     "Pixelanea checks GitHub for the latest version on the main branch and installs the matching release.",
