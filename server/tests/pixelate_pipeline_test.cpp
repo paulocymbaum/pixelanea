@@ -13,6 +13,8 @@
 #include <cstdint>
 #include <vector>
 
+#include "fixtures/pixelate_4k_png.inc"
+
 using pixelanea::domain::Color;
 using pixelanea::domain::Palette;
 using pixelanea::image::decode_image;
@@ -347,4 +349,42 @@ TEST_CASE("downscale 4K to 64x64 within performance budget", "[pixelate][benchma
   REQUIRE(downscaled.width == 64);
   REQUIRE(downscaled.height == 64);
   REQUIRE(elapsed < std::chrono::milliseconds(2000));
+}
+
+TEST_CASE("pixelate pipeline 4K to 64x64 downscale quantize within performance budget",
+          "[pixelate][benchmark]") {
+  const auto source = solid_rgba(3840, 2160, 128, 64, 200);
+  const auto start = std::chrono::steady_clock::now();
+
+  const auto downscaled = downscale_box(source, 64, 64);
+  const auto palette = extract_palette(downscaled, 16);
+  REQUIRE(palette.has_value());
+  const auto grid = quantize_to_palette(downscaled, palette.value());
+
+  const auto elapsed = std::chrono::steady_clock::now() - start;
+  REQUIRE(grid.has_value());
+  REQUIRE(grid.value().width == 64);
+  REQUIRE(grid.value().height == 64);
+  REQUIRE(elapsed < std::chrono::milliseconds(2000));
+}
+
+TEST_CASE("pixelate 4K PNG decode downscale quantize within performance budget",
+          "[pixelate][benchmark]") {
+  const auto start = std::chrono::steady_clock::now();
+
+  const auto decoded = decode_image(kPixelate4kPng.data(), kPixelate4kPng.size());
+  REQUIRE(decoded.has_value());
+  REQUIRE(decoded.value().width == 3840);
+  REQUIRE(decoded.value().height == 2160);
+
+  const auto downscaled = downscale_box(decoded.value(), 64, 64);
+  const auto palette = extract_palette(downscaled, 16);
+  REQUIRE(palette.has_value());
+  const auto grid = quantize_to_palette(downscaled, palette.value());
+
+  const auto elapsed = std::chrono::steady_clock::now() - start;
+  REQUIRE(grid.has_value());
+  REQUIRE(grid.value().width == 64);
+  REQUIRE(grid.value().height == 64);
+  REQUIRE(elapsed < std::chrono::milliseconds(3000));
 }

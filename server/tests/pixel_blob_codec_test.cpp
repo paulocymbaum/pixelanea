@@ -59,3 +59,19 @@ TEST_CASE("PixelBlobCodec rejects size mismatch", "[codec]") {
   const std::vector<uint8_t> blob{1, 2, 3};
   REQUIRE_THROWS_AS(PixelBlobCodec::decode(blob, 2), std::runtime_error);
 }
+
+TEST_CASE("PixelBlobCodec 64x64 grids fit autosave budget for 32 frames", "[codec][perf]") {
+  std::vector<uint8_t> indices(64 * 64);
+  for (std::size_t i = 0; i < indices.size(); ++i) {
+    indices[i] = static_cast<uint8_t>((i / 8) % 16 + 1);
+  }
+
+  const auto encoded = PixelBlobCodec::encode(indices);
+  REQUIRE(encoded.size() <= indices.size());
+
+  std::size_t total_bytes = 0;
+  for (int frame = 0; frame < 32; ++frame) {
+    total_bytes += PixelBlobCodec::encode(indices).size();
+  }
+  REQUIRE(total_bytes < 1024 * 1024);
+}

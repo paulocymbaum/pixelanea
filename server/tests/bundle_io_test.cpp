@@ -7,6 +7,7 @@
 
 #include <zip.h>
 
+#include <chrono>
 #include <filesystem>
 #include <fstream>
 
@@ -186,6 +187,43 @@ TEST_CASE("bundle unpack rejects missing manifest", "[bundle]") {
   const auto result = unpack_bundle(zip_path, work_dir / "extract");
   REQUIRE_FALSE(result.has_value());
   REQUIRE(result.error().find(".pixelanea project") != std::string::npos);
+}
+
+TEST_CASE("bundle pack and unpack within performance budget", "[bundle][benchmark]") {
+  NullLogger logger;
+  ProjectRepository projects{logger};
+  FrameRepository frames{projects, logger};
+
+  const auto project = create_sample_project(projects);
+  const ProjectId id = project.id;
+
+  Frame frame;
+  frame.index = 0;
+  frame.width = 4;
+  frame.height = 4;
+  frame.pixels = std::vector<uint8_t>(16, 1);
+  REQUIRE(frames.put(id, frame).has_value());
+
+  const auto work_dir = temp_test_dir("benchmark");
+  const auto bundle_path = work_dir / "bench.pixelanea";
+
+  const auto start = std::chrono::steady_clock::now();
+
+  REQUIRE(projects.save_to_bundle(id, bundle_path).has_value());
+  REQUIRE(projects.close(id).has_value());
+
+  auto reopened = projects.open_from_bundle(bundle_path);
+  REQUIRE(reopened.has_value());
+  REQUIRE(reopened.value().name == "Bundle Test");
+
+  const auto fetched = frames.get(reopened.value().id, 0);
+  REQUIRE(fetched.has_value());
+  REQUIRE(fetched.value().pixels[0] == 1);
+
+  REQUIRE(projects.close(reopened.value().id).has_value());
+
+  const auto elapsed = std::chrono::steady_clock::now() - start;
+  REQUIRE(elapsed < std::chrono::milliseconds(5000));
 }
 
 TEST_CASE("ProjectRepository reopen returns attached project", "[bundle]") {
