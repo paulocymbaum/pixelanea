@@ -207,13 +207,14 @@ pnpm test:e2e
 
 # Full CI gate (same as GitHub Actions build job)
 ./scripts/ci.sh              # full profile (all 13 steps)
-./scripts/ci.sh profiles       # fast | core | e2e | full | sprint
-./scripts/ci.sh fast           # lint + typecheck + QA + unit only
+./scripts/ci.sh profiles       # hook-commit | hook-push | fast | core | e2e | full | sprint
+./scripts/ci.sh hook-commit    # pre-commit hook profile
+./scripts/ci.sh hook-push      # pre-push hook profile
 ./scripts/ci.sh 08-build-server
 
 # pnpm aliases
 pnpm ci:fast
-pnpm ci:core                 # pre-push without E2E
+pnpm ci:core                 # full local gate (same steps as hook-commit + hook-push)
 pnpm ci:e2e
 
 # Sprint gate (subset — see scripts/ci-steps/README.md)
@@ -227,6 +228,7 @@ CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke script
 | Doc | Description |
 |-----|-------------|
 | [docs/README.md](./docs/README.md) | Documentation index |
+| [docs/AGENTS.md](./docs/AGENTS.md) | Agent workflows, skills, rules, and spec index |
 | [docs/user-guide.md](./docs/user-guide.md) | End-user walkthrough |
 | [docs/shortcuts.md](./docs/shortcuts.md) | Keyboard shortcuts reference |
 | [docs/workshop/teacher-guide.md](./docs/workshop/teacher-guide.md) | Classroom workshop guide |

@@ -76,6 +76,12 @@ ci_profile_steps() {
     fast)
       echo "00-verify-version 03-lint 04-typecheck 05-test-qa 06-test-unit"
       ;;
+    hook-commit)
+      echo "03-lint 04-typecheck"
+      ;;
+    hook-push)
+      echo "00-verify-version 01-deps 02-api-assets 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit"
+      ;;
     core)
       echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit"
       ;;
@@ -96,6 +102,8 @@ ci_profile_steps() {
 
 ci_list_profiles() {
   echo "CI profiles (run: ./scripts/ci.sh <profile>)"
+  echo "  hook-commit — lint + typecheck (pre-commit hook)"
+  echo "  hook-push   — verify, deps, tests, builds (pre-push hook)"
   echo "  fast    — lint, typecheck, QA matrix, unit tests"
   echo "  core    — fast + web/server build + backend unit tests"
   echo "  e2e     — core + Playwright E2E (manual only; not in GitHub Actions)"

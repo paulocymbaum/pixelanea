@@ -6,8 +6,10 @@
 #   ./scripts/ci.sh                    # full profile (all steps)
 #   ./scripts/ci.sh list               # step ids
 #   ./scripts/ci.sh profiles           # named profiles
-#   ./scripts/ci.sh fast               # profile: lint + typecheck + QA + unit
-#   ./scripts/ci.sh core               # profile: + builds + backend unit tests
+#   ./scripts/ci.sh hook-commit          # profile: lint + typecheck (pre-commit)
+#   ./scripts/ci.sh hook-push            # profile: tests + builds (pre-push)
+#   ./scripts/ci.sh fast                 # profile: lint + typecheck + QA + unit
+#   ./scripts/ci.sh core                 # profile: + builds + backend unit tests
 #   ./scripts/ci.sh e2e                # profile: + Playwright
 #   ./scripts/ci.sh 08-build-server      # single step
 #   ./scripts/ci.sh 05-test-qa 06-test-unit
