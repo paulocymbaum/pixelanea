@@ -7,5 +7,5 @@ cd "${CI_ROOT_DIR}"
 
 ci_step_begin "11 — Playwright E2E (excl. LinkedIn)"
 export CI=true
-pnpm test:e2e --grep-invert LinkedIn
+pnpm test:e2e --grep-invert 'LinkedIn|@perf'
 ci_step_end "11 — Playwright E2E (excl. LinkedIn)"

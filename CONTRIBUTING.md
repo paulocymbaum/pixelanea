@@ -22,9 +22,12 @@ Thank you for helping build a free, local-first pixel art editor. This guide cov
 
    ```bash
    pnpm ci:fast              # lint, typecheck, QA matrix, unit tests
-   pnpm ci:core              # + builds + backend unit tests (pre-push)
+   pnpm ci:core              # full local gate (all of the above + builds)
    pnpm ci:e2e               # optional Playwright E2E (not in GitHub Actions)
    ./scripts/ci.sh           # full gate (matches GitHub Actions)
+
+   Git hooks split work to avoid duplicate runs: **pre-commit** runs lint + typecheck;
+   **pre-push** runs tests + builds. Use `PRE_PUSH_CI=core` to re-run lint on push.
    ```
 
    Or run individual steps: `./scripts/ci.sh list` · see `scripts/ci-steps/README.md`.
@@ -98,6 +101,7 @@ Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). S
 | Typecheck | `pnpm typecheck` | Always |
 | Unit / integration | `pnpm test:unit` | Touched `apps/web` |
 | QA matrices | `pnpm test:qa` | Route guards, I/O, import, animation |
+| Perf regressions | `pnpm test:perf` | Hot-path benchmarks (ctest `[benchmark]` + vitest `*Perf.test.ts`) |
 | Backend unit | `./scripts/ci-steps/09-test-backend-unit.sh` | Touched `server/` |
 | CI profiles | `pnpm ci:fast` / `ci:core` / `ci:e2e` / `./scripts/ci.sh` | See `scripts/ci-steps/README.md` |
 | Smoke gate | `pnpm test:smoke` | Standalone; skips redundant checks when `CI_SKIP_REDUNDANT=1` |

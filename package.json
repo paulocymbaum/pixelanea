@@ -31,6 +31,7 @@
     "test:e2e:install": "./scripts/e2e-install.sh",
     "test:smoke:backend": "./scripts/test-backend.sh",
     "test:smoke:frontend": "./scripts/test-frontend.sh",
+    "test:perf": "./scripts/test-perf.sh",
     "test:smoke": "pnpm test:smoke:backend && pnpm test:smoke:frontend",
     "test:backend": "pnpm test:smoke:backend",
     "test:frontend": "pnpm test:smoke:frontend",

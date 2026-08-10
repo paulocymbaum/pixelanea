@@ -280,6 +280,7 @@ if(BUILD_TESTING)
       ${PIXELANEA_HTTPLIB_LIB}
       Catch2::Catch2WithMain
   )
+  target_include_directories(pixelanea_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
 
   list(APPEND CMAKE_MODULE_PATH ${catch2_SOURCE_DIR}/extras)
   include(Catch)
