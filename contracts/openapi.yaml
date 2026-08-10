@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Pixelanea API
-  version: 1.10.0
+  version: 1.11.0
   description: Local-only pixel art editor backend API.
 
 servers:
