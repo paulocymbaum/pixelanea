@@ -462,8 +462,8 @@ export VCPKG_ROOT=~/.vcpkg
 
 | Host | `VCPKG_TARGET_TRIPLET` | Notes |
 |------|------------------------|-------|
-| Apple Silicon (M1/M2/M3) | `arm64-osx` | Default on `macos-14` CI (`release-macos`) |
-| Intel Mac | `x64-osx` | Legacy hardware; local builds only unless CI matrix expands |
+| Apple Silicon (M1/M2/M3) | `arm64-osx` | `macos-14` CI matrix leg (`package-macos` / `release-macos`) |
+| Intel Mac | `x64-osx` | `macos-15-intel` CI matrix leg |
 
 ```bash
 git clone https://github.com/microsoft/vcpkg.git ~/.vcpkg
@@ -496,8 +496,12 @@ cmake --build server/build --config Release --target pixelanea-server
 
 | Install kind | Filename pattern |
 |--------------|------------------|
-| DMG installer | `pixelanea-{version}-macos-arm64.dmg` |
-| Portable `.app` zip | `pixelanea-{version}-macos-arm64.zip` |
+| DMG installer (Apple Silicon) | `pixelanea-{version}-macos-arm64.dmg` |
+| Portable `.app` zip (Apple Silicon) | `pixelanea-{version}-macos-arm64.zip` |
+| DMG installer (Intel) | `pixelanea-{version}-macos-x64.dmg` |
+| Portable `.app` zip (Intel) | `pixelanea-{version}-macos-x64.zip` |
+
+CI builds both arches in parallel (`macos-14` + `macos-15-intel`).
 
 **Unsigned pilot builds:** Notarization and stapling are deferred (Batch 3 signing). Gatekeeper may block first launch — users can allow via System Settings → Privacy & Security or download manually from releases.
 

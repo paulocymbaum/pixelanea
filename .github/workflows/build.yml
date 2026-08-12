@@ -198,9 +198,17 @@ jobs:
           retention-days: 7
 
   package-macos:
-    name: Package macOS (DMG)
+    name: Package macOS (${{ matrix.mac_arch }})
     needs: build
-    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            mac_arch: arm64
+          - os: macos-15-intel
+            mac_arch: x64
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -233,7 +241,7 @@ jobs:
             apps/web/dist
             server/build
             .cache/assets
-          key: pixelanea-assets-release-macos-${{ steps.assets-hash.outputs.hash }}
+          key: pixelanea-assets-release-macos-${{ matrix.mac_arch }}-${{ steps.assets-hash.outputs.hash }}
 
       - uses: pnpm/action-setup@v4
         with:
@@ -250,12 +258,26 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: apps/desktop/src-tauri
+          key: macos-${{ matrix.mac_arch }}
 
       - name: Install Tauri CLI
         run: cargo install tauri-cli --version "${{ env.TAURI_CLI_VERSION }}" --locked
 
       - name: Install dependencies
         run: ./scripts/deps-cache.sh install
+
+      - name: Verify host architecture
+        run: |
+          HOST_ARCH="$(uname -m)"
+          case "${HOST_ARCH}" in
+            arm64|aarch64) EXPECTED="arm64" ;;
+            x86_64) EXPECTED="x64" ;;
+            *) echo "Unsupported host arch: ${HOST_ARCH}" >&2; exit 1 ;;
+          esac
+          if [[ "${EXPECTED}" != "${{ matrix.mac_arch }}" ]]; then
+            echo "Runner arch ${EXPECTED} does not match matrix ${{ matrix.mac_arch }}" >&2
+            exit 1
+          fi
 
       - name: Build macOS packages
         run: ./scripts/package-dmg.sh
@@ -266,10 +288,10 @@ jobs:
       - name: Upload macOS packages
         uses: actions/upload-artifact@v4
         with:
-          name: pixelanea-macos-${{ github.run_id }}
+          name: pixelanea-macos-${{ matrix.mac_arch }}-${{ github.run_id }}
           path: |
-            dist/pixelanea-*-macos-*.dmg
-            dist/pixelanea-*-macos-*.zip
+            dist/pixelanea-*-macos-${{ matrix.mac_arch }}.dmg
+            dist/pixelanea-*-macos-${{ matrix.mac_arch }}.zip
           retention-days: 7
 
   package-windows:

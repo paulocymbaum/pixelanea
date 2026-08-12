@@ -123,9 +123,9 @@ hdiutil detach "$MOUNT"
 open -a Pixelanea
 ```
 
-Portable (no install): unzip `dist/pixelanea-${VERSION}-macos-${MAC_ARCH}.zip` and open `Pixelanea.app`.
+Portable (no install): unzip `dist/pixelanea-${VERSION}-macos-${MAC_ARCH}.zip` and open `Pixelanea.app`. The zip includes `README.txt` with install and Gatekeeper steps.
 
-On Apple Silicon use `arm64` in the filename; on Intel Mac use `x64`. Unsigned builds may need **System Settings → Privacy & Security** approval on first launch.
+CI publishes **both** `macos-arm64` and `macos-x64` packages. Pick the arch that matches your Mac. Unsigned builds may need **System Settings → Privacy & Security** approval on first launch.
 
 ### Windows
 

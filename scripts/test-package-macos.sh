@@ -125,8 +125,17 @@ trap cleanup EXIT
 echo "==> Verifying portable zip layout"
 unzip -q "${PORTABLE_ZIP}" -d "${TEMP_EXTRACT}"
 APP_ROOT="${TEMP_EXTRACT}/${APP_NAME}"
+README_FILE="${TEMP_EXTRACT}/README.txt"
 if [[ ! -d "${APP_ROOT}" ]]; then
   echo "ERROR: portable zip did not contain ${APP_NAME}" >&2
+  exit 1
+fi
+if [[ ! -f "${README_FILE}" ]]; then
+  echo "ERROR: portable zip did not contain README.txt" >&2
+  exit 1
+fi
+if ! grep -qE 'Privacy & Security|xattr -dr com.apple.quarantine' "${README_FILE}"; then
+  echo "ERROR: README.txt missing Gatekeeper / open instructions" >&2
   exit 1
 fi
 verify_app_layout "${APP_ROOT}"
