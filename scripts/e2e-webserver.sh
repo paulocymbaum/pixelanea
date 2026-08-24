@@ -48,8 +48,12 @@ wait_for_url() {
 }
 
 # Prefer the shared helper when present (kills listeners via ss/lsof/fuser).
+# Fail closed: a foreign process on 5173/8787 makes Playwright hit the wrong app.
 if [[ -x "${ROOT_DIR}/scripts/free-ci-ports.sh" ]]; then
-  API_PORT="${API_PORT}" VITE_PORT="${VITE_PORT}" "${ROOT_DIR}/scripts/free-ci-ports.sh" || true
+  if ! API_PORT="${API_PORT}" VITE_PORT="${VITE_PORT}" "${ROOT_DIR}/scripts/free-ci-ports.sh"; then
+    echo "ERROR: could not free E2E ports (API ${API_PORT}, Vite ${VITE_PORT})" >&2
+    exit 1
+  fi
 else
   free_port "${API_PORT}"
   free_port "${VITE_PORT}"

@@ -9,32 +9,19 @@ test.describe("@perf animation playback", () => {
   test("active frame advances during playback", async ({ page }) => {
     await createBlankProject(page, { frames: 8 });
 
+    // Scope to frame thumbnails — palette section tabs also use aria-current.
+    const activeFrameThumb = () =>
+      page.locator(
+        '[aria-label="Frame strip"] button[aria-current="true"][aria-label^="Frame "]',
+      );
+
     await page.getByRole("button", { name: "Play animation" }).click();
 
-    const activeFrameLabel = () =>
-      page.evaluate(() => {
-        const btn = document.querySelector<HTMLButtonElement>(
-          'button[aria-current="true"]',
-        );
-        return btn?.getAttribute("aria-label") ?? null;
-      });
+    await expect(activeFrameThumb()).toHaveAttribute("aria-label", "Frame 1");
 
-    const startLabel = await activeFrameLabel();
-    expect(startLabel).toBe("Frame 1");
-
-    await page.waitForFunction(
-      () => {
-        const btn = document.querySelector<HTMLButtonElement>(
-          'button[aria-current="true"]',
-        );
-        const label = btn?.getAttribute("aria-label");
-        return label != null && label !== "Frame 1";
-      },
-      { timeout: 10_000 },
-    );
-
-    const advancedLabel = await activeFrameLabel();
-    expect(advancedLabel).not.toBe("Frame 1");
+    await expect(activeFrameThumb()).not.toHaveAttribute("aria-label", "Frame 1", {
+      timeout: 10_000,
+    });
 
     await page.getByRole("button", { name: "Pause animation" }).click();
   });
