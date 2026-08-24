@@ -298,6 +298,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
         paletteSyncError: null,
         isPlaying: false,
         readOnly: false,
+        // Multi-frame projects show onion skin by default (BACKLOG editor polish).
+        onionSkinEnabled: true,
+        onionSkinOpacity: ONION_SKIN_OPACITY,
         colorFilters: { ...DEFAULT_COLOR_FILTER_SETTINGS },
         placingLighting: false,
         selection: null,
@@ -314,7 +317,13 @@ export const useEditorStore = create<EditorState>((set, get) => {
       const clamped = Math.max(0, Math.min(index, paletteColors.length - 1));
       set({ activeColorIndex: clamped });
     },
-    setFrameCount: (count) => set({ frameCount: count }),
+    setFrameCount: (count) =>
+      set((state) => ({
+        frameCount: count,
+        ...(count > 1 && state.frameCount <= 1
+          ? { onionSkinEnabled: true }
+          : {}),
+      })),
     setReadOnly: (readOnly) =>
       set((state) => ({
         readOnly,

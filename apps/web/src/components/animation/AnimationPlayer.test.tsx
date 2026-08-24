@@ -70,6 +70,36 @@ describe("AnimationPlayer", () => {
     expect(screen.getByText(copy.animationOnionSkinOpacityValue(30))).toBeInTheDocument();
   });
 
+  it("defaults onion skin on for multi-frame projects", () => {
+    useEditorStore.setState({
+      onionSkinEnabled: false,
+      frameCount: 1,
+    });
+    useEditorStore.getState().setFrameCount(8);
+    expect(useEditorStore.getState().onionSkinEnabled).toBe(true);
+
+    useEditorStore.setState({ onionSkinEnabled: false, frameCount: 8 });
+    useEditorStore.getState().setFrameCount(8);
+    expect(useEditorStore.getState().onionSkinEnabled).toBe(false);
+
+    useEditorStore.getState().setProject({
+      projectId: "p1",
+      name: "Walk",
+      gridWidth: 2,
+      gridHeight: 2,
+      frameCount: 8,
+      pixels: new Uint8Array(4),
+      paletteColors: ["#000000", "#ffffff"],
+    });
+    expect(useEditorStore.getState().onionSkinEnabled).toBe(true);
+
+    render(<AnimationPlayer />);
+    expect(screen.getByLabelText(copy.animationOnionSkinOn)).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+  });
+
   it("restarts play-once from frame 0 when already on the last frame", async () => {
     useEditorStore.setState({
       animationLoop: false,

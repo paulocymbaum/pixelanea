@@ -24,6 +24,7 @@ type FrameSlice = {
   framePixelsByIndex: Record<number, Uint8Array>;
   isPlaying: boolean;
   isDirty: boolean;
+  onionSkinEnabled: boolean;
   frameSyncStatus: import("./editorStoreSync").SyncStatus;
   paletteSyncStatus: import("./editorStoreSync").SyncStatus;
   frameSyncError: string | null;
@@ -137,7 +138,7 @@ export function createFrameActions(
 
       const pixels = result.frames[clampedActive];
 
-      set({
+      set((prev) => ({
         frameCount,
         activeFrameIndex: clampedActive,
         framePixelsByIndex: result.framePixelsByIndex,
@@ -149,7 +150,11 @@ export function createFrameActions(
         paletteSyncStatus: "idle",
         frameSyncError: null,
         paletteSyncError: null,
-      });
+        // After expanding into multi-frame (e.g. duplicate), restore default onion on.
+        ...(frameCount > 1 && prev.frameCount <= 1
+          ? { onionSkinEnabled: true }
+          : {}),
+      }));
 
       return { ok: true };
     },

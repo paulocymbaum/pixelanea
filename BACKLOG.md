@@ -26,8 +26,8 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 
 ### Editor polish
 
-- [ ] Onion skin visible by default when animation frames > 1 (currently feature-flagged)
-- [ ] Spritesheet / GIF export enabled by default in shipping `features.ts` when release-ready
+- [x] Onion skin visible by default when animation frames > 1 (`features.onionSkin` + store default; re-enabled on multi-frame load/duplicate)
+- [x] Spritesheet / GIF export enabled by default in shipping `features.ts` when release-ready
 
 ## Deferred
 

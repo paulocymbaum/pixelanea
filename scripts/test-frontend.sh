@@ -246,6 +246,10 @@ else
   fail "backend health prerequisite"
 fi
 
+# Free Vite's default port — a foreign process on 5173 makes /api/health return HTML.
+fuser -k 5173/tcp 2>/dev/null || true
+sleep 0.5
+
 pnpm --filter @pixelanea/web dev >/tmp/pixelanea-test-vite.log 2>&1 &
 VITE_PID=$!
 sleep 4

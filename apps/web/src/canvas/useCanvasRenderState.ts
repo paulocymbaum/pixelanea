@@ -413,9 +413,11 @@ export function useStrokePreviewRedraw({
   const panX = useViewportStore((s) => s.panX);
   const panY = useViewportStore((s) => s.panY);
 
+  // Viewport updates are already RAF-coalesced at the input source; schedule
+  // (don't sync-fire) so multiple store ticks in one frame still draw once.
   useEffect(() => {
-    redrawRef.current();
-  }, [zoom, panX, panY]);
+    scheduleRedraw();
+  }, [zoom, panX, panY, scheduleRedraw]);
 
   useEffect(() => {
     redrawRef.current();
