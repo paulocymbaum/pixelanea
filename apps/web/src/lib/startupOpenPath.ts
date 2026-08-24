@@ -24,4 +24,6 @@ export function clearStartupOpenPathFromUrl(): void {
 
 export type PixelaneaShellWindow = Window & {
   __pixelaneaOpenProject?: (path: string) => void;
+  /** Desktop shell calls this before killing pixelanea-server. */
+  __pixelaneaPrepareQuit?: () => Promise<{ ok: boolean }>;
 };

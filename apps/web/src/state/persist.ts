@@ -1,8 +1,10 @@
 import { saveFrame, saveFrameCells } from "@/api/frames";
 import { savePalette } from "@/api/palette";
 import { updateProjectSettings } from "@/api/projects";
+import { copy } from "@/content/copy";
 import type { SaveResult } from "./sync/types";
 import { useEditorStore } from "./editorStore";
+import { useUiStore } from "./uiStore";
 import {
   captureFrameDeltaSnapshot,
   captureFrameSnapshot,
@@ -15,6 +17,11 @@ import { clearPendingCellChanges } from "./sync/pendingCellChanges";
 import { SyncCoordinator } from "./sync/syncCoordinator";
 
 let coordinator = createCoordinator();
+
+function notifySyncFailure(): void {
+  // Status bar already shows sync error; toast makes a silent PUT failure obvious.
+  useUiStore.getState().showToast(copy.statusSyncError);
+}
 
 async function saveProjectSettings(
   projectId: string,
@@ -43,14 +50,18 @@ function createCoordinator(): SyncCoordinator {
         clearPendingCellChanges();
         useEditorStore.getState().markFrameSynced();
       },
-      onError: (message) =>
-        useEditorStore.getState().setFrameSyncStatus("error", message),
+      onError: (message) => {
+        useEditorStore.getState().setFrameSyncStatus("error", message);
+        notifySyncFailure();
+      },
     },
     paletteCallbacks: {
       onSyncing: () => useEditorStore.getState().setPaletteSyncStatus("syncing"),
       onSuccess: () => useEditorStore.getState().markPaletteSynced(),
-      onError: (message) =>
-        useEditorStore.getState().setPaletteSyncStatus("error", message),
+      onError: (message) => {
+        useEditorStore.getState().setPaletteSyncStatus("error", message);
+        notifySyncFailure();
+      },
     },
     // Animation settings have no status indicator of their own: the coordinator
     // logs failures and the next flush retries from live store state.

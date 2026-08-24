@@ -77,6 +77,19 @@ describe("StatusBar", () => {
     expect(screen.getByText(copy.statusSaving)).toBeInTheDocument();
   });
 
+  it("shows sync error when frame PUT failed", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
+    useEditorStore.setState({
+      frameSyncStatus: "error",
+      frameSyncError: "Could not save frame",
+      isDirty: true,
+    });
+    render(<StatusBar />);
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent(copy.statusSyncError);
+    expect(status.querySelector(".text-danger")).toBeTruthy();
+  });
+
   it("does not repeat disconnect message when API is disconnected", () => {
     useUiStore.setState({ apiStatus: "disconnected", apiVersion: null });
     render(<StatusBar />);

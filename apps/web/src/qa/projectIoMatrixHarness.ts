@@ -100,6 +100,8 @@ export class FakeProjectBackend {
   beforeSave: ((path: string) => Promise<void> | void) | null = null;
   /** Awaited inside `putFrame`; used to keep autosave in flight during a save. */
   beforeFrameWrite: ((frameIndex: number) => Promise<void> | void) | null = null;
+  /** When set, `putFrame` / `putFrameBinary` throw this message (failed PUT leave dirty). */
+  frameWriteError: string | null = null;
 
   private readonly projects = new Map<string, ProjectRecord>();
 
@@ -278,6 +280,11 @@ export class FakeProjectBackend {
       ): Promise<Frame> => {
         this.calls.push(`putFrame:${projectId}:${frameIndex}`);
         await this.beforeFrameWrite?.(frameIndex);
+        if (this.frameWriteError) {
+          throw new ApiError(500, this.frameWriteError, {
+            message: this.frameWriteError,
+          });
+        }
         const record = this.requireRecord(projectId);
         record.frames.set(frameIndex, [...body.pixels]);
         return {
@@ -296,6 +303,11 @@ export class FakeProjectBackend {
       ): Promise<Frame> => {
         this.calls.push(`putFrame:${projectId}:${frameIndex}`);
         await this.beforeFrameWrite?.(frameIndex);
+        if (this.frameWriteError) {
+          throw new ApiError(500, this.frameWriteError, {
+            message: this.frameWriteError,
+          });
+        }
         const record = this.requireRecord(projectId);
         record.frames.set(frameIndex, [...pixels]);
         return {

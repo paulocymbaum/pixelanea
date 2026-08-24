@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-quit-flush-complete"
+description = "Lets the WebView signal that quit flush finished (or failed)."
+commands.allow = ["quit_flush_complete"]

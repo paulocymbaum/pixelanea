@@ -53,6 +53,11 @@ export function createFrameActions(
 
       if (state.isDirty) {
         await flushFrameSync();
+        const afterFlush = get();
+        // Failed PUT must keep dirty pixels on this frame — never soft-clear via switch.
+        if (afterFlush.isDirty || afterFlush.frameSyncStatus === "error") {
+          return;
+        }
       }
 
       const flushed = get();
@@ -103,6 +108,10 @@ export function createFrameActions(
 
       if (state.isDirty) {
         await flushFrameSync();
+        const afterFlush = get();
+        if (afterFlush.isDirty || afterFlush.frameSyncStatus === "error") {
+          return { ok: false };
+        }
       }
 
       const clampedActive = Math.max(0, Math.min(activeIndex, frameCount - 1));

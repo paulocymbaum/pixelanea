@@ -30,6 +30,11 @@ import {
   pixelAt,
   resetProjectIoStore,
 } from "./projectIoMatrixHarness";
+import { prepareDesktopQuit } from "@/lib/prepareDesktopQuit";
+import {
+  getEditorNavigationGuardState,
+  needsNavigationGuard,
+} from "@/lib/unsavedGuard";
 
 const { backendRef } = vi.hoisted(() => ({
   backendRef: { current: null as FakeProjectBackend | null },
@@ -712,6 +717,114 @@ describe("QA-004 save / open round-trip matrix", () => {
       expect(state.projectId).toBe(MATRIX_PROJECT_ID);
       expect(pixelAt(2, 2)).toBe(4);
       expect(useUiStore.getState().toastMessage).toBe(errors.bundleWriteFailed);
+    });
+
+    it("[ERR-007] failed frame PUT leaves dirty and surfaces sync error toast", async () => {
+      resetProjectIoStore({ bundlePath: PATH_A, frameCount: 2 });
+      backend().frameWriteError = "disk write failed";
+      paintDirtyPixel(1, 1, 3);
+
+      await act(async () => {
+        await flushFrameSync();
+      });
+
+      const state = useEditorStore.getState();
+      expect(state.isDirty).toBe(true);
+      expect(state.frameSyncStatus).toBe("error");
+      expect(pixelAt(1, 1)).toBe(3);
+      expect(useUiStore.getState().toastMessage).toBe(copy.statusSyncError);
+    });
+  });
+
+  describe("durability Batch 1", () => {
+    it("[B1-FLUSH-001] dirty frame switch flushes then moves to the next frame", async () => {
+      backendRef.current = new FakeProjectBackend();
+      backend().seedProject({
+        frameCount: 2,
+        frames: {
+          0: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+          1: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+        },
+      });
+      resetProjectIoStore({
+        frameCount: 2,
+        framePixelsByIndex: {
+          0: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+          1: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+        },
+      });
+      paintDirtyPixel(2, 2, 5);
+
+      await act(async () => {
+        await useEditorStore.getState().switchFrame(1);
+      });
+
+      const state = useEditorStore.getState();
+      expect(state.activeFrameIndex).toBe(1);
+      expect(state.isDirty).toBe(false);
+      expect(callsMatching("putFrame")).toHaveLength(1);
+      expect(backend().liveFrame(MATRIX_PROJECT_ID, 0)[2 * MATRIX_GRID + 2]).toBe(5);
+    });
+
+    it("[B1-FLUSH-002] failed flush aborts frame switch and keeps dirty pixels", async () => {
+      backendRef.current = new FakeProjectBackend();
+      backend().seedProject({
+        frameCount: 2,
+        frames: {
+          0: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+          1: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+        },
+      });
+      resetProjectIoStore({
+        frameCount: 2,
+        framePixelsByIndex: {
+          0: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+          1: framePixels(MATRIX_GRID, MATRIX_GRID, 0),
+        },
+      });
+      backend().frameWriteError = "put rejected";
+      paintDirtyPixel(3, 3, 4);
+
+      await act(async () => {
+        await useEditorStore.getState().switchFrame(1);
+      });
+
+      const state = useEditorStore.getState();
+      expect(state.activeFrameIndex).toBe(0);
+      expect(state.isDirty).toBe(true);
+      expect(state.frameSyncStatus).toBe("error");
+      expect(pixelAt(3, 3)).toBe(4);
+    });
+
+    it("[B1-QUIT-001] prepareDesktopQuit fails when dirty work remains after flush error", async () => {
+      resetProjectIoStore({ bundlePath: PATH_A });
+      backend().frameWriteError = "put rejected";
+      paintDirtyPixel(0, 0, 2);
+
+      const result = await prepareDesktopQuit();
+      expect(result.ok).toBe(false);
+      expect(useEditorStore.getState().isDirty).toBe(true);
+    });
+
+    it("[B1-QUIT-002] beforeunload guard trips when the project is dirty", () => {
+      resetProjectIoStore({ bundlePath: PATH_A });
+      paintDirtyPixel(0, 0, 2);
+
+      expect(needsNavigationGuard(getEditorNavigationGuardState())).toBe(true);
+    });
+
+    it("[B1-QUIT-003] prepareDesktopQuit succeeds after a clean flush", async () => {
+      resetProjectIoStore({ bundlePath: PATH_A, bundleDirty: false });
+      paintDirtyPixel(0, 0, 2);
+
+      await act(async () => {
+        await flushFrameSync();
+      });
+      useEditorStore.setState({ bundleDirty: false });
+
+      const result = await prepareDesktopQuit();
+      expect(result.ok).toBe(true);
+      expect(useEditorStore.getState().isDirty).toBe(false);
     });
   });
 });

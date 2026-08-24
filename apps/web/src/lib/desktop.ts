@@ -80,3 +80,8 @@ export function downloadAndInstallDesktopUpdate(
 export function restartDesktopShell(): Promise<void> {
   return invokeDesktop<void>("updater_restart_app");
 }
+
+/** Signal the shell that WebView quit flush finished (graceful close path). */
+export function notifyQuitFlushComplete(ok: boolean): Promise<void> {
+  return invokeDesktop<void>("quit_flush_complete", { ok });
+}

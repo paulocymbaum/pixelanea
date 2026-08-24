@@ -64,6 +64,12 @@ describe("needsNavigationGuard", () => {
       ),
     ).toBe(false);
   });
+
+  it("returns true when sync failed even if dirty flags were cleared", () => {
+    expect(needsNavigationGuard(guardState({ syncStatus: "error" }))).toBe(
+      true,
+    );
+  });
 });
 
 describe("isNavigationBlocked", () => {

@@ -41,6 +41,10 @@ export function BottomFrameStrip() {
     // on whichever frame takes the active slot.
     if (useEditorStore.getState().isDirty) {
       await flushFrameSync();
+      const afterFlush = useEditorStore.getState();
+      if (afterFlush.isDirty || afterFlush.frameSyncStatus === "error") {
+        return;
+      }
     }
 
     const result = await reorderFrames(projectId, {

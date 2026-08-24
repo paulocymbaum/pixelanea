@@ -1,16 +1,18 @@
 mod argv;
 mod paths;
 mod port;
+mod quit;
 mod server;
 mod updater;
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use argv::extract_bundle_path_from_args;
 use paths::{devtools_requested, resolve_paths_flexible, InstallPaths};
 use port::{app_url, find_free_port, is_pixelanea_healthy, is_port_listening};
+use quit::{handle_window_event, quit_flush_complete, QuitCoordinator};
 use server::ServerProcess;
 use updater::{
     check_connection, check_for_updates, download_and_install, ConnectionStatus, InstallResult,
@@ -247,6 +249,7 @@ pub fn run() {
             updater_check_for_updates,
             updater_download_and_install,
             updater_restart_app,
+            quit_flush_complete,
         ])
         .plugin(tauri_plugin_dialog::init())
         .plugin(
@@ -254,6 +257,9 @@ pub fn run() {
                 .level(log::LevelFilter::Info)
                 .build(),
         )
+        .on_window_event(|window, event| {
+            handle_window_event(window, event);
+        })
         .setup(|app| {
             let paths = resolve_paths_flexible().map_err(|error| {
                 app.dialog()
@@ -288,6 +294,7 @@ pub fn run() {
                 host: host.clone(),
                 port,
             });
+            app.manage(Arc::new(QuitCoordinator::new()));
 
             open_main_window(
                 app.handle(),

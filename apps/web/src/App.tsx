@@ -9,11 +9,12 @@ import {
   readStartupOpenPath,
   type PixelaneaShellWindow,
 } from "@/lib/startupOpenPath";
+import { prepareDesktopQuit } from "@/lib/prepareDesktopQuit";
 import {
   getEditorNavigationGuardState,
   needsNavigationGuard,
 } from "@/lib/unsavedGuard";
-import { isDesktopShell } from "@/lib/desktop";
+import { isDesktopShell, notifyQuitFlushComplete } from "@/lib/desktop";
 import { useStartupDesktopUpdateCheck } from "@/hooks/useStartupDesktopUpdateCheck";
 import { EditorPage } from "@/pages/EditorPage";
 import { ImportWizardPage } from "@/pages/ImportWizardPage";
@@ -102,9 +103,21 @@ export function App() {
     shellWindow.__pixelaneaOpenProject = (path: string) => {
       void openProjectAtPath(path);
     };
+    shellWindow.__pixelaneaPrepareQuit = async () => {
+      const result = await prepareDesktopQuit();
+      if (isDesktopShell()) {
+        try {
+          await notifyQuitFlushComplete(result.ok);
+        } catch {
+          // Shell may have already timed out; still return for eval callers.
+        }
+      }
+      return result;
+    };
 
     return () => {
       delete shellWindow.__pixelaneaOpenProject;
+      delete shellWindow.__pixelaneaPrepareQuit;
     };
   }, [openProjectAtPath]);
 

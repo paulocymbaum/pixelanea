@@ -24,6 +24,9 @@ export function needsNavigationGuard(state: UnsavedGuardState): boolean {
   if (state.syncStatus === "syncing") {
     return false;
   }
+  if (state.syncStatus === "error") {
+    return true;
+  }
   return state.isDirty || state.isPaletteDirty || state.bundleDirty;
 }
 
