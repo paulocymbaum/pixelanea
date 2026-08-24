@@ -52,6 +52,7 @@ import {
 } from "@/state/editorStoreSelectionFeedback";
 import {
   deriveSyncError,
+  deriveSyncPending,
   deriveSyncStatus,
   withPaletteSyncStatus,
   type SyncStatus,
@@ -106,6 +107,8 @@ type EditorState = {
   bundleDirty: boolean;
   frameSyncStatus: SyncStatus;
   paletteSyncStatus: SyncStatus;
+  frameSyncPending: boolean;
+  paletteSyncPending: boolean;
   frameSyncError: string | null;
   paletteSyncError: string | null;
   bundlePath: string | null;
@@ -164,6 +167,8 @@ type EditorState = {
   savePalette: () => void;
   markFrameSynced: () => void;
   markPaletteSynced: () => void;
+  setFrameSyncPending: (pending: boolean) => void;
+  setPaletteSyncPending: (pending: boolean) => void;
   setFrameSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setPaletteSyncStatus: (status: SyncStatus, error?: string | null) => void;
   setBundlePath: (path: string | null) => void;
@@ -247,6 +252,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
     bundleDirty: false,
     frameSyncStatus: "idle",
     paletteSyncStatus: "idle",
+    frameSyncPending: false,
+    paletteSyncPending: false,
     frameSyncError: null,
     paletteSyncError: null,
     bundlePath: null,
@@ -294,6 +301,8 @@ export const useEditorStore = create<EditorState>((set, get) => {
         bundleDirty: false,
         frameSyncStatus: "idle",
         paletteSyncStatus: "idle",
+        frameSyncPending: false,
+        paletteSyncPending: false,
         frameSyncError: null,
         paletteSyncError: null,
         isPlaying: false,
@@ -381,11 +390,17 @@ export const useEditorStore = create<EditorState>((set, get) => {
       set({
         isPaletteDirty: false,
         paletteSyncStatus: "idle",
+        paletteSyncPending: false,
         paletteSyncError: null,
       }),
 
+    setPaletteSyncPending: (pending: boolean) => set({ paletteSyncPending: pending }),
+
     setPaletteSyncStatus: (status, error?: string | null) =>
-      set((state) => withPaletteSyncStatus(state, status, error ?? null)),
+      set((state) => ({
+        ...withPaletteSyncStatus(state, status, error ?? null),
+        ...(status === "syncing" ? { paletteSyncPending: false } : {}),
+      })),
 
     setBundlePath: (bundlePath) => set({ bundlePath, bundleDirty: false }),
     setAssetType: (assetType) => set({ assetType }),
@@ -394,6 +409,9 @@ export const useEditorStore = create<EditorState>((set, get) => {
 
 export const useSyncStatus = () =>
   useEditorStore((s) => deriveSyncStatus(s.frameSyncStatus, s.paletteSyncStatus));
+
+export const useSyncPending = () =>
+  useEditorStore((s) => deriveSyncPending(s.frameSyncPending, s.paletteSyncPending));
 
 export const useSyncError = () =>
   useEditorStore((s) => deriveSyncError(s.frameSyncError, s.paletteSyncError));

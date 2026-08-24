@@ -1,0 +1,71 @@
+name: E2E Nightly
+
+# Nightly @smoke + @race Playwright gate (Batch 1 — not on every PR).
+# PR authors: run pnpm ci:e2e or pnpm test:e2e:smoke-race when touching sync/frame API.
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-nightly-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  e2e-smoke-race:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute dependency hash
+        id: deps-hash
+        run: echo "hash=$(python3 scripts/deps-hash.py)" >> $GITHUB_OUTPUT
+
+      - name: Compute asset hash
+        id: assets-hash
+        run: echo "hash=$(python3 scripts/assets-hash.py --build-type Debug)" >> $GITHUB_OUTPUT
+
+      - name: Install OS dependencies
+        run: ./scripts/install-ci-os-deps.sh
+
+      - name: Restore dependency cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            apps/web/node_modules
+            packages/api-client/node_modules
+            server/build/_deps
+            .cache/deps
+            .cache/venv-scripts
+          key: pixelanea-deps-${{ steps.deps-hash.outputs.hash }}
+
+      - name: Restore asset cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            apps/web/public
+            packages/api-client/src/generated
+            packages/api-client/dist
+            apps/web/dist
+            server/build/pixelanea-server
+            server/build/pixelanea_tests
+            server/build/CTestTestfile.cmake
+            server/build/DartConfiguration.tcl
+            .cache/assets
+          key: pixelanea-assets-${{ steps.assets-hash.outputs.hash }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: E2E smoke-race profile
+        run: ./scripts/ci.sh e2e-nightly

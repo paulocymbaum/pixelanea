@@ -196,18 +196,23 @@ pnpm test:smoke:backend    # backend smoke only
 
 # Desktop packaging
 pnpm test:package:linux    # .deb structure (+ optional --docker)
+pnpm test:package:windows  # NSIS + portable zip (Windows host or CI)
 pnpm test:desktop-shell    # shell subprocess smoke
+
+# Headless export (requires built pixelanea-cli)
+pnpm export:cli -- export path/to/project.pixelanea --format png
 
 # Backward-compatible aliases
 pnpm test                  # same as test:smoke
 
-# Playwright E2E (@smoke + @routing — requires Chromium)
+# Playwright E2E (@smoke + @race — requires Chromium)
 pnpm test:e2e:install   # first time only
-pnpm test:e2e
+pnpm test:e2e:smoke-race   # nightly CI subset
+pnpm test:e2e              # full local suite (excl. LinkedIn / @perf)
 
 # Full CI gate (same as GitHub Actions build job)
 ./scripts/ci.sh              # full profile (all 13 steps)
-./scripts/ci.sh profiles       # hook-commit | hook-push | fast | core | e2e | full | sprint
+./scripts/ci.sh profiles       # hook-commit | hook-push | fast | core | e2e | e2e-nightly | full | sprint
 ./scripts/ci.sh hook-commit    # pre-commit hook profile
 ./scripts/ci.sh hook-push      # pre-push hook profile
 ./scripts/ci.sh 08-build-server
@@ -215,13 +220,14 @@ pnpm test:e2e
 # pnpm aliases
 pnpm ci:fast
 pnpm ci:core                 # full local gate (same steps as hook-commit + hook-push)
-pnpm ci:e2e
+pnpm ci:e2e                  # full Playwright (local opt-in)
+pnpm ci:e2e-nightly          # @smoke + @race (matches nightly workflow)
 
 # Sprint gate (subset — see scripts/ci-steps/README.md)
 ./scripts/ci-sprint1.sh      # same as ./scripts/ci.sh sprint
 ```
 
-CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke scripts, and **desktop packaging** (`.deb`, DMG, Windows installer) on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Mirror locally: `./scripts/ci.sh`. Playwright E2E is optional (`pnpm ci:e2e`). Tagged releases upload the same artifacts to GitHub Releases — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke scripts, and **desktop packaging** (`.deb`, DMG, Windows installer) on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Playwright `@smoke` + `@race` runs **nightly** on `main` — see [`.github/workflows/e2e-nightly.yml`](.github/workflows/e2e-nightly.yml). Full Playwright is local opt-in (`pnpm ci:e2e`). Mirror the PR gate locally: `./scripts/ci.sh`. Tagged releases upload the same artifacts to GitHub Releases — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Documentation
 

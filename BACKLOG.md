@@ -15,7 +15,7 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 
 ### Distribution
 
-- [ ] Windows desktop shell (Tauri) + NSIS installer
+- [x] Windows desktop shell (Tauri) + NSIS installer — CI `package-windows` job; see [docs/user-guide.md](./docs/user-guide.md#install-windows)
 - [ ] Code signing for Windows releases (optional, budget-dependent)
 - [ ] Authenticode / release signing documentation for facilitators
 
@@ -33,7 +33,7 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 
 - snap / flatpak packages
 - Auto-update channel
-- Tauri-native file dialogs replacing zenity (see [docs/adr/0002-desktop-file-dialogs.md](./docs/adr/0002-desktop-file-dialogs.md))
+- Tauri-native file dialogs replacing zenity (see [docs/adr/0002-desktop-file-dialogs.md](./docs/adr/0002-desktop-file-dialogs.md)) — revisit after Windows shell; server-side pickers remain on Linux
 - Cloud sync or accounts
 
 ## References

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Full CI gate — mirrors .github/workflows/build.yml (build job).
-# Playwright E2E is manual only: ./scripts/ci.sh e2e or pnpm ci:e2e
+# Playwright E2E: pnpm ci:e2e (full) or pnpm ci:e2e-nightly (@smoke|@race; nightly workflow).
 #
 # Usage:
 #   ./scripts/ci.sh                    # full profile (all steps)
@@ -10,7 +10,8 @@
 #   ./scripts/ci.sh hook-push            # profile: tests + builds (pre-push)
 #   ./scripts/ci.sh fast                 # profile: lint + typecheck + QA + unit
 #   ./scripts/ci.sh core                 # profile: + builds + backend unit tests
-#   ./scripts/ci.sh e2e                # profile: + Playwright
+#   ./scripts/ci.sh e2e                # profile: + full Playwright
+#   ./scripts/ci.sh e2e-nightly        # profile: + @smoke|@race Playwright
 #   ./scripts/ci.sh 08-build-server      # single step
 #   ./scripts/ci.sh 05-test-qa 06-test-unit
 set -euo pipefail

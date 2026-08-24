@@ -1,6 +1,6 @@
 export const SYNC_DEBOUNCE_MS = 500;
 
-/** Max cells per PATCH before falling back to full binary PUT. */
+/** Max cells per PATCH before falling back to full binary PUT (paint hot path). */
 export const MAX_DELTA_CELL_COUNT = 64;
 
 export type SyncLane = "frame" | "frameDelta" | "palette" | "projectSettings";

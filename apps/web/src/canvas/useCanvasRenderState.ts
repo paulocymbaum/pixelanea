@@ -194,7 +194,7 @@ export function useStrokePreviewRedraw({
       !readOnly && hasActiveColorFilters(colorFilters);
 
     let onionSkinPixels: Uint8Array | undefined;
-    if (features.onionSkin && onionSkinEnabled && frameCount > 1) {
+    if (features.onionSkin && onionSkinEnabled && frameCount > 1 && !isPlaying) {
       const onionIndex = resolveOnionSkinFrameIndex(
         activeFrameIndex,
         frameCount,

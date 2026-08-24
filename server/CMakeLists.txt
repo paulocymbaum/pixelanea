@@ -175,6 +175,7 @@ target_compile_definitions(pixelanea_image PUBLIC STBI_NO_THREAD_LOCALS)
 
 set(PIXELANEA_EXPORT_SOURCES
   src/export/gif_encoder.cpp
+  src/export/png_encoder.cpp
   ${gifenc_SOURCE_DIR}/gifenc.c
 )
 
@@ -184,6 +185,7 @@ target_include_directories(
   PUBLIC
     src
     ${gifenc_SOURCE_DIR}
+    ${stb_SOURCE_DIR}
 )
 target_link_libraries(
   pixelanea_export
@@ -229,6 +231,22 @@ if(UNIX AND NOT APPLE)
   target_link_libraries(pixelanea_db PUBLIC pthread)
 endif()
 
+add_executable(
+  pixelanea-cli
+  src/cli/main.cpp
+  src/cli/export_command.cpp
+)
+target_link_libraries(
+  pixelanea-cli
+  PRIVATE
+    pixelanea_db
+    pixelanea_export
+    pixelanea_image
+)
+if(UNIX AND NOT APPLE)
+  target_link_libraries(pixelanea-cli PRIVATE pthread)
+endif()
+
 option(BUILD_TESTING "Build unit tests" ON)
 
 if(BUILD_TESTING)
@@ -255,6 +273,9 @@ if(BUILD_TESTING)
     tests/bundle_io_test.cpp
     tests/gif_encoder_test.cpp
     tests/file_dialog_test.cpp
+    tests/project_api_test.cpp
+    tests/cli_export_test.cpp
+    src/cli/export_command.cpp
     src/api/api_server.cpp
     src/api/api_http_helpers.cpp
     src/api/api_json_serializers.cpp

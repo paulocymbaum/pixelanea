@@ -3,6 +3,8 @@ export type SyncStatus = "idle" | "syncing" | "error";
 export type LaneSyncFields = {
   frameSyncStatus: SyncStatus;
   paletteSyncStatus: SyncStatus;
+  frameSyncPending: boolean;
+  paletteSyncPending: boolean;
   frameSyncError: string | null;
   paletteSyncError: string | null;
 };
@@ -18,6 +20,13 @@ export function deriveSyncStatus(
     return "syncing";
   }
   return "idle";
+}
+
+export function deriveSyncPending(
+  frameSyncPending: boolean,
+  paletteSyncPending: boolean,
+): boolean {
+  return frameSyncPending || paletteSyncPending;
 }
 
 export function deriveSyncError(

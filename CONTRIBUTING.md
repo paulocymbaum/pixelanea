@@ -21,14 +21,32 @@ Thank you for helping build a free, local-first pixel art editor. This guide cov
 4. Run tests before opening a PR:
 
    ```bash
-   pnpm ci:fast              # lint, typecheck, QA matrix, unit tests
-   pnpm ci:core              # full local gate (all of the above + builds)
-   pnpm ci:e2e               # optional Playwright E2E (not in GitHub Actions)
-   ./scripts/ci.sh           # full gate (matches GitHub Actions)
+   pnpm ci:fast              # lint, typecheck, QA matrix, unit tests, skill-output smoke
+   pnpm ci:core              # fast + web/server build + backend unit tests
+   pnpm ci:e2e               # full Playwright E2E (local / PR opt-in)
+   pnpm ci:e2e-nightly       # @smoke + @race Playwright (matches nightly CI job)
+   ./scripts/ci.sh           # full gate (matches GitHub Actions build job)
+   ```
+
+   **When CI runs what**
+
+   | Gate | GitHub Actions | Local command |
+   |------|----------------|---------------|
+   | Lint, typecheck, unit, QA, builds, smoke | Every PR — [`build.yml`](.github/workflows/build.yml) | `./scripts/ci.sh` or `pnpm ci:core` |
+   | Skill-output smoke | Every PR — step 14 in `build.yml` | `pnpm ci:fast` |
+   | Playwright `@smoke` + `@race` | Nightly on `main` + manual dispatch — [`e2e-nightly.yml`](.github/workflows/e2e-nightly.yml) | `pnpm ci:e2e-nightly` |
+   | Full Playwright (all specs except LinkedIn / `@perf`) | Not automated on PRs | `pnpm ci:e2e` |
+
+   **Run E2E locally before merge when you touch:**
+
+   - `apps/web/src/state/sync/`, `persist.ts`, or frame/palette API wrappers
+   - `server/` frame or project HTTP handlers
+   - `e2e/` specs or `scripts/e2e-webserver.sh`
+
+   Install browsers once: `pnpm test:e2e:install` (add `--with-deps` on fresh Linux CI images).
 
    Git hooks split work to avoid duplicate runs: **pre-commit** runs lint + typecheck;
    **pre-push** runs tests + builds. Use `PRE_PUSH_CI=core` to re-run lint on push.
-   ```
 
    Or run individual steps: `./scripts/ci.sh list` · see `scripts/ci-steps/README.md`.
 
@@ -65,7 +83,9 @@ See `.cursor/skills/pixelanea-frontend-standards/SKILL.md` for detailed frontend
 | Build shell release binary | `pnpm build:desktop-shell` |
 | Package `.deb` | `pnpm package:deb` (output in `dist/`, gitignored) |
 | Portable `.tar.gz` | `pnpm package:desktop` |
-| Package smoke tests | `pnpm test:package:linux`, `pnpm test:desktop-shell` |
+| Windows NSIS + portable zip | `pnpm package:windows` (Windows host or CI `package-windows` job) |
+| Package smoke tests | `pnpm test:package:linux`, `pnpm test:package:windows`, `pnpm test:desktop-shell` |
+| CLI PNG export (spike) | `pnpm export:cli -- export path/to/project.pixelanea --format png [--output out.png]` |
 
 Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). See [DEPENDENCIES.md](./DEPENDENCIES.md) for WebKitGTK system packages.
 
@@ -103,19 +123,25 @@ Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). S
 | QA matrices | `pnpm test:qa` | Route guards, I/O, import, animation |
 | Perf regressions | `pnpm test:perf` | Hot-path benchmarks (ctest `[benchmark]` + vitest `*Perf.test.ts`) |
 | Backend unit | `./scripts/ci-steps/09-test-backend-unit.sh` | Touched `server/` |
-| CI profiles | `pnpm ci:fast` / `ci:core` / `ci:e2e` / `./scripts/ci.sh` | See `scripts/ci-steps/README.md` |
+| CI profiles | `pnpm ci:fast` / `ci:core` / `ci:e2e` / `ci:e2e-nightly` / `./scripts/ci.sh` | See `scripts/ci-steps/README.md` |
 | Smoke gate | `pnpm test:smoke` | Standalone; skips redundant checks when `CI_SKIP_REDUNDANT=1` |
-| E2E | `pnpm test:e2e` | User flows; install browsers with `pnpm test:e2e:install` first |
+| E2E (full) | `pnpm test:e2e --grep-invert 'LinkedIn\|@perf'` | All product specs (~40 cases): `@smoke`, `@race`, `@routing`, `@export`, `@import`, `@onboarding`, `@errors`, palette rail; excludes LinkedIn media capture and `@perf` |
+| E2E (smoke-race gate) | `pnpm test:e2e:smoke-race` | `@smoke` + `@race` only — same subset as nightly CI |
+| E2E (CI full profile) | `pnpm ci:e2e` | Core gate + full Playwright (frees port 5173; use when no dev server running) |
 | Desktop package | `pnpm test:package:linux` | Touched `package-deb.sh`, `stage-linux-desktop.sh`, or `.deb` staging |
+| Windows package | `pnpm test:package:windows` | Touched `package-windows.ps1` or Windows CI job |
+| CLI export | `./scripts/ci-steps/09-test-backend-unit.sh` (filter `[cli][export]`) or `pnpm export:cli -- export …` | Touched `server/src/cli/` or `server/src/export/png_encoder.*` |
 | Desktop shell | `pnpm test:desktop-shell` | Touched `apps/desktop/` or shell launch scripts |
 | Sprint gate | `./scripts/ci-sprint1.sh` or `pnpm ci:sprint` | Before sprint-close PRs |
 
-QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MVP Gherkin spec. Playwright specs in `e2e/` cover `@smoke` and `@routing` scenarios; `playwright.config.ts` starts the stack via `scripts/e2e-webserver.sh`.
+QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MVP Gherkin spec. Playwright specs in `e2e/` cover `@smoke`, `@race`, `@routing`, `@sync`, `@export`, `@import`, and palette rail scenarios; `playwright.config.ts` starts the stack via `scripts/e2e-webserver.sh` (or reuses an existing dev server locally). Nightly CI runs `@smoke` + `@race` only (see `.github/workflows/e2e-nightly.yml`). Run the full Playwright suite before batch closes or when touching status bar, routing guards, import/export, or palette panel.
 
 ## Pull request checklist
 
 - [ ] `pnpm typecheck` and `pnpm test:unit` pass locally (or scoped commands for your change)
 - [ ] `pnpm test:qa` green if you touched routes, guards, or I/O
+- [ ] `pnpm test:e2e:smoke-race` or `pnpm ci:e2e-nightly` green if you touched `state/sync/`, `persist.ts`, frame/palette API, or related `e2e/` specs
+- [ ] `pnpm test:e2e --grep-invert 'LinkedIn|@perf'` green before merge when closing a multi-batch milestone or touching routing guards, status bar, import/export, or palette panel
 - [ ] `pnpm test:smoke` green before merge when touching build or integration paths
 - [ ] Shell/packaging changes: `pnpm test:package:linux` and/or `pnpm test:desktop-shell` green
 - [ ] Do not commit `dist/`, `apps/desktop/src-tauri/target/`, or `**/.pixelanea-assets-hash`

@@ -17,7 +17,8 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 | 08 | `08-build-server.sh` | Wrapper: 08a + 08b |
 | 09 | `09-test-backend-unit.sh` | `ctest` or `pixelanea_tests` fallback |
 | 10 | `10-e2e-install.sh` | Playwright Chromium (manual `ci e2e` profile only) |
-| 11 | `11-test-e2e.sh` | Playwright E2E (manual `ci e2e` profile only) |
+| 11 | `11-test-e2e.sh` | Full Playwright E2E (local `ci e2e` profile; excludes LinkedIn / `@perf`) |
+| 11a | `11a-test-e2e-smoke-race.sh` | Playwright `@smoke` + `@race` gate (nightly workflow + `ci e2e-nightly`) |
 | 12 | `12-smoke-backend.sh` | Live API smoke + lifecycle |
 | 13 | `13-smoke-frontend.sh` | Static UI checks + Vite `/api` proxy |
 | 14 | `14-skill-output-smoke.sh` | Canonical `test.md` / `test_matrix_unit.md` gates (`.cursor/ci-smoke-manifest.txt`) |
@@ -28,10 +29,11 @@ Shared helpers live in `../ci-lib.sh`.
 
 | Profile | Steps | Use when |
 |---------|-------|----------|
-| `fast` | 03–06 | Frontend-only edits; seconds–minutes |
+| `fast` | 03–06, 14 | Frontend-only edits; seconds–minutes |
 | `core` | 01–02, 03–09 | Pre-push without smoke |
-| `e2e` | 01–02, 03–11 | Optional Playwright (not in GitHub Actions) |
-| `full` | 01–09, 12–13 | Same as GitHub Actions `build` job |
+| `e2e` | 01–02, 03–11 | Full Playwright locally / PR opt-in (not PR-blocking) |
+| `e2e-nightly` | 01–02, 07–09, 10, 11a | `@smoke` + `@race` Playwright (GitHub Actions nightly) |
+| `full` | 01–09, 12–13, 14 | Same as GitHub Actions `build` job |
 | `sprint` | 04–06, 08–09 | Legacy sprint gate |
 
 ```bash

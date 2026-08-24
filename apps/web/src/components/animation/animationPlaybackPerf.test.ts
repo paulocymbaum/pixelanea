@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { clampAnimationFps } from "@/state/editorStorePlayback";
+import { PREFETCH_FRAME_CONCURRENCY } from "@/components/animation/useAnimationPlayback";
 
 /** Deterministic FPS bounds for RAF playback scheduling. */
 describe("animation playback performance", () => {
@@ -9,5 +10,9 @@ describe("animation playback performance", () => {
     expect(1000 / clampAnimationFps(24)).toBeCloseTo(41.67, 1);
     expect(1000 / clampAnimationFps(12)).toBeCloseTo(83.33, 1);
     expect(1000 / clampAnimationFps(1)).toBe(1000);
+  });
+
+  it("caps prefetch concurrency for multi-frame projects", () => {
+    expect(PREFETCH_FRAME_CONCURRENCY).toBe(4);
   });
 });

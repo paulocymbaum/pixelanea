@@ -74,10 +74,12 @@ function createCoordinator(): SyncCoordinator {
 }
 
 export function scheduleFrameSync(): void {
+  useEditorStore.getState().setFrameSyncPending(true);
   coordinator.scheduleFrame();
 }
 
 export function schedulePaletteSync(): void {
+  useEditorStore.getState().setPaletteSyncPending(true);
   coordinator.schedulePalette();
 }
 
@@ -87,10 +89,12 @@ export function scheduleProjectSettingsSync(): void {
 
 export function cancelFrameSync(): void {
   coordinator.cancelFrame();
+  useEditorStore.getState().setFrameSyncPending(false);
 }
 
 export function cancelPaletteSync(): void {
   coordinator.cancelPalette();
+  useEditorStore.getState().setPaletteSyncPending(false);
 }
 
 export async function flushFrameSync(): Promise<void> {
@@ -113,6 +117,9 @@ export function resetPersistState(): void {
   coordinator.reset();
   clearPendingCellChanges();
   forgetProjectSettingsSynced();
+  const store = useEditorStore.getState();
+  store.setFrameSyncPending(false);
+  store.setPaletteSyncPending(false);
 }
 
 export { markProjectSettingsSynced };

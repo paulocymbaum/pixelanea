@@ -4,6 +4,9 @@ import { useEditorStore } from "@/state/editorStore";
 import { flushFrameSync } from "@/state/persist";
 import { useCallback, useEffect, useRef } from "react";
 
+/** Max parallel frame fetches during playback prefetch (avoids API stampede). */
+export const PREFETCH_FRAME_CONCURRENCY = 4;
+
 /** Prefetch uncached frame buffers and fold the active buffer into the cache. */
 export async function prefetchFrameCache(projectId: string): Promise<void> {
   const state = useEditorStore.getState();
@@ -22,16 +25,19 @@ export async function prefetchFrameCache(projectId: string): Promise<void> {
     return;
   }
 
-  const results = await Promise.all(
-    missing.map(async (index) => {
-      const result = await fetchFrame(projectId, index);
-      return { index, result };
-    }),
-  );
+  for (let offset = 0; offset < missing.length; offset += PREFETCH_FRAME_CONCURRENCY) {
+    const batch = missing.slice(offset, offset + PREFETCH_FRAME_CONCURRENCY);
+    const results = await Promise.all(
+      batch.map(async (index) => {
+        const result = await fetchFrame(projectId, index);
+        return { index, result };
+      }),
+    );
 
-  for (const { index, result } of results) {
-    if (result.ok) {
-      nextCache = writeFramePixels(nextCache, index, result.pixels);
+    for (const { index, result } of results) {
+      if (result.ok) {
+        nextCache = writeFramePixels(nextCache, index, result.pixels);
+      }
     }
   }
 

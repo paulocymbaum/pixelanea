@@ -77,7 +77,7 @@ test.describe("@smoke palette section rail", () => {
   });
 
   test("PR-HP-003: Riley shades from Shading tab then paints on Swatches", async ({ page }) => {
-    await createBlankProject(page);
+    const projectId = await createBlankProject(page);
 
     await selectPaletteColor(page, 1);
     await selectPaletteSection(page, "shading");
@@ -90,7 +90,8 @@ test.describe("@smoke palette section rail", () => {
     await paintStroke(page);
     await putFrame;
 
-    expect(await canvasHasPaintNear(page, { xRatio: 0.5, yRatio: 0.5 })).toBe(true);
+    const pixels = await getFramePixels(page, projectId, 0);
+    expect(pixels.some((value) => value !== 0)).toBe(true);
   });
 
   test("PR-HP-004: Filters overlay apply changes canvas pixels", async ({ page }) => {

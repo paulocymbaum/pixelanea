@@ -27,6 +27,8 @@ type FrameSlice = {
   onionSkinEnabled: boolean;
   frameSyncStatus: import("./editorStoreSync").SyncStatus;
   paletteSyncStatus: import("./editorStoreSync").SyncStatus;
+  frameSyncPending: boolean;
+  paletteSyncPending: boolean;
   frameSyncError: string | null;
   paletteSyncError: string | null;
   undoStack: import("@/state/commands/types").Command[];
@@ -216,12 +218,19 @@ export function createFrameSyncActions(
       set({
         isDirty: false,
         frameSyncStatus: "idle",
+        frameSyncPending: false,
         frameSyncError: null,
       }),
+
+    setFrameSyncPending: (pending: boolean) => set({ frameSyncPending: pending }),
 
     setFrameSyncStatus: (
       status: import("./editorStoreSync").SyncStatus,
       error?: string | null,
-    ) => set((state) => withFrameSyncStatus(state, status, error ?? null)),
+    ) =>
+      set((state) => ({
+        ...withFrameSyncStatus(state, status, error ?? null),
+        ...(status === "syncing" ? { frameSyncPending: false } : {}),
+      })),
   };
 }

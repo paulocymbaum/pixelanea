@@ -624,7 +624,7 @@ The architecture supports growth without rewrites:
 | Capability | Status | How |
 |------------|--------|-----|
 | Desktop app (Tauri) | **Implemented (Linux)** | `apps/desktop/` launches `pixelanea-server` + embeds `apps/web` build in WebKitGTK |
-| CLI exporter | Planned | `pixelanea export project.pixelanea --format png` using `server/export` |
+| CLI exporter | **Spike (png)** | `pixelanea-cli export project.pixelanea --format png` via `server/export/png_encoder` |
 | Plugin tools | Supported | Register new `Tool` implementations in `apps/web/tools/` |
 | Layers | Planned | Add `layers` table; extend `Frame` with `layer_id` |
 | GIF/spritesheet export | Supported | `server/export` encoder; UI behind feature flags |

@@ -70,6 +70,9 @@ Students can open this file instead of creating from scratch to save time.
 | Lock palette | "Stay inside your color set" |
 | Save As | "Name your file so you can find it" |
 | Status bar | "When it says **All changes saved**, you're good" |
+| **Sync pending…** | "Your strokes are waiting to copy to the local server — keep drawing, they'll save in a moment" |
+| **Syncing to server…** | "Pixels are being copied to the local server right now" |
+| **Not saved to file** | "Pixels are on the server but you still need **File → Save** before leaving" |
 
 ### Common student questions
 
@@ -81,6 +84,21 @@ Students can open this file instead of creating from scratch to save time.
 | Where is my file? | Use the path shown in the save toast; remind them to copy the `.pixelanea` file |
 | Red banner at top | Click **Retry** or restart Pixelanea from the app menu / `pixelanea` |
 | File picker didn't open | A manual path dialog appears instead. Students type the full path ending in `.pixelanea` — provide a template path on the board (e.g. `/home/student/Desktop/my-art.pixelanea`) or help them paste from the teacher's example |
+| App crashed — did I lose work? | Strokes sync to the local server within ~½ second while drawing. **File → Save** writes the `.pixelanea` file students take home. If Pixelanea closed before sync finished, the last second of edits may be lost — remind students to watch for **All changes saved** before closing. |
+
+## Data durability & privacy (for facilitators)
+
+Pixelanea is **local-only** — no student accounts, no cloud upload. Use these talking points when parents or IT ask about data handling.
+
+| Topic | What to say |
+|-------|-------------|
+| **Network** | The editor talks to a small program on the same computer (`127.0.0.1` only). Nothing is sent to Pixelanea's servers or the internet. |
+| **Two kinds of "saved"** | (1) **Synced to the local server** — happens automatically while students draw (about every half second after they stop moving the mouse). (2) **Saved to a file** — **File → Save** / **Save As** writes the `.pixelanea` file they copy to USB. Both matter for class ending. |
+| **Status bar** | **All changes saved** = file on disk is current. **Not saved to file** = pixels are in memory/server but they still need **Save** before leaving. |
+| **Crash or force-quit** | Undo history lives in the app session only. If the app dies before the automatic sync finishes, the last fraction of a second of painting may not persist. Best practice: **Save** before break and before shutdown. |
+| **Sharing files** | `.pixelanea` files contain art data only — safe to email or copy on USB. See [security audit](../security-audit.md) for technical detail. |
+
+**End-of-class checklist:** each student **Save As** → status shows **All changes saved** → copy `.pixelanea` off the machine.
 
 ## If the file picker doesn't open
 

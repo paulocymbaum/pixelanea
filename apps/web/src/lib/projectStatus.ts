@@ -4,17 +4,18 @@
  * Priority order (why: trust / save state before API jargon):
  * 1. checking
  * 2. error (sync)
- * 3. saving
- * 4. unsaved (`isDirty` || `isPaletteDirty`)
- * 5. not saved to file (`bundleDirty` while pixels/palette are synced)
- * 6. saved
- * 7. idle
+ * 3. saving (active server sync)
+ * 4. sync pending (debounced autosave not yet sent)
+ * 5. unsaved (`isDirty` || `isPaletteDirty`)
+ * 6. not saved to file (`bundleDirty` while pixels/palette are synced)
+ * 7. saved
+ * 8. idle
  *
  * Disconnect UX is owned by ConnectionBanner — not repeated here.
  */
 import { useMemo } from "react";
 import { copy } from "@/content/copy";
-import { useEditorStore, useSyncStatus } from "@/state/editorStore";
+import { useEditorStore, useSyncPending, useSyncStatus } from "@/state/editorStore";
 import { useUiStore } from "@/state/uiStore";
 
 export type ProjectStatus =
@@ -29,6 +30,7 @@ export type ProjectStatusInput = {
   hasProject: boolean;
   apiStatus: "checking" | "connected" | "disconnected";
   syncStatus: "idle" | "syncing" | "error";
+  syncPending: boolean;
   isDirty: boolean;
   isPaletteDirty: boolean;
   bundleDirty: boolean;
@@ -42,6 +44,7 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
     isDirty,
     isPaletteDirty,
     bundleDirty,
+    syncPending,
   } = input;
 
   if (apiStatus === "checking") {
@@ -57,7 +60,11 @@ export function deriveProjectStatus(input: ProjectStatusInput): ProjectStatus {
   }
 
   if (syncStatus === "syncing") {
-    return { kind: "saving", label: copy.statusSaving };
+    return { kind: "saving", label: copy.statusSyncingToServer };
+  }
+
+  if (syncPending && (isDirty || isPaletteDirty)) {
+    return { kind: "saving", label: copy.statusSyncPending };
   }
 
   if (isDirty || isPaletteDirty) {
@@ -86,6 +93,7 @@ export function useDerivedProjectStatus(): ProjectStatus {
   const isPaletteDirty = useEditorStore((s) => s.isPaletteDirty);
   const bundleDirty = useEditorStore((s) => s.bundleDirty);
   const syncStatus = useSyncStatus();
+  const syncPending = useSyncPending();
   const apiStatus = useUiStore((s) => s.apiStatus);
 
   return useMemo(
@@ -94,6 +102,7 @@ export function useDerivedProjectStatus(): ProjectStatus {
         hasProject,
         apiStatus,
         syncStatus,
+        syncPending,
         isDirty,
         isPaletteDirty,
         bundleDirty,
@@ -102,6 +111,7 @@ export function useDerivedProjectStatus(): ProjectStatus {
       hasProject,
       apiStatus,
       syncStatus,
+      syncPending,
       isDirty,
       isPaletteDirty,
       bundleDirty,

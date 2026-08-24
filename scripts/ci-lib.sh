@@ -88,6 +88,9 @@ ci_profile_steps() {
     e2e)
       echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11-test-e2e"
       ;;
+    e2e-nightly)
+      echo "00-verify-version 01-deps 02-api-assets 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 10-e2e-install 11a-test-e2e-smoke-race"
+      ;;
     full | all)
       echo "00-verify-version 01-deps 02-api-assets 03-lint 04-typecheck 05-test-qa 06-test-unit 14-skill-output-smoke 07-build-web 08a-server-configure 08b-server-compile 09-test-backend-unit 12-smoke-backend 13-smoke-frontend"
       ;;
@@ -106,7 +109,8 @@ ci_list_profiles() {
   echo "  hook-push   — verify, deps, tests, builds (pre-push hook)"
   echo "  fast    — lint, typecheck, QA matrix, unit tests, skill-output smoke"
   echo "  core    — fast + web/server build + backend unit tests"
-  echo "  e2e     — core + Playwright E2E (manual only; not in GitHub Actions)"
+  echo "  e2e     — core + full Playwright E2E (local / PR opt-in; not PR-blocking)"
+  echo "  e2e-nightly — build stack + @smoke|@race Playwright (GitHub Actions nightly)"
   echo "  full    — core + smoke scripts (GitHub Actions build job)"
   echo "  sprint  — typecheck, QA, unit, server build, backend tests"
 }

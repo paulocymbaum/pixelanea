@@ -6,6 +6,7 @@ import {
   createBlankProject,
   E2E_SAVE_PATH,
   expectAllChangesSaved,
+  expectPixelsSyncedToServer,
   mockProjectPicker,
   openProjectFromLanding,
   paintStroke,
@@ -15,9 +16,7 @@ test.describe("@routing", () => {
   test("Paint → New → confirm → Cancel → still editor", async ({ page }) => {
     await createBlankProject(page);
     await paintStroke(page);
-    await expect(page.getByRole("status")).toContainText("Unsaved changes", {
-      timeout: 10_000,
-    });
+    await expectPixelsSyncedToServer(page);
 
     await clickFileMenuItem(page, "New");
     await expect(
@@ -35,9 +34,7 @@ test.describe("@routing", () => {
     await mockProjectPicker(page);
     await createBlankProject(page);
     await paintStroke(page);
-    await expect(page.getByRole("status")).toContainText("Unsaved changes", {
-      timeout: 10_000,
-    });
+    await expectPixelsSyncedToServer(page);
 
     await clickFileMenuItem(page, "Open");
     await expect(
@@ -64,9 +61,7 @@ test.describe("@routing", () => {
     await mockProjectPicker(page, { save: E2E_SAVE_PATH, open: E2E_SAVE_PATH });
     await createBlankProject(page);
     await paintStroke(page);
-    await expect(page.getByRole("status")).toContainText(/Unsaved changes|Not saved to file/, {
-      timeout: 10_000,
-    });
+    await expectPixelsSyncedToServer(page);
 
     await clickFileMenuItem(page, "Import image");
     await expect(

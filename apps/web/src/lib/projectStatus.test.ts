@@ -12,6 +12,7 @@ function input(
     hasProject: true,
     apiStatus: "connected",
     syncStatus: "idle",
+    syncPending: false,
     isDirty: false,
     isPaletteDirty: false,
     bundleDirty: false,
@@ -26,10 +27,26 @@ describe("deriveProjectStatus", () => {
     ).toEqual({ kind: "unsaved", label: copy.statusUnsaved });
   });
 
-  it("returns saving when syncing and clean local flags", () => {
+  it("returns syncing to server when sync is active", () => {
     expect(
       deriveProjectStatus(input({ syncStatus: "syncing" })),
-    ).toEqual({ kind: "saving", label: copy.statusSaving });
+    ).toEqual({ kind: "saving", label: copy.statusSyncingToServer });
+  });
+
+  it("returns sync pending during debounce while dirty", () => {
+    expect(
+      deriveProjectStatus(
+        input({ isDirty: true, syncPending: true, syncStatus: "idle" }),
+      ),
+    ).toEqual({ kind: "saving", label: copy.statusSyncPending });
+  });
+
+  it("prefers syncing to server over sync pending", () => {
+    expect(
+      deriveProjectStatus(
+        input({ isDirty: true, syncPending: true, syncStatus: "syncing" }),
+      ),
+    ).toEqual({ kind: "saving", label: copy.statusSyncingToServer });
   });
 
   it("returns saved when project loaded, connected, idle, clean", () => {
@@ -84,12 +101,12 @@ describe("deriveProjectStatus", () => {
     ).toEqual({ kind: "unsaved", label: copy.statusNotSavedToDisk });
   });
 
-  it("prefers saving over unsaved while syncing", () => {
+  it("prefers syncing to server over unsaved while syncing", () => {
     expect(
       deriveProjectStatus(
         input({ isDirty: true, isPaletteDirty: true, syncStatus: "syncing" }),
       ),
-    ).toEqual({ kind: "saving", label: copy.statusSaving });
+    ).toEqual({ kind: "saving", label: copy.statusSyncingToServer });
   });
 
   it("prefers error over unsaved", () => {

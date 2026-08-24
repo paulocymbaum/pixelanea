@@ -13,6 +13,11 @@ export const E2E_OPEN_PATH = "/tmp/pixelanea-e2e-open.pixelanea";
 /** Header shows basename only (R1-302); use for visible path assertions. */
 export const E2E_SAVE_BASENAME = path.basename(E2E_SAVE_PATH);
 
+/** Status bar footer — avoids collision with toast `role="status"`. */
+export function statusBar(page: Page) {
+  return page.locator('footer[role="status"]');
+}
+
 export async function dismissOnboarding(page: Page): Promise<void> {
   const skip = page.getByRole("button", { name: "Skip tour" });
   if (await skip.isVisible().catch(() => false)) {
@@ -155,7 +160,7 @@ export async function selectPaletteSection(
 }
 
 export async function expectPixelsSyncedToServer(page: Page): Promise<void> {
-  await expect(page.getByRole("status")).toContainText("Not saved to file", {
+  await expect(statusBar(page)).toContainText("Not saved to file", {
     timeout: 15_000,
   });
 }
@@ -165,7 +170,19 @@ export async function expectAllChangesSaved(
   page: Page,
   options: { timeout?: number } = {},
 ): Promise<void> {
-  await expect(page.getByRole("status")).toContainText("All changes saved", {
+  await expect(statusBar(page)).toContainText("All changes saved", {
+    timeout: options.timeout ?? 10_000,
+  });
+}
+
+/** Waits for status bar to show one of the given phrases (debounce/sync transitions). */
+export async function expectStatusBarOneOf(
+  page: Page,
+  phrases: string[],
+  options: { timeout?: number } = {},
+): Promise<void> {
+  const pattern = new RegExp(phrases.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"));
+  await expect(statusBar(page)).toContainText(pattern, {
     timeout: options.timeout ?? 10_000,
   });
 }

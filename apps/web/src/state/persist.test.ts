@@ -6,6 +6,7 @@ import {
   flushAllSync,
   markProjectSettingsSynced,
   resetPersistState,
+  scheduleFrameSync,
   schedulePaletteSync,
   scheduleProjectSettingsSync,
   setSyncCoordinatorForTests,
@@ -47,6 +48,8 @@ describe("persist", () => {
       isPaletteDirty: false,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
+      frameSyncPending: false,
+      paletteSyncPending: false,
       frameSyncError: null,
       paletteSyncError: null,
     });
@@ -61,6 +64,11 @@ describe("persist", () => {
       expect.any(Uint8Array),
     );
     expect(useEditorStore.getState().isDirty).toBe(false);
+  });
+
+  it("marks frame sync pending when scheduleFrameSync is called", () => {
+    scheduleFrameSync();
+    expect(useEditorStore.getState().frameSyncPending).toBe(true);
   });
 
   it("skips sync when not dirty", async () => {

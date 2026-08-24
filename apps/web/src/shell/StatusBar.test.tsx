@@ -21,6 +21,8 @@ describe("StatusBar", () => {
       bundleDirty: false,
       frameSyncStatus: "idle",
       paletteSyncStatus: "idle",
+      frameSyncPending: false,
+      paletteSyncPending: false,
       frameSyncError: null,
       paletteSyncError: null,
       pastePreview: null,
@@ -70,11 +72,18 @@ describe("StatusBar", () => {
     expect(screen.getByText(copy.statusNotSavedToDisk)).toBeInTheDocument();
   });
 
-  it("shows saving while syncing", () => {
+  it("shows syncing to server while frame PUT is in flight", () => {
     useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
     useEditorStore.setState({ frameSyncStatus: "syncing" });
     render(<StatusBar />);
-    expect(screen.getByText(copy.statusSaving)).toBeInTheDocument();
+    expect(screen.getByText(copy.statusSyncingToServer)).toBeInTheDocument();
+  });
+
+  it("shows sync pending during debounced autosave", () => {
+    useUiStore.setState({ apiStatus: "connected", apiVersion: "1.0.0" });
+    useEditorStore.setState({ isDirty: true, frameSyncPending: true });
+    render(<StatusBar />);
+    expect(screen.getByText(copy.statusSyncPending)).toBeInTheDocument();
   });
 
   it("shows sync error when frame PUT failed", () => {

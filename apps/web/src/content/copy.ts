@@ -11,6 +11,10 @@ export const copy = {
   statusSaved: "All changes saved",
   statusUnsaved: "Unsaved changes",
   statusNotSavedToDisk: "Not saved to file",
+  /** Active HTTP PUT/PATCH to the local server. */
+  statusSyncingToServer: "Syncing to server…",
+  /** Debounced autosave waiting to fire (edits not yet on the server). */
+  statusSyncPending: "Sync pending…",
   statusSaving: "Saving…",
   statusSyncError: "Couldn't save changes. Try again.",
   statusReady: "Ready",
