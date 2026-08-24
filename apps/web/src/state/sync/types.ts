@@ -5,8 +5,6 @@ export const MAX_DELTA_CELL_COUNT = 64;
 
 export type SyncLane = "frame" | "frameDelta" | "palette" | "projectSettings";
 
-export type SyncStatus = "idle" | "syncing" | "error";
-
 export type FrameSnapshot = {
   lane: "frame";
   projectId: string;

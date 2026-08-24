@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Experimental headless PNG export (pixelanea-cli). Prefer File → Export in the app for GIF/spritesheet.
 # Run pixelanea-cli export (builds CLI binary if missing).
 set -euo pipefail
 

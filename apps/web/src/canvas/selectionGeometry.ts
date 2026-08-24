@@ -24,7 +24,7 @@ export function selectionShapeFromModifiers(
 }
 
 /** Axis-aligned bbox from anchor cell to current cell (both inclusive). */
-export function rectSelectionBbox(
+function rectSelectionBbox(
   anchor: CellCoord,
   current: CellCoord,
 ): SelectionRect {
@@ -37,7 +37,7 @@ export function rectSelectionBbox(
 }
 
 /** Square bbox with side = max(|dx|, |dy|) + 1 cells, anchored at pointer-down cell. */
-export function squareSelectionBbox(
+function squareSelectionBbox(
   anchor: CellCoord,
   current: CellCoord,
 ): SelectionRect {
@@ -51,7 +51,7 @@ export function squareSelectionBbox(
 }
 
 /** Ellipse selection uses the drag bbox; cells are filtered by ellipse hit test. */
-export function ellipseSelectionBbox(
+function ellipseSelectionBbox(
   anchor: CellCoord,
   current: CellCoord,
 ): SelectionRect {

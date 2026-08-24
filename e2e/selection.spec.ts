@@ -70,6 +70,7 @@ test.describe("selection workflows", () => {
     const undoSync = waitForFrameSync(page);
     await page.keyboard.press("Control+z");
     await undoSync;
+    await expectPixelsSyncedToServer(page);
   });
 
   test("select → Copy → Paste → Place", async ({ page }) => {
@@ -88,8 +89,13 @@ test.describe("selection workflows", () => {
       timeout: 5_000,
     });
 
+    // Nudge so place is not a pure no-op at the selection origin (still syncs, but
+    // asserts a visible commit path).
+    await page.keyboard.press("ArrowRight");
+
     const pasteSync = waitForFrameSync(page);
     await page.keyboard.press("Enter");
     await pasteSync;
+    await expectPixelsSyncedToServer(page);
   });
 });

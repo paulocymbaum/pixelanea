@@ -15,7 +15,7 @@ import {
   placeLightingPointOnCanvas,
   selectPaletteColor,
   selectPaletteSection,
-  waitForFramePut,
+  waitForFrameSync,
 } from "./helpers";
 
 test.describe("@smoke palette section rail", () => {
@@ -86,7 +86,7 @@ test.describe("@smoke palette section rail", () => {
     await selectPaletteSection(page, "swatches");
     await page.getByRole("button", { name: "Paint", exact: true }).click();
 
-    const putFrame = waitForFramePut(page);
+    const putFrame = waitForFrameSync(page);
     await paintStroke(page);
     await putFrame;
 
@@ -99,7 +99,7 @@ test.describe("@smoke palette section rail", () => {
     await selectPaletteColor(page, 2);
     await page.getByRole("button", { name: "Paint", exact: true }).click();
 
-    const paintPut = waitForFramePut(page);
+    const paintPut = waitForFrameSync(page);
     await paintStroke(page);
     await paintPut;
 
@@ -339,7 +339,7 @@ test.describe("@regression palette section rail", () => {
   }) => {
     await createBlankProject(page);
 
-    const putFrame = waitForFramePut(page);
+    const putFrame = waitForFrameSync(page);
     await paintStroke(page);
     await putFrame;
 

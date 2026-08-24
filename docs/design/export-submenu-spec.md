@@ -31,6 +31,6 @@ File
 
 ## Implementation
 
-- `apps/web/src/shell/fileMenuItems.ts` — builds submenu entries from `features.ts`
+- `apps/web/src/shell/fileMenuItems.ts` — builds submenu entries when export callbacks are provided
 - `apps/web/src/shell/FileMenu.tsx` — Radix `DropdownMenuSub`
 - `apps/web/src/shell/exportActions.ts` — PNG / spritesheet / GIF orchestration

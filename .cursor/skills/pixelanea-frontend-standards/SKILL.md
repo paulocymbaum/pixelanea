@@ -166,7 +166,7 @@ Canvas renderer reads functional tokens (`checker-a`, `grid-line`, `onion-skin`)
 ### Liskov Substitution
 
 - Every `Tool` honors `ToolContext.readOnly` during animation preview.
-- Every `Command` is reversible; eraser uses `ClearCellCommand` on the same undo path.
+- Every `Command` is reversible; paint and eraser both use `PaintCellsCommand` via the stroke session.
 - UI primitives honor variant API (primary / secondary / ghost / destructive) consistently.
 
 ### Interface Segregation

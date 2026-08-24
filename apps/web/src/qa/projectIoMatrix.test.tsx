@@ -40,14 +40,6 @@ const { backendRef } = vi.hoisted(() => ({
   backendRef: { current: null as FakeProjectBackend | null },
 }));
 
-vi.mock("@/content/features", () => ({
-  features: {
-    exportSpritesheet: false,
-    exportGif: false,
-    onionSkin: false,
-  },
-}));
-
 vi.mock("@/api/client", () => ({
   getApiClient: () => {
     if (!backendRef.current) {

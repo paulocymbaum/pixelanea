@@ -38,7 +38,7 @@ apps/web/src/
 │   ├── uiStore.ts               # panels, wizard step, technical info flag
 │   ├── sessionStore.ts          # theme, collapse prefs (localStorage)
 │   ├── shortcuts.ts             # single keyboard map
-│   ├── commands/                # PaintCellCommand, ClearCellCommand, …
+│   ├── commands/                # PaintCellsCommand, PasteCellsCommand, …
 │   ├── persist.ts               # façade: schedule* / flush* / reset
 │   └── sync/                    # SyncCoordinator, snapshots, types
 ├── content/
@@ -230,8 +230,8 @@ interface Tool {
 
 | Tool | Module | Command / side effect | UX note |
 |------|--------|----------------------|---------|
-| Paint | `tools/paint.ts` | `PaintCellCommand` | Default active on editor open |
-| Eraser | `tools/eraser.ts` | `ClearCellCommand` | Label "Fix mistakes" in onboarding |
+| Paint | `tools/paint.ts` | `PaintCellsCommand` | Default active on editor open |
+| Eraser | `tools/eraser.ts` | `PaintCellsCommand` (transparent index) | Label "Fix mistakes" in onboarding |
 | Eyedropper | `tools/eyedropper.ts` | updates `activeColor` | Works when palette locked |
 | Frame duplicate | `tools/frameDuplicate.ts` | API + reload | Confirm dialog — one of three allowed confirms |
 | Import pixelate | `tools/importPixelate.ts` | wizard → API | Casey front door |

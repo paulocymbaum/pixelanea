@@ -5,7 +5,7 @@ import {
   openImportWizard,
   paintStroke,
   SAMPLE_IMAGE,
-  waitForFramePut,
+  waitForFrameSync,
 } from "./helpers";
 
 test.describe("@onboarding", () => {
@@ -29,7 +29,7 @@ test.describe("@onboarding", () => {
     await page.getByRole("button", { name: "Skip tour" }).click();
     await expect(page.getByText("Pick a color")).toHaveCount(0);
 
-    const putFrame = waitForFramePut(page);
+    const putFrame = waitForFrameSync(page);
     await paintStroke(page);
     await putFrame;
     await expectPixelsSyncedToServer(page);

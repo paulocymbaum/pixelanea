@@ -14,10 +14,10 @@ function deltaPayloadBytes(changes: readonly CellChange[]): number {
   return JSON.stringify(changes).length;
 }
 
-/** Gate from Batch 2 spike: delta must beat full-frame PUT by >30%. */
+/** Regression gate: delta must beat full-frame PUT by >30%. */
 const MIN_DELTA_SAVINGS_RATIO = 0.3;
 
-describe("frame sync payload spike (Batch 2)", () => {
+describe("frame sync payload size regression", () => {
   it("64×64 stroke: delta PATCH is >30% smaller than full binary PUT", () => {
     const gridSize = 64;
     const strokeCells = 64;

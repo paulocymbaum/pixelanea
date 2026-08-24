@@ -1,4 +1,5 @@
 import type { CellCoord } from "@/canvas/coordinates";
+import type { SelectionRect } from "@/canvas/selectionGeometry";
 import { PasteCellsCommand } from "@/state/commands/pasteCells";
 import { computePasteChanges } from "@/api/selectionCompute";
 import type { ClipboardData } from "@/state/editorStoreClipboard";
@@ -23,6 +24,7 @@ type PasteStore = PasteEditorSlice & {
   readOnly: boolean;
   clipboard: ClipboardData | null;
   hoverCell: CellCoord | null;
+  selection: SelectionRect | null;
   pixels: Uint8Array;
   gridWidth: number;
   gridHeight: number;
@@ -43,9 +45,11 @@ export function createPasteActions(
         return false;
       }
 
+      const selection = state.selection;
       const anchor = state.hoverCell;
-      const x = originX ?? anchor?.x ?? 0;
-      const y = originY ?? anchor?.y ?? 0;
+      // Prefer selection origin (in-place paste), then hover, then canvas origin.
+      const x = originX ?? selection?.x ?? anchor?.x ?? 0;
+      const y = originY ?? selection?.y ?? anchor?.y ?? 0;
 
       state.cancelMove();
       set({

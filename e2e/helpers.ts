@@ -98,15 +98,6 @@ export async function paintStroke(page: Page): Promise<void> {
   );
 }
 
-/** Horizontal stroke near the top of the canvas (row 0 in fit-to-view). */
-export async function paintRowZeroStroke(page: Page): Promise<void> {
-  await paintDragOnCanvas(
-    page,
-    { xRatio: 0.2, yRatio: 0.12 },
-    { xRatio: 0.8, yRatio: 0.12 },
-  );
-}
-
 /** Distinct stroke for multi-frame round-trip checks (upper-left diagonal). */
 export async function paintFrame2Mark(page: Page): Promise<void> {
   await paintDragOnCanvas(
@@ -171,18 +162,6 @@ export async function expectAllChangesSaved(
   options: { timeout?: number } = {},
 ): Promise<void> {
   await expect(statusBar(page)).toContainText("All changes saved", {
-    timeout: options.timeout ?? 10_000,
-  });
-}
-
-/** Waits for status bar to show one of the given phrases (debounce/sync transitions). */
-export async function expectStatusBarOneOf(
-  page: Page,
-  phrases: string[],
-  options: { timeout?: number } = {},
-): Promise<void> {
-  const pattern = new RegExp(phrases.map((phrase) => phrase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|"));
-  await expect(statusBar(page)).toContainText(pattern, {
     timeout: options.timeout ?? 10_000,
   });
 }
@@ -274,18 +253,6 @@ export async function waitForFrameSync(page: Page): Promise<void> {
       response.ok(),
     { timeout: 30_000 },
   );
-}
-
-/** Wait for N successful frame sync responses (order not guaranteed). */
-export async function waitForFrameSyncResponses(page: Page, count: number): Promise<void> {
-  for (let index = 0; index < count; index += 1) {
-    await waitForFrameSync(page);
-  }
-}
-
-/** @deprecated Prefer waitForFrameSync — editor may PATCH cells instead of PUT binary. */
-export async function waitForFramePut(page: Page): Promise<void> {
-  await waitForFrameSync(page);
 }
 
 /** Count non-transparent pixels in a frame via the API (reliable after round-trip). */
@@ -397,12 +364,6 @@ export async function mockProjectPicker(
 
 export async function openProjectFromLanding(page: Page): Promise<void> {
   await page.getByRole("button", { name: "Open existing project" }).click();
-  await expect(page.getByLabel("Pixel canvas")).toBeVisible({ timeout: 30_000 });
-  await dismissOnboarding(page);
-}
-
-export async function openProjectFromFileMenu(page: Page): Promise<void> {
-  await clickFileMenuItem(page, "Open");
   await expect(page.getByLabel("Pixel canvas")).toBeVisible({ timeout: 30_000 });
   await dismissOnboarding(page);
 }

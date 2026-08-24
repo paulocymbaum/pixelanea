@@ -4,14 +4,14 @@ import {
   clickFileMenuItem,
   createBlankProject,
   paintStroke,
-  waitForFramePut,
+  waitForFrameSync,
 } from "./helpers";
 
 test.describe("@export", () => {
   test("Export PNG downloads current frame as a valid PNG", async ({ page }) => {
     await createBlankProject(page);
     await paintStroke(page);
-    await waitForFramePut(page);
+    await waitForFrameSync(page);
 
     const downloadPromise = page.waitForEvent("download");
     await clickFileMenuItem(page, "PNG (current frame)");

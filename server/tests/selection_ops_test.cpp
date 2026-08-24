@@ -119,6 +119,7 @@ TEST_CASE("build_move_selection_changes moves rect selection", "[domain][selecti
 }
 
 TEST_CASE("is_cell_in_selection ellipse center cell", "[domain][selection_ops]") {
+  // Keep in lockstep with apps/web selectionGeometry.test.ts golden matrix.
   const SelectionRect selection = ellipse_selection(0, 0, 1, 1);
   REQUIRE(is_cell_in_selection(0, 0, selection));
 }

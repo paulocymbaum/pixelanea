@@ -23,8 +23,22 @@ describe("editorStore paste preview", () => {
     });
   });
 
-  it("startPastePreview anchors to hover cell", () => {
+  it("startPastePreview anchors to selection origin by default", () => {
     useEditorStore.setState({ hoverCell: { x: 2, y: 1 } });
+
+    expect(useEditorStore.getState().startPastePreview()).toBe(true);
+    expect(useEditorStore.getState().pastePreview).toEqual({
+      originX: 0,
+      originY: 0,
+      clipboard,
+    });
+  });
+
+  it("startPastePreview uses hover when there is no selection", () => {
+    useEditorStore.setState({
+      selection: null,
+      hoverCell: { x: 2, y: 1 },
+    });
 
     expect(useEditorStore.getState().startPastePreview()).toBe(true);
     expect(useEditorStore.getState().pastePreview).toEqual({

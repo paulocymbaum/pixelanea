@@ -47,8 +47,13 @@ wait_for_url() {
   return 1
 }
 
-free_port "${API_PORT}"
-free_port "${VITE_PORT}"
+# Prefer the shared helper when present (kills listeners via ss/lsof/fuser).
+if [[ -x "${ROOT_DIR}/scripts/free-ci-ports.sh" ]]; then
+  API_PORT="${API_PORT}" VITE_PORT="${VITE_PORT}" "${ROOT_DIR}/scripts/free-ci-ports.sh" || true
+else
+  free_port "${API_PORT}"
+  free_port "${VITE_PORT}"
+fi
 
 echo "==> Starting API on :${API_PORT}"
 "${BINARY}" &

@@ -32,7 +32,7 @@ void print_cli_usage(std::string_view program) {
             << "  " << program << " export <project.pixelanea> --format png [options]\n"
             << "\n"
             << "Options:\n"
-            << "  --format FORMAT   Export format (only png in this spike)\n"
+            << "  --format FORMAT   Export format (experimental CLI: png only)\n"
             << "  --output PATH     Output file path (default: beside bundle)\n"
             << "  --frame INDEX     Frame index, zero-based (default: 0)\n"
             << "  -h, --help        Show help\n";

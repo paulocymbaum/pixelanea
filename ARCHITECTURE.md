@@ -81,7 +81,8 @@ pixelanea/
 │   ├── stage-linux-desktop.sh    # Shared staging for shell + server + web
 │   ├── test-package-linux.sh     # .deb structure smoke test
 │   ├── test-desktop-shell.sh     # Shell subprocess smoke test
-│   ├── ci-sprint1.sh             # Sprint quality gate
+│   ├── ci.sh                     # CI profiles (sprint, full, …)
+│   ├── ci-sprint1.sh             # Thin alias → ci.sh sprint (prefer pnpm ci:sprint)
 │   └── e2e-webserver.sh          # Stack for Playwright
 ├── ARCHITECTURE.md
 └── README.md
@@ -521,13 +522,13 @@ sequenceDiagram
     participant Export as Bundle I/O
 
     UI->>Canvas: pointer down on cell (3, 5)
-    Canvas->>Store: PaintCellCommand
+    Canvas->>Store: PaintCellsCommand
     Store->>Store: push undo stack, update local grid
     Canvas->>Canvas: re-render cell
 
     Note over Store,API: scheduleFrameSync (debounced) or flush* (explicit)
-    Store->>Store: SyncCoordinator coalesce + serial PUT
-    Store->>API: PUT /frames/0
+    Store->>Store: SyncCoordinator coalesce + serial PUT/PATCH
+    Store->>API: PUT /frames/0 or PATCH cells
     API->>DB: UPDATE frames SET pixel_blob = ...
 
     UI->>API: POST /projects/{id}/save
@@ -561,24 +562,19 @@ Undo is **client-side** for responsiveness:
 
 ```typescript
 interface Command {
-  execute(state: EditorState): void;
-  undo(state: EditorState): void;
+  apply(pixels: Uint8Array, gridWidth: number): void;
+  revert(pixels: Uint8Array, gridWidth: number): void;
 }
 
-// Example
-class PaintCellCommand implements Command {
-  constructor(
-    readonly x: number,
-    readonly y: number,
-    readonly previous: string | null,
-    readonly next: string | null,
-  ) {}
-  // execute / undo swap previous ↔ next
+// Example — batched cell edits (paint stroke, eraser, paste, move)
+class PaintCellsCommand implements Command {
+  constructor(readonly changes: CellChange[]) {}
+  // apply / revert swap previous ↔ next for each cell
 }
 ```
 
 - Stack cap: 500 commands (configurable)
-- Eraser tool produces `ClearCellCommand` (same undo path as paint)
+- Paint and eraser both produce `PaintCellsCommand` via the stroke session (single-cell erase is just a one-cell batch)
 - Save/autosave persists the **resulting grid**, not the full command history (via `SyncCoordinator`; see [Backend sync](#backend-sync-synccoordinator))
 - Optional future: `history_checkpoints` table for session recovery
 
@@ -623,11 +619,12 @@ The architecture supports growth without rewrites:
 
 | Capability | Status | How |
 |------------|--------|-----|
-| Desktop app (Tauri) | **Implemented (Linux)** | `apps/desktop/` launches `pixelanea-server` + embeds `apps/web` build in WebKitGTK |
-| CLI exporter | **Spike (png)** | `pixelanea-cli export project.pixelanea --format png` via `server/export/png_encoder` |
+| Desktop app (Tauri) | **Implemented (Linux + Windows)** | `apps/desktop/` launches `pixelanea-server` + embeds `apps/web`; Linux WebKitGTK, Windows WebView2 + NSIS |
+| CLI exporter | **Experimental (png)** | `pixelanea-cli export project.pixelanea --format png` via `server/export/png_encoder` — PNG-only; not a full export surface |
 | Plugin tools | Supported | Register new `Tool` implementations in `apps/web/tools/` |
 | Layers | Planned | Add `layers` table; extend `Frame` with `layer_id` |
-| GIF/spritesheet export | Supported | `server/export` encoder; UI behind feature flags |
+| GIF export | Supported | Server encoder (`server/export`); File → Export → GIF |
+| Spritesheet export | Supported | Client canvas (`apps/web/src/canvas/exportFrame.ts`); File → Export → spritesheet |
 | Cloud sync (if ever needed) | Deferred | New `persistence` adapter behind repository interface |
 
 ---
@@ -642,9 +639,9 @@ Pixelanea uses three complementary test layers:
 | QA matrices | `apps/web/src/qa/*Matrix.test.tsx` | `pnpm test:qa` | Route guards, import wizard, I/O, animation regressions |
 | E2E | `e2e/*.spec.ts` | `pnpm test:e2e` | Browser smoke (`@smoke`) and navigation (`@routing`) |
 
-Playwright starts the stack via `scripts/e2e-webserver.sh` (C++ API + Vite). The sprint gate script `scripts/ci-sprint1.sh` runs typecheck, QA matrices, unit tests, optional E2E, and backend tests locally.
+Playwright starts the stack via `scripts/e2e-webserver.sh` (C++ API + Vite). Canonical local gate: `pnpm ci:sprint` (`./scripts/ci.sh sprint`; `ci-sprint1.sh` is a thin alias).
 
-Post-MVP UI surfaces are gated in `apps/web/src/content/features.ts` so E2E and manual QA target the minimal shipping chrome by default.
+Onion skin, spritesheet, and GIF export ship enabled in the default UI (no feature-flag module).
 
 ---
 

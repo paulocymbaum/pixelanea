@@ -1,4 +1,3 @@
-import { features } from "@/content/features";
 import { copy } from "@/content/copy";
 import type { useProjectFileActions } from "@/components/project/useProjectFileActions";
 
@@ -53,7 +52,7 @@ export function buildFileMenuItems({
     },
   ];
 
-  if (features.exportSpritesheet && onExportSpritesheet) {
+  if (onExportSpritesheet) {
     exportItems.push({
       type: "item",
       label: copy.fileMenuExportSpritesheet,
@@ -62,7 +61,7 @@ export function buildFileMenuItems({
     });
   }
 
-  if (features.exportGif && onExportGif) {
+  if (onExportGif) {
     exportItems.push({
       type: "item",
       label: copy.fileMenuExportGif,

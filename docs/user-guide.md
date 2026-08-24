@@ -159,7 +159,7 @@ Single-frame projects show an **Add frames for animation** call-to-action on the
 
 The canvas is read-only during playback so you can preview without accidental edits.
 
-> **Note:** Onion skin is implemented but hidden by default in the current release. Enable it in `content/features.ts` for local builds.
+> **Note:** Onion skin is available from the animation player whenever the project has more than one frame.
 
 ## Saving and opening
 
@@ -197,8 +197,8 @@ From the File menu:
 | Format | Contents | Availability |
 |--------|----------|--------------|
 | PNG | Current frame only | Default |
-| PNG spritesheet | All frames in one image | Feature flag (off by default) |
-| GIF | Animated export (server-rendered) | Feature flag (off by default) |
+| PNG spritesheet | All frames in one image (browser canvas) | Default |
+| GIF | Animated export (server-rendered) | Default |
 
 If off-palette pixels exist and palette lock was used, you get a warning before export. Successful exports show a toast with the filename (e.g. **Exported my-art.png.**).
 

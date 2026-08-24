@@ -19,6 +19,8 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 | 10 | `10-e2e-install.sh` | Playwright Chromium (manual `ci e2e` profile only) |
 | 11 | `11-test-e2e.sh` | Full Playwright E2E (local `ci e2e` profile; excludes LinkedIn / `@perf`) |
 | 11a | `11a-test-e2e-smoke-race.sh` | Playwright `@smoke` + `@race` gate (nightly workflow + `ci e2e-nightly`) |
+
+Canonical local smoke+race: `pnpm test:e2e:smoke-race` (same grep as step 11a). Nightly workflow should call the step script only.
 | 12 | `12-smoke-backend.sh` | Live API smoke + lifecycle |
 | 13 | `13-smoke-frontend.sh` | Static UI checks + Vite `/api` proxy |
 | 14 | `14-skill-output-smoke.sh` | Canonical `test.md` / `test_matrix_unit.md` gates (`.cursor/ci-smoke-manifest.txt`) |

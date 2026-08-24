@@ -85,6 +85,34 @@ install_rtk() {
   echo "setup-agent-tools: RTK active — Cursor reloads hooks.json automatically"
 }
 
+# Keep ~/.cursor/skills copies of in-repo skills as symlinks so agents never read stale host copies.
+sync_host_skills() {
+  local repo_skills="${ROOT_DIR}/.cursor/skills"
+  local host_skills="${HOME}/.cursor/skills"
+  mkdir -p "${host_skills}"
+
+  if [[ ! -d "${repo_skills}" ]]; then
+    return 0
+  fi
+
+  echo "setup-agent-tools: linking host skills → repo .cursor/skills..."
+  for skill_dir in "${repo_skills}"/*; do
+    [[ -d "${skill_dir}" ]] || continue
+    local name
+    name="$(basename "${skill_dir}")"
+    local target="${host_skills}/${name}"
+    if [[ -L "${target}" ]]; then
+      ln -sfn "${skill_dir}" "${target}"
+    elif [[ -d "${target}" ]]; then
+      echo "  replacing directory ${target} with symlink"
+      rm -rf "${target}"
+      ln -sfn "${skill_dir}" "${target}"
+    else
+      ln -sfn "${skill_dir}" "${target}"
+    fi
+  done
+}
+
 cd "${ROOT_DIR}"
 
 if [[ "${SKIP_GRAPHIFY}" == "false" ]]; then
@@ -98,6 +126,8 @@ fi
 if [[ "${SKIP_RTK}" == "false" ]]; then
   install_rtk
 fi
+
+sync_host_skills
 
 cat <<EOF
 

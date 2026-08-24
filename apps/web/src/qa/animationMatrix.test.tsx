@@ -25,14 +25,6 @@ import {
   resetAnimationProject,
 } from "./animationMatrixHarness";
 
-vi.mock("@/content/features", () => ({
-  features: {
-    exportSpritesheet: false,
-    exportGif: false,
-    onionSkin: false,
-  },
-}));
-
 vi.mock("@/api/frames", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/api/frames")>();
   return {

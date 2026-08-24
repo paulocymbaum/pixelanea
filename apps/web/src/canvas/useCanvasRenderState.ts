@@ -1,4 +1,3 @@
-import { features } from "@/content/features";
 import { resolveOnionSkinFrameIndex } from "@/canvas/onionSkin";
 import { hasActiveColorFilters } from "@/lib/colorFilters";
 import type { LightingPoint } from "@/lib/colorFilters";
@@ -194,7 +193,7 @@ export function useStrokePreviewRedraw({
       !readOnly && hasActiveColorFilters(colorFilters);
 
     let onionSkinPixels: Uint8Array | undefined;
-    if (features.onionSkin && onionSkinEnabled && frameCount > 1 && !isPlaying) {
+    if (onionSkinEnabled && frameCount > 1 && !isPlaying) {
       const onionIndex = resolveOnionSkinFrameIndex(
         activeFrameIndex,
         frameCount,

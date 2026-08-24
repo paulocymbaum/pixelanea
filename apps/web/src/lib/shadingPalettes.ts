@@ -1,3 +1,5 @@
+import { clamp, hslToRgb, parseHex, rgbToHsl, type Hsl, type Rgb } from "@/lib/colorMath";
+
 export type ShadingStyle = "cell-shading" | "lighting" | "dark";
 
 export const SHADING_STYLES: readonly ShadingStyle[] = [
@@ -5,94 +7,6 @@ export const SHADING_STYLES: readonly ShadingStyle[] = [
   "lighting",
   "dark",
 ] as const;
-
-type Rgb = { r: number; g: number; b: number };
-type Hsl = { h: number; s: number; l: number };
-
-const HEX_PATTERN = /^#?([0-9A-Fa-f]{6})$/;
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function parseHex(hex: string): Rgb | null {
-  const match = HEX_PATTERN.exec(hex.trim());
-  if (!match) {
-    return null;
-  }
-
-  const value = match[1];
-  return {
-    r: Number.parseInt(value.slice(0, 2), 16),
-    g: Number.parseInt(value.slice(2, 4), 16),
-    b: Number.parseInt(value.slice(4, 6), 16),
-  };
-}
-
-function rgbToHsl({ r, g, b }: Rgb): Hsl {
-  const rn = r / 255;
-  const gn = g / 255;
-  const bn = b / 255;
-  const max = Math.max(rn, gn, bn);
-  const min = Math.min(rn, gn, bn);
-  const delta = max - min;
-
-  let h = 0;
-  if (delta !== 0) {
-    if (max === rn) {
-      h = ((gn - bn) / delta) % 6;
-    } else if (max === gn) {
-      h = (bn - rn) / delta + 2;
-    } else {
-      h = (rn - gn) / delta + 4;
-    }
-    h *= 60;
-    if (h < 0) {
-      h += 360;
-    }
-  }
-
-  const l = (max + min) / 2;
-  const s = delta === 0 ? 0 : delta / (1 - Math.abs(2 * l - 1));
-
-  return { h, s, l };
-}
-
-function hslToRgb({ h, s, l }: Hsl): Rgb {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-
-  let rn = 0;
-  let gn = 0;
-  let bn = 0;
-
-  if (h < 60) {
-    rn = c;
-    gn = x;
-  } else if (h < 120) {
-    rn = x;
-    gn = c;
-  } else if (h < 180) {
-    gn = c;
-    bn = x;
-  } else if (h < 240) {
-    gn = x;
-    bn = c;
-  } else if (h < 300) {
-    rn = x;
-    bn = c;
-  } else {
-    rn = c;
-    bn = x;
-  }
-
-  return {
-    r: Math.round((rn + m) * 255),
-    g: Math.round((gn + m) * 255),
-    b: Math.round((bn + m) * 255),
-  };
-}
 
 function rgbToHex({ r, g, b }: Rgb): string {
   const toChannel = (channel: number) =>

@@ -26,13 +26,13 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 
 ### Editor polish
 
-- [x] Onion skin visible by default when animation frames > 1 (`features.onionSkin` + store default; re-enabled on multi-frame load/duplicate)
-- [x] Spritesheet / GIF export enabled by default in shipping `features.ts` when release-ready
+- [x] Onion skin visible by default when animation frames > 1 (store default; re-enabled on multi-frame load/duplicate)
+- [x] Spritesheet / GIF export enabled by default in the File → Export menu
 
 ## Deferred
 
 - snap / flatpak packages
-- Auto-update channel
+- Auto-update **channel** (GitHub Releases productization + code signing) — desktop shell already has experimental updater IPC (`apps/desktop/src-tauri/src/updater.rs`); not shipping until signing + UX are ready
 - Tauri-native file dialogs replacing zenity (see [docs/adr/0002-desktop-file-dialogs.md](./docs/adr/0002-desktop-file-dialogs.md)) — revisit after Windows shell; server-side pickers remain on Linux
 - Cloud sync or accounts
 

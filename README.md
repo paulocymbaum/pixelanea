@@ -224,7 +224,8 @@ pnpm ci:e2e                  # full Playwright (local opt-in)
 pnpm ci:e2e-nightly          # @smoke + @race (matches nightly workflow)
 
 # Sprint gate (subset — see scripts/ci-steps/README.md)
-./scripts/ci-sprint1.sh      # same as ./scripts/ci.sh sprint
+pnpm ci:sprint           # canonical sprint gate (./scripts/ci.sh sprint)
+./scripts/ci-sprint1.sh  # thin alias of the above
 ```
 
 CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke scripts, and **desktop packaging** (`.deb`, DMG, Windows installer) on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Playwright `@smoke` + `@race` runs **nightly** on `main` — see [`.github/workflows/e2e-nightly.yml`](.github/workflows/e2e-nightly.yml). Full Playwright is local opt-in (`pnpm ci:e2e`). Mirror the PR gate locally: `./scripts/ci.sh`. Tagged releases upload the same artifacts to GitHub Releases — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
@@ -270,7 +271,8 @@ pixelanea/
     ├── ci.sh              # CI orchestrator (profiles + per-step)
     ├── ci-lib.sh          # shared CI helpers
     ├── ci-steps/          # 13 observable CI steps (+ README)
-    ├── ci-sprint1.sh      # delegates to ci.sh sprint
+    ├── ci.sh              # CI profiles
+    ├── ci-sprint1.sh      # alias → ci.sh sprint
     └── e2e-webserver.sh   # Stack for Playwright
 ```
 

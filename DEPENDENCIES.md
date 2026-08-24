@@ -670,5 +670,6 @@ pnpm test:desktop-shell
 pnpm test:e2e
 
 # Sprint 1 local gate
-./scripts/ci-sprint1.sh
+./scripts/ci.sh sprint
+# or: pnpm ci:sprint
 ```

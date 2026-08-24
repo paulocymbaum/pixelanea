@@ -112,7 +112,8 @@ Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). S
 - All user-facing strings live in `apps/web/src/content/`.
 - Use plain language — no error codes in toasts.
 - Confirm dialogs only for destructive actions (delete, overwrite, remove in-use color).
-- Post-MVP surfaces can be toggled in `content/features.ts` for experiments — defaults ship spritesheet, GIF, and onion skin.
+- Onion skin, spritesheet, and GIF export ship in the default UI.
+- Experimental headless PNG: `pnpm export:cli` / `pixelanea-cli export` (PNG-only; not the full File → Export surface).
 
 ## Testing
 
@@ -132,7 +133,7 @@ Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). S
 | Windows package | `pnpm test:package:windows` | Touched `package-windows.ps1` or Windows CI job |
 | CLI export | `./scripts/ci-steps/09-test-backend-unit.sh` (filter `[cli][export]`) or `pnpm export:cli -- export …` | Touched `server/src/cli/` or `server/src/export/png_encoder.*` |
 | Desktop shell | `pnpm test:desktop-shell` | Touched `apps/desktop/` or shell launch scripts |
-| Sprint gate | `./scripts/ci-sprint1.sh` or `pnpm ci:sprint` | Before sprint-close PRs |
+| Sprint gate | `pnpm ci:sprint` (`./scripts/ci.sh sprint`) | Before sprint-close PRs |
 
 QA matrix harnesses under `apps/web/src/qa/` encode regression cases from the MVP Gherkin spec. Playwright specs in `e2e/` cover `@smoke`, `@race`, `@routing`, `@sync`, `@export`, `@import`, and palette rail scenarios; `playwright.config.ts` starts the stack via `scripts/e2e-webserver.sh` (or reuses an existing dev server locally). Nightly CI runs `@smoke` + `@race` only (see `.github/workflows/e2e-nightly.yml`). Run the full Playwright suite before batch closes or when touching status bar, routing guards, import/export, or palette panel.
 
