@@ -27,6 +27,7 @@
     "test:unit": "pnpm --filter @pixelanea/web test",
     "test:unit:watch": "pnpm --filter @pixelanea/web test:watch",
     "test:qa": "pnpm --filter @pixelanea/web exec vitest run src/qa/",
+    "test:skill-smoke": "./scripts/run-skill-output-smoke.sh",
     "test:e2e": "./scripts/e2e-playwright.sh",
     "test:e2e:install": "./scripts/e2e-install.sh",
     "test:smoke:backend": "./scripts/test-backend.sh",

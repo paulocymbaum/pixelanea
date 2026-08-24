@@ -20,6 +20,7 @@ Each file is one observable gate. GitHub Actions runs them individually; locally
 | 11 | `11-test-e2e.sh` | Playwright E2E (manual `ci e2e` profile only) |
 | 12 | `12-smoke-backend.sh` | Live API smoke + lifecycle |
 | 13 | `13-smoke-frontend.sh` | Static UI checks + Vite `/api` proxy |
+| 14 | `14-skill-output-smoke.sh` | Canonical `test.md` / `test_matrix_unit.md` gates (`.cursor/ci-smoke-manifest.txt`) |
 
 Shared helpers live in `../ci-lib.sh`.
 

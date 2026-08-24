@@ -355,6 +355,7 @@ Tools print a human banner on **stderr** and structured results on **stdout**. O
 | `search_frontend_elements.py` | Fuzzy symbol search scoped to an `apps/web/src` layer (`shell`, `canvas`, `state`, …). Prefer after graphify when the layer is known but the file is not. `--list-layers` for the catalog. |
 | `search_backend_elements.py` | Same idea for `server/` layers (`domain`, `db`, `api`, `export`, `image`, …). Aliases like `handlers` → `api`. |
 | `sync_paint_matrix_status.py` | Paint-matrix helper: runs vitest (or reads JSON), maps `[HP-001]`-style IDs to Status/Notes in the paint `test_matrix_unit.md`. Keeps the living matrix aligned with automated unit results. |
+| `run_skill_output_smoke.py` | CI/local gate: reads [`.cursor/ci-smoke-manifest.txt`](../ci-smoke-manifest.txt), runs `test.md` **Automated** bash blocks and verifies matrix Status cells (no open `[ ]` / `[!]`). |
 
 ### `skill-outputs/` — Runtime delivery store
 
@@ -384,6 +385,69 @@ Treat the newest timestamped folder for a feature/layer as the working set unles
 ```
 
 Use changelog when the artifact is meant for humans planning releases or running E2E; use skill-outputs when the artifact feeds another agent loop (matrix Status, loop sensors, step chains).
+
+---
+
+## Fast path (when **not** to loop)
+
+Use the full harness (recursive-implementer + `loop_management.js` + scored review) for multi-file features, cross-layer work, or anything that must hit EVALUATION ≥ 95 before merge.
+
+**Use the fast path** — single `skill-implementer` stroke or direct edit + lint — when **all** of these hold:
+
+| Signal | Example |
+|--------|---------|
+| One file (or docs-only) | typo, comment, `HARNESS.md` section |
+| No API / schema / bundle change | no OpenAPI, migrations, manifest |
+| No new user-visible behavior | copy tweak, rule wording |
+| Proof = lint or one command | `pnpm lint`, `vitest run one-file` |
+
+**Do not** spawn recursive-implementer for the rows above — loop overhead exceeds delivery size.
+
+| Fast path | Tooling |
+|-----------|---------|
+| Docs / rules / harness | Edit + `pnpm lint` or `pnpm run lint` |
+| Single-module fix | `skill-implementer` once (no loop folder) |
+| Post-delivery proof | `test.md` in the skill run folder, or canonical CI smoke (below) |
+
+When in doubt: if the task fits in one PR hunk and one test command, skip the loop.
+
+---
+
+## CI smoke for skill outputs (Batch 3 gate)
+
+Durable proof lives in files, not chat EVALUATION scores. CI runs a **light manifest** — not a full agent loop.
+
+| Piece | Path |
+|-------|------|
+| Manifest | [`.cursor/ci-smoke-manifest.txt`](.cursor/ci-smoke-manifest.txt) |
+| Runner | [`scripts/run-skill-output-smoke.sh`](../scripts/run-skill-output-smoke.sh) → [`.cursor/tools/run_skill_output_smoke.py`](.cursor/tools/run_skill_output_smoke.py) |
+| CI step | `scripts/ci-steps/14-skill-output-smoke.sh` (GitHub Actions `build` job, after unit tests) |
+| Local | `pnpm test:skill-smoke` or `./scripts/ci.sh fast` |
+
+**Manifest entry types**
+
+| Type | Gate |
+|------|------|
+| `test-md` | Run bash blocks under `## Automated` in the listed `test.md` (skips `cargo` when Rust toolchain absent) |
+| `matrix` | Fail if any case Status is `[ ]` or `[!]` |
+
+After a shippable skill run becomes the regression anchor for a feature, add or replace its path in the manifest. Keep the list short (1–3 entries).
+
+---
+
+## Graphify hygiene
+
+Graphify is mandatory for exploration, but broad queries return noisy hubs (`string`, `json`, package.json keys) that waste context.
+
+| Practice | Why |
+|----------|-----|
+| Start with `graphify query "<specific question>" --budget N` | Avoid 200-node truncations |
+| Use `graphify path A B` / `explain concept` for traces | Narrower than BFS from generic terms |
+| Prefer layer search when the layer is known | [`search_*_elements.py`](tools/search_frontend_elements.py) |
+| Run `pnpm graphify:update` after code edits | Keeps AST graph current (no API cost) |
+| Ignore generic community hubs in `GRAPH_REPORT.md` | Hubs ≠ architecture; follow EXTRACTED edges to real files |
+
+If orientation still fails after a narrowed query, read the identified file directly — do not re-run the same broad query with a higher budget.
 
 ---
 

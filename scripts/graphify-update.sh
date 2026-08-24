@@ -26,3 +26,4 @@ if [[ "${SKIP_GRAPHIFY_CLUSTER:-}" != "1" ]]; then
 fi
 
 echo "graphify-update: done (graphify-out/)"
+echo "graphify-update: if graph hubs look noisy (e.g. generic 'string' nodes), narrow queries with --budget or context_filter; see HARNESS.md § Graphify hygiene."

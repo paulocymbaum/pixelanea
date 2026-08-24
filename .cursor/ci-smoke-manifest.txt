@@ -1,0 +1,9 @@
+# Canonical skill-output smoke sources for CI (scripts/run-skill-output-smoke.sh).
+# One entry per line: TYPE<TAB>PATH
+#   test-md  — run ## Automated bash blocks from test.md
+#   matrix   — fail if any case Status is [ ] or [!]
+#
+# Update when a delivery becomes the regression anchor for a feature area.
+
+test-md	.cursor/skill-outputs/editor/state/20260824T013858_pixelanea-frontend-standards/test.md
+matrix	.cursor/skill-outputs/qa/paint/20260731T223100_test-matrix-unit/test_matrix_unit.md

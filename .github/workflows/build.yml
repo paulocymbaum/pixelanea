@@ -95,6 +95,9 @@ jobs:
       - name: Frontend unit tests
         run: ./scripts/ci-steps/06-test-unit.sh
 
+      - name: Skill-output smoke (canonical test.md / matrix)
+        run: ./scripts/ci-steps/14-skill-output-smoke.sh
+
       - name: Build frontend
         run: ./scripts/ci-steps/07-build-web.sh
 
