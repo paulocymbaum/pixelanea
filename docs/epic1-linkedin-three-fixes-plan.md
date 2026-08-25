@@ -1,5 +1,7 @@
 # Epic 1 LinkedIn rewrite plan — three fixes
 
+> **Superseded for full Epic 1 ship:** use [`docs/epic1-linkedin-five-fixes-plan.md`](./epic1-linkedin-five-fixes-plan.md) (adds packaging spine + wiring cut). Keep this file as the detailed edit map for metaphor / CTA / proof sub-steps.
+
 **Target file:** `docs/loop-engineering-control-loop-linkedin.md`  
 **Scope:** Metaphor pile-up, weak CTA, proof asserted. Do not mix in the other review items yet (length cut, wiring section split) unless they collide.
 
