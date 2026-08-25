@@ -37,12 +37,12 @@ Do not ship Part 1 until steps 1–5 pass the acceptance checklist below.
 
 | Decision | Recommendation | Owner fills |
 |----------|----------------|-------------|
-| Proof stance | **A — Still testing** unless inventory yields ≥1 real metric or residual-error story | A / B |
-| Single CTA ask | **Comment** your one-sentence stop condition (algorithm-friendly) | Comment / clone |
-| Single primary link | `https://github.com/paulocymbaum/pixelanea` | Confirm URL |
-| Series shape | **Epic 1a–1c product posts → 1d essay → 1e Part 2 (wiring)** | Confirm |
-| Part 2 home | LinkedIn follow-up *or* link to published `recursive-agent-loop-spec` / gist | Choose |
-| Mermaid | Replace with **one static PNG** (or table-only) before publish — track as sub-task of step 3 | PNG / table-only |
+| Proof stance | **A — Still testing** unless inventory yields ≥1 real metric or residual-error story | **A** (locked) |
+| Single CTA ask | **Comment** your one-sentence stop condition (algorithm-friendly) | **Comment** (locked) |
+| Single primary link | `https://github.com/paulocymbaum/pixelanea` | **`https://github.com/pixelanea/pixelanea`** (README canonical) |
+| Series shape | **Epic 1a–1c product posts → 1d essay → 1e Part 2 (wiring)** | **Locked** |
+| Part 2 home | LinkedIn follow-up *or* link to published `recursive-agent-loop-spec` / gist | **Both:** tease + link to `docs/recursive-agent-loop-spec.md` |
+| Mermaid | Replace with **one static PNG** (or table-only) before publish — track as sub-task of step 3 | **Table-only** (locked) |
 
 ---
 
@@ -276,16 +276,16 @@ Everything currently in “Wiring the plant” and most of nested cascade prose 
 
 ## Acceptance checklist
 
-- [ ] Stance A/B locked; subtitle and close agree  
-- [ ] “123” verified or removed; “hypothesis held” gone or evidence-backed  
-- [ ] ≥1 imperfect concrete disturbance cycle in Part 1  
-- [ ] Only thermostat as extended metaphor; one mapping table  
-- [ ] No cruise / refinery / strain-gauge / craftsmen / flight-instrument language  
-- [ ] “Wiring the plant” removed from Part 1 (or ≤3 sentences + link)  
-- [ ] Part 2 tease + destination present  
-- [ ] Hashtags gone; one ask; one primary link  
-- [ ] Media doc lists 1a→1e order and bridge sentence in captions  
-- [ ] Part 1 word count roughly 900–1,200 (≤1,400 hard ceiling)
+- [x] Stance A/B locked; subtitle and close agree  
+- [x] “123” verified or removed; “hypothesis held” gone or evidence-backed  
+- [x] ≥1 imperfect concrete disturbance cycle in Part 1  
+- [x] Only thermostat as extended metaphor; one mapping table  
+- [x] No cruise / refinery / strain-gauge / craftsmen / flight-instrument language  
+- [x] “Wiring the plant” removed from Part 1 (or ≤3 sentences + link)  
+- [x] Part 2 tease + destination present  
+- [x] Hashtags gone; one ask; one primary link  
+- [x] Media doc lists 1a→1e order and bridge sentence in captions  
+- [x] Part 1 word count roughly 900–1,200 (≤1,400 hard ceiling)
 
 ---
 
