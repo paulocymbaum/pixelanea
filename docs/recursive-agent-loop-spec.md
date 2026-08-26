@@ -14,7 +14,7 @@ A single agent turn is unreliable for multi-step delivery:
 - Chat context resets between sessions.
 - "Done" is subjective unless defined and checked mechanically.
 
-**Solution:** a supervisor agent runs a bounded loop. After each worker run, a script reads persisted output and returns `continue` or `stop`. The supervisor delegates again only when the script says so.
+**Solution:** a supervisor agent runs a bounded loop. After each worker run, `run_runners.sh` records CI step exits under `loop/runners/`, and a decision script returns `continue` or `stop` with an explicit `status` (`complete` | `continue` | `capped` | `interrupted`). Cap ≠ complete. The supervisor delegates again only when the script says so.
 
 ---
 
@@ -32,8 +32,8 @@ A single agent turn is unreliable for multi-step delivery:
                ▼                               ▼
 ┌──────────────────────────┐    ┌─────────────────────────────┐
 │  Worker agent            │    │  Decision script            │
-│  - Executes a skill      │    │  - Reads last response file │
-│  - Writes skill outputs  │    │  - Returns JSON decision    │
+│  - Executes a skill      │    │  - Reads loop/runners JSON  │
+│  - Writes skill outputs  │    │  - Returns JSON + status    │
 │  - Returns full response │    │  - Updates iteration state  │
 └──────────────┬───────────┘    └─────────────────────────────┘
                │
@@ -94,7 +94,7 @@ Setup: `pnpm agent-tools:setup`.
 
 | Script | Input | Use when |
 |--------|-------|----------|
-| `.cursor/tools/loop_management.js` | `loop/loop_config.json` + `last_agent_response.md` | Completion is checked by grep/bash on agent text |
+| `.cursor/tools/loop_management.js` | `loop/loop_config.json` + `loop/runners/*.json` | Completion is checked by CI runner sensors (not agent prose) |
 | `.cursor/tools/orchestrate_unit_test_matrix.py` | `test_matrix_unit.md` | Completion is checked by matrix Status column |
 
 Both scripts print a human banner on **stderr** and a JSON object on **stdout**. Orchestrators must parse stdout.
@@ -112,7 +112,7 @@ All deliverables and loop state live under `.cursor/skill-outputs/`. See `.curso
   01_investigation.md
   02_plan.md
   03_{step-slug}.md
-  {NN}_code-review.md          # includes EVALUATION score 0–100
+  {NN}_code-review.md          # CRITIC: PASS|FAIL (optional next-context; not stop bit)
 ```
 
 ### Orchestration run folder (loops)
@@ -121,11 +121,17 @@ All deliverables and loop state live under `.cursor/skill-outputs/`. See `.curso
 .cursor/skill-outputs/orchestration/{feature}/{timestamp}_{orchestrator-name}/
   01_setup-loop.md               # optional setup notes
   loop/
-    loop_config.json             # paths, cap, prompts
-    check_condition.sh           # bash: exit 0 = done (generic loops only)
+    loop_config.json             # paths, cap, prompts, harness_profile
+    check_condition.sh           # bash: exit 0/1/2 from loop/runners/
     stop_condition.md            # one-sentence definition of exit 0
-    last_agent_response.md       # full worker output; overwritten each iteration
+    last_agent_response.md       # critic/context; overwritten each iteration — not the sensor
     loop_iteration.json          # written by loop_management.js
+    runners/                     # written only by run_runners.sh / check helper
+      lint.json
+      unit.json
+      e2e.json                   # Deliver profile only
+      summary.json
+      logs/
 ```
 
 **Rule:** loop artifacts stay inside `loop/` under the run folder. Do not store loop state in `.cursor/tools/`, the repo root, or application source trees.
@@ -134,28 +140,28 @@ All deliverables and loop state live under `.cursor/skill-outputs/`. See `.curso
 
 ## Generic loop: `loop_management.js`
 
-Use this pattern when "done" is defined on **text output** from the previous agent (scores, markers, phrases).
+Use this pattern when "done" is defined on **plant sensors** under `loop/runners/` (CI step exits). `last_agent_response.md` is critic/context only.
+
+### Develop vs Deliver
+
+| Profile | Required runners | Commands |
+|---------|------------------|----------|
+| **Develop** (recursive-implementer default) | `lint.json`, `unit.json` | `./scripts/ci.sh 03-lint`, `04-typecheck`, `06-test-unit` (+ `09-test-backend-unit` when `server/` in scope) |
+| **Deliver** (QA gate) | + `e2e.json` | `./scripts/ci.sh e2e` (or `e2e-nightly`) |
+
+Sensor catalog: [scripts/ci-steps/README.md](../scripts/ci-steps/README.md).
 
 ### Bash check contract
 
-`loop/check_condition.sh` receives `RESPONSE_FILE` (alias `LOOP_RESPONSE_FILE`) pointing at `last_agent_response.md`.
+`loop/check_condition.sh` reads `loop/runners/*.json` (via `check_runner_gate.js`). It must **ignore** `EVALUATION`, `STATUS: complete`, and critic phrases in `RESPONSE_FILE`.
 
-| Exit code | Meaning | Orchestrator action |
-|-----------|---------|---------------------|
-| `0` | Done | Stop loop |
-| non-zero | Not done | Continue loop |
-| `2` | Misconfiguration (missing file) | Treat as error; fix artifacts |
+| Exit code | Meaning | `status` | Orchestrator action |
+|-----------|---------|----------|---------------------|
+| `0` | Required runners green | `complete` | Stop loop |
+| `1` | At least one required runner red | `continue` | Continue loop |
+| `2` | Misconfiguration (missing `runners/`, bad JSON) | `interrupted` | Stop; fix artifacts |
 
-Example checks:
-
-```bash
-# Explicit marker
-grep -qE '^\s*STATUS:\s*complete\s*$' "${RESPONSE_FILE}" && exit 0
-
-# Score threshold (recursive-implementer default)
-score="$(grep -oE 'EVALUATION[^0-9]*[0-9]+' "${RESPONSE_FILE}" | grep -oE '[0-9]+$' | tail -1)"
-[[ -n "${score}" && "${score}" -ge 95 ]] || exit 1
-```
+Preferred split: `run_runners.sh` writes JSON (timeout lives there); `check_condition.sh` only reads.
 
 ### `loop_config.json` fields
 
@@ -164,10 +170,13 @@ score="$(grep -oE 'EVALUATION[^0-9]*[0-9]+' "${RESPONSE_FILE}" | grep -oE '[0-9]
 | `name` | yes | Loop identifier |
 | `check_script` | yes | Repo-relative path to `check_condition.sh` |
 | `response_file` | yes | Repo-relative path to `last_agent_response.md` |
-| `max_iterations` | no | Default `5` |
+| `max_iterations` | no | Default `5` — cap → `status: capped`, never complete |
 | `iteration_file` | no | Path to `loop_iteration.json` |
+| `harness_profile` | no | `develop` or `deliver` |
+| `auto_run_runners` | no | Invoke `run_runners.sh` when summary is stale |
+| `include_backend` | no | Fold backend unit into `unit.json` |
 | `stop_reason` | no | Message when check exits 0 |
-| `continue_reason` | no | Message when check exits non-zero |
+| `continue_reason` | no | Message when check exits 1 |
 | `next_prompt` | no | Default prompt for next worker (orchestrator may override) |
 
 ### Decision JSON (`loop_management.js` stdout)
@@ -175,7 +184,8 @@ score="$(grep -oE 'EVALUATION[^0-9]*[0-9]+' "${RESPONSE_FILE}" | grep -oE '[0-9]
 | Field | Type | Meaning |
 |-------|------|---------|
 | `continue_loop` | boolean | `true` → delegate again; `false` → stop |
-| `action` | `"continue"` \| `"stop"` | Same as above |
+| `status` | `"complete"` \| `"continue"` \| `"capped"` \| `"interrupted"` | Exit class |
+| `action` | `"continue"` \| `"stop"` | Same as continue_loop |
 | `reason` | string | Why this decision was made |
 | `iteration` | number | Current iteration (incremented on continue) |
 | `max_iterations` | number | Cap from config |
@@ -210,20 +220,23 @@ node .cursor/tools/loop_management.js \
 3. Report to user: iterations used, stop reason, final score/artifacts
 ```
 
-**Iteration cap:** when `iteration >= max_iterations`, the script returns `continue_loop: false` with `max_iterations_exceeded: true`. Report residual work; do not loop forever.
+**Iteration cap:** when `iteration >= max_iterations`, the script returns `continue_loop: false` with `status: "capped"` and `max_iterations_exceeded: true`. Cap ≠ complete — report residual red runners; do not loop forever.
 
 ---
 
 ## Reference implementation: recursive skill delivery
 
-`AGENT-recursive-implementer` is the canonical generic loop. It delegates to `skill-implementer` until delivery passes a review gate.
+`AGENT-recursive-implementer` is the canonical Develop loop. It delegates to `skill-implementer` until **CI runners** are green.
 
 ### Completion condition (default)
 
-All must hold in `last_agent_response.md`:
+Required files under `loop/runners/` must be green:
 
-1. `EVALUATION` score ≥ **95**, **or** line `STATUS: complete` is present
-2. No unresolved **Critical** findings in the code-review Outcome (bash grep with negation allowances)
+1. `lint.json` exit 0
+2. `unit.json` exit 0
+3. (Deliver only) `e2e.json` exit 0
+
+`{NN}_code-review.md` critic (`CRITIC: PASS|FAIL`) is optional context for the next stroke. `loop/last_agent_response.md` is **not** the sensor.
 
 Override only when the user defines a different gate — document it in `stop_condition.md` and implement it in `check_condition.sh`.
 
@@ -234,16 +247,16 @@ Override only when the user defines a different gate — document it in `stop_co
 1. **Investigate** → `01_investigation.md`
 2. **Plan** → `02_plan.md`
 3. **Implement** → `03_*.md` … (mark backlog In progress before coding)
-4. **Code review** → `{NN}_code-review.md` with **EVALUATION** 0–100
+4. **Code review** → `{NN}_code-review.md` with **CRITIC: PASS|FAIL**
 
-### Prompt strategy
+### Prompt strategy (continue pack order)
 
 | Iteration | Prompt focus |
 |-----------|--------------|
-| 1 | Full skill path, user goal, output folder, request `STATUS: complete` when perfect |
-| 2+ | Prior score, delivered summary, open Critical/Warnings; fix deltas only — do not restart unless investigation requires it |
+| 1 | Full skill path, user goal, output folder; remind that runners (not EVALUATION) are the stop bit |
+| 2+ | Setpoint → `summary.json` → failing log tails → optional CRITIC notes; fix deltas only |
 
-Extract score and issues from `last_agent_response.md` before building iteration 2+ prompts.
+Do not lead continuation prompts with a numeric EVALUATION.
 
 ### Anti-patterns
 
@@ -307,14 +320,14 @@ Same loop shape: run script → if `call_subagent` → delegate → persist matr
 Run loops from **cheap self-check** to **expensive independent validation**:
 
 ```text
-1. skill-implementer review gate     (EVALUATION ≥ 95, inner loop)
+1. Develop runners (lint + unit)     (recursive-implementer inner loop)
         ↓
 2. unit test matrix                  (orchestrate_unit_test_matrix.py)
         ↓
-3. Gherkin / E2E                     (qa-gherkin-run skill)
+3. Deliver / Gherkin E2E             (qa-gherkin-run / Playwright)
 ```
 
-Inner loop (recursive-implementer) catches quality issues before outer loops spend time on full test execution. Case IDs should trace across contract → harness → matrix → Gherkin so each layer validates the same claims.
+Inner loop (recursive-implementer) uses cheap CI step sensors before outer loops spend time on Playwright. Matrix Status cells remain the matrix orchestrator's input — agent `[x]` is not lint/unit green. Case IDs should trace across contract → harness → matrix → Gherkin so each layer validates the same claims.
 
 ---
 
@@ -322,20 +335,22 @@ Inner loop (recursive-implementer) catches quality issues before outer loops spe
 
 1. **Define done** in one sentence (`stop_condition.md`).
 2. **Choose decision layer:**
-   - Text/markers on agent output → `loop_management.js` + `check_condition.sh`
+   - CI runners under `loop/runners/` → `run_runners.sh` + `loop_management.js` + `check_condition.sh`
    - Structured file (matrix, JSON report) → dedicated Python script
 3. **Pick worker** and skill (`skill-implementer`, test-matrix-unit, etc.).
-4. **Materialize** run folder under `.cursor/skill-outputs/orchestration/.../loop/`.
-5. **Set** `max_iterations` (default 5).
+4. **Materialize** run folder under `.cursor/skill-outputs/orchestration/.../loop/` (including `runners/`).
+5. **Set** `max_iterations` (default 5) and `harness_profile` (`develop`|`deliver`).
 6. **Implement supervisor agent** or follow `loop-management` skill (`.cursor/skills/loop-management/SKILL.md`).
-7. **Test** the bash check in isolation before running the full loop:
+7. **Test** the gate with fixture JSON (no product build required):
 
    ```bash
-   RESPONSE_FILE=path/to/last_agent_response.md bash loop/check_condition.sh
-   echo $?   # 0 = would stop, non-zero = would continue
+   node .cursor/tools/check_runner_gate.test.js
+   # or:
+   node .cursor/tools/check_runner_gate.js --runners-dir path/to/loop/runners
+   echo $?   # 0 = complete, 1 = continue, 2 = interrupted
    ```
 
-Templates: `.cursor/skills/loop-management/check_condition.template.sh`, `loop_config.template.json`, `stop_condition.template.md`.
+Templates: `.cursor/skills/loop-management/check_condition.template.sh`, `run_runners.template.sh`, `loop_config.template.json`, `stop_condition.template.md`.
 
 ---
 
@@ -343,7 +358,7 @@ Templates: `.cursor/skills/loop-management/check_condition.template.sh`, `loop_c
 
 | Goal | Invoke | Decision script |
 |------|--------|-----------------|
-| Deliver a skill with auto-retry until review passes | `AGENT-recursive-implementer` | `loop_management.js` |
+| Deliver a skill with auto-retry until Develop runners pass | `AGENT-recursive-implementer` | `loop_management.js` + `run_runners.sh` |
 | Stabilize a unit test matrix | `TEST-AGENT-unit-test-matrix-generator` | `orchestrate_unit_test_matrix.py` |
 | One-shot skill run (no loop) | `skill-implementer` | — |
 | Custom loop | Follow `loop-management` skill | `loop_management.js` |

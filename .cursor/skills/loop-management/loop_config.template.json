@@ -1,10 +1,13 @@
 {
   "name": "{LOOP_NAME}",
   "max_iterations": 5,
+  "harness_profile": "develop",
+  "auto_run_runners": true,
+  "include_backend": false,
   "check_script": ".cursor/skill-outputs/{feature}/{layer}/{timestamp}_loop-management/loop/check_condition.sh",
   "response_file": ".cursor/skill-outputs/{feature}/{layer}/{timestamp}_loop-management/loop/last_agent_response.md",
   "iteration_file": ".cursor/skill-outputs/{feature}/{layer}/{timestamp}_loop-management/loop/loop_iteration.json",
-  "stop_reason": "Loop goal achieved — check script exited 0.",
-  "continue_reason": "Loop goal not yet achieved — check script exited non-zero.",
-  "next_prompt": "Continue the loop. Read the previous response at {response_file} and complete the next step toward the loop goal."
+  "stop_reason": "Required CI runners in loop/runners/ are green (status=complete).",
+  "continue_reason": "Required CI runners still red — continue with summary.json + failing tails.",
+  "next_prompt": "Continue the loop. Read loop/runners/summary.json and failing log tails first, then optional CRITIC notes in last_agent_response.md. Do not treat EVALUATION as the stop bit."
 }

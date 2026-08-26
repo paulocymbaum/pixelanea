@@ -6,7 +6,7 @@ The **Cursor harness** is Pixelanea’s in-repo system for running multi-step ag
 
 - One agent turn is unreliable for investigate → plan → implement → review, or for “run tests until green.”
 - Context resets between sessions; files under `.cursor/` are the shared memory.
-- “Done” must be checkable (EVALUATION score, matrix Status cells, bash grep) so supervisors can loop safely with a cap.
+- “Done” must be checkable (CI runner JSON under `loop/runners/`, matrix Status cells) so supervisors can loop safely with a cap. Cap ≠ complete.
 
 **Roles at a glance**
 
@@ -90,9 +90,11 @@ flowchart LR
 
 ### 2 — Recursive skill delivery
 
-**Purpose:** Run a chosen skill end-to-end and **retry until quality gates pass** (or hit `max_iterations`, default 5), without the supervisor rewriting code itself.
+**Purpose:** Run a chosen skill end-to-end and **retry until Develop CI runners are green** (or hit `max_iterations`, default 5), without the supervisor rewriting code itself.
 
-**Separation:** The supervisor owns the loop. The worker (`skill-implementer`) owns investigation, planning, code, and a scored review. `loop_management.js` + `check_condition.sh` decide continue vs stop from **persisted text**, not vibes.
+**Separation:** The supervisor owns the loop. The worker (`skill-implementer`) owns investigation, planning, code, and an optional critic. `run_runners.sh` writes `loop/runners/*.json` from real CI steps; `check_condition.sh` + `loop_management.js` decide continue vs stop from **those sensors**, not model prose. Cap ≠ complete.
+
+**Develop vs Deliver:** recursive strokes use lint + unit (`./scripts/ci.sh 03-lint`, `04-typecheck`, `06-test-unit`, optional `09-test-backend-unit`). Playwright / `./scripts/ci.sh e2e` belongs to the Deliver QA gate — not every recursive stroke. Sensor catalog: [scripts/ci-steps/README.md](scripts/ci-steps/README.md).
 
 ```mermaid
 flowchart TD
@@ -100,22 +102,27 @@ flowchart TD
   RI --> Mat["skill-outputs/orchestration/.../loop/*"]
   Mat --> LM["tools/loop_management.js"]
   LM -->|continue| SI[skill-implementer]
-  LM -->|stop / cap| Done([Report to user])
+  LM -->|complete / capped / interrupted| Done([Report to user])
   SI --> Skill[skills/*/SKILL.md]
   SI --> Steps["skill-outputs/{feature}/{layer}/{ts}_*/{NN}_*.md"]
-  SI --> Review[".../{NN}_code-review.md + EVALUATION"]
+  SI --> Review[".../{NN}_code-review.md + CRITIC"]
   SI -->|write full response| Last["loop/last_agent_response.md"]
-  Last --> LM
+  Last --> Runners["run_runners.sh → loop/runners/*.json"]
+  Runners --> LM
   Steps -.-> TW[TEST-AGENT-test-writer]
   TW --> TestMd["same run folder / test.md"]
 ```
 
-**Default stop gate** (`check_condition.sh` exit 0 when all hold):
+**Default stop gate (Develop)** — `check_condition.sh` exit 0 only when required files under `loop/runners/` are green:
 
-1. `EVALUATION` ≥ **95**, **or** a line `STATUS: complete`
-2. No unresolved **Critical** findings in the review Outcome (allow “no critical” phrasing)
+1. `lint.json` exit 0 (`03-lint` + `04-typecheck`)
+2. `unit.json` exit 0 (`06-test-unit`; + `09-test-backend-unit` when `server/` is in scope)
 
-**Per iteration (worker):** `01_investigation.md` → `02_plan.md` → implement step(s) → `{NN}_code-review.md` with **EVALUATION 0–100**. Full chat response is copied to `loop/last_agent_response.md` before the decision script runs.
+Ignore `EVALUATION`, `STATUS: complete`, and critic phrases in `last_agent_response.md` for the stop bit. Optional `CRITIC: PASS|FAIL` feeds the **next** context after runner tails and never greens a red runner.
+
+**Statuses:** `complete` | `continue` | `capped` | `interrupted` — encoded in decision JSON and `summary.json`.
+
+**Per iteration (worker):** `01_investigation.md` → `02_plan.md` → implement step(s) → `{NN}_code-review.md` with **CRITIC: PASS|FAIL**. Full chat response is copied to `loop/last_agent_response.md`; then runners are refreshed before the decision script reads them.
 
 **Templates:** copy from `skills/loop-management/*.template.*` into the run’s `loop/` folder on first materialization.  
 **Optional follow-up:** test-writer adds `test.md` so humans/CI can re-validate without re-reading every step file.
@@ -199,7 +206,7 @@ flowchart TD
 
 **Always applied on every stroke:** `graphify.mdc`, `pixelanea-token-efficiency.mdc`, `pixelanea-core.mdc` (dependency direction), plus frontend globs when touching `apps/web`.  
 **References:** `reference.md` beside each standards skill holds the long-form checklist; `SKILL.md` is the executable playbook.  
-**For automatic retries until EVALUATION ≥ 95:** wrap with recursive-implementer (workflow 2) instead of a single stroke.
+**For automatic retries until Develop runners are green:** wrap with recursive-implementer (workflow 2) instead of a single stroke.
 
 ---
 
@@ -249,16 +256,17 @@ Orchestration loops often use:
 | Artifact | Producer | Detailed role |
 |----------|----------|---------------|
 | `{NN}_{step-slug}.md` | skill-implementer, standards skills | Atomic step record: **Goal** (one sentence), **Outcome** (decisions/changes, no code dumps), **Files** (paths touched). Numbered so a run is replayable in order (`01_investigation`, `02_plan`, …). |
-| `{NN}_code-review.md` | skill-implementer | Scored review of the delivery; must include **EVALUATION** 0–100 and severity findings. Recursive loop greps this via `last_agent_response.md`. |
+| `{NN}_code-review.md` | skill-implementer | Critic review of the delivery; must include **CRITIC: PASS** or **CRITIC: FAIL** plus severity findings. Optional next-stroke context — not the stop sensor. |
 | `test.md` | test-writer | Executable validation guide for the run folder: commands, expected UI/API signals, what “pass” means. Written only after inspecting real delivered code. |
 | `test_matrix_unit.md` | test-matrix-unit | Living table of cases (happy path, race, edge, error) with Status cells the decision script parses. Updated after every matrix execution. |
 | `gherkin.md` | qa-e2e-gherkin | Optional sibling of a matrix in skill-outputs; often mirrored under changelog for Playwright runs. |
 | `qa_run_report.md` | qa-gherkin-run | Per-scenario pass/fail plus UX flag colors and short rationale. |
 | `loop/loop_config.json` | loop-management / recursive-implementer | Machine config: check script path, response file path, `max_iterations`, reasons, optional `next_prompt`. Paths must stay under the same `loop/` directory. |
-| `loop/check_condition.sh` | loop-management | Bash sensor: exit **0** = stop, non-zero = continue, **2** = misconfigured (missing response file). Reads only `RESPONSE_FILE` / `LOOP_RESPONSE_FILE`. |
+| `loop/check_condition.sh` | loop-management | Bash sensor: exit **0** = complete, **1** = continue, **2** = interrupted. Reads `loop/runners/*.json`; ignores EVALUATION / STATUS in `RESPONSE_FILE`. |
+| `loop/runners/*.json` | `run_runners.sh` (only) | Plant sensors: `lint.json`, `unit.json`, optional `e2e.json`, `summary.json` + truncated logs. |
 | `loop/stop_condition.md` | loop-management | Human one-liner documenting what exit 0 means (for reviewers and future agents). |
-| `loop/last_agent_response.md` | orchestrator each iteration | Full worker stdout/prose for that stroke; **overwritten** each loop. Sole text input to `check_condition.sh`. |
-| `loop/loop_iteration.json` | `loop_management.js` | Tool-managed iteration counter; enforces the cap (`max_iterations_exceeded`). |
+| `loop/last_agent_response.md` | orchestrator each iteration | Full worker stdout/prose for that stroke; **overwritten** each loop. Critic/context for the next stroke — not the stop sensor. |
+| `loop/loop_iteration.json` | `loop_management.js` | Tool-managed iteration counter; enforces the cap (`status: capped`, never implies complete). |
 
 **Step file discipline:** one concern per file; keep Outcomes concise and link paths. Chat may summarize; the folder is authoritative.
 
@@ -299,7 +307,7 @@ Each file is a Cursor agent definition (YAML frontmatter + instructions). Invoke
 |------|------------------------|-------------|
 | `AGENT-product-director.md` | `AGENT-product-director` | **Taylor — Product Director.** Chairs cross-functional sessions. Does not deep-impersonate specialists; delegates design to `uxui-design-critique` and strategy to `AGENT-product-refinement`, then writes `product_direction.md`. Use for vision, release readiness, or aligning UX with feasibility. |
 | `AGENT-product-refinement.md` | `AGENT-product-refinement` | **Sam (PM) ↔ Jordan (Tech Lead)** dialogue. Turns chat/context into a prioritized, batched `loop-backlog.md` with RICE and risk–impact. Use for sprint/loop planning and scope cuts. |
-| `AGENT-recursive-implementer.md` | `AGENT-recursive-implementer` | **Recursive delivery supervisor.** Materializes `loop/` under `skill-outputs/orchestration/…`, runs `loop_management.js` after each worker stroke, and auto-delegates `skill-implementer` while `continue_loop` is true (cap 5). Stops on EVALUATION ≥ 95 / `STATUS: complete` / no Critical, or on cap. Does not implement product code itself. |
+| `AGENT-recursive-implementer.md` | `AGENT-recursive-implementer` | **Recursive delivery supervisor.** Materializes `loop/` + `runners/` under `skill-outputs/orchestration/…`, runs `loop_management.js` after each worker stroke, and auto-delegates `skill-implementer` while `continue_loop` is true (cap 5). Stops when Develop runners are green (`status: complete`) or on cap (`status: capped`). Does not implement product code itself. |
 | `DEVELOPMENT-AGENT-skill-implementer.md` | `skill-implementer` | **Primary delivery worker.** Always confirms which skill to run, then executes four fixed steps (investigate → plan → implement → scored review), marks backlog In progress before coding, and writes numbered step files under skill-outputs. Marks documentation/backlog status as it goes. |
 | `DESIGN AGENT-uxui-critics.md` | `uxui-design-critique` | **Maya (UX) ↔ Leo (UI)** critique orchestrator. Stages a structured dialogue grounded in `ux-seamless-flows` and project UX/DESIGN docs; persists `uxui_design_critique.md` under changelog. Use for shell polish, wizards, onboarding, microcopy, hierarchy. |
 | `TEST-AGENT-unit-test-matrix-generator.md` | `TEST-AGENT-unit-test-matrix-generator` | **Matrix lifecycle supervisor.** On every invocation runs `orchestrate_unit_test_matrix.py` and auto-delegates to test-matrix-unit, skill-implementer, or test-matrix-unit-recovery per JSON. Owns discovery → execute → recover → re-test until stable or capped. |
@@ -330,7 +338,7 @@ Skills are the **procedures** workers must follow. Agents read `SKILL.md` (and `
 | `caveman/SKILL.md` | Explicit caveman skill: intensity levels (`lite` / `full` / `ultra` / wenyan variants), when to trigger (`/caveman`, “be brief”), measured token savings intent. Complements the always-on caveman rule. |
 | `loop-management/SKILL.md` | How to create a generic orchestration loop: materialize `loop/` under skill-outputs, define bash stop check + config, run `loop_management.js` after each agent response, act on JSON. Used by recursive-implementer and any custom supervisor. |
 | `loop-management/loop_config.template.json` | Starter JSON for `loop/loop_config.json` (name, paths, caps, reasons, `next_prompt`). Copy and fill; keep paths repo-relative under the same `loop/`. |
-| `loop-management/check_condition.template.sh` | Starter bash script implementing the RESPONSE_FILE contract (exit 0 = done). Customize grep/jq rules per loop goal. |
+| `loop-management/check_condition.template.sh` | Starter bash script that reads `loop/runners/` via `check_runner_gate.js` (exit 0/1/2). |
 | `loop-management/stop_condition.template.md` | Starter one-sentence human definition of “done” for reviewers and future agents. |
 | `pixelanea-frontend-standards/SKILL.md` | Executable frontend standards playbook: shell layout, canvas/tools, tokens, UX flows, SOLID/DRY for `apps/web`. Mandates graphify + frontend layer search before investigation. |
 | `pixelanea-frontend-standards/reference.md` | Long-form frontend standards checklist and patterns referenced by the skill (ARCHITECTURE/DESIGN/UX distilled). |
@@ -350,11 +358,13 @@ Tools print a human banner on **stderr** and structured results on **stdout**. O
 
 | File | Description |
 |------|-------------|
-| `loop_management.js` | Generic loop decision layer. Loads `loop_config.json`, sets `RESPONSE_FILE` to `last_agent_response.md`, runs `check_condition.sh`, updates `loop_iteration.json`, and prints JSON (`continue_loop`, `action`, `reason`, cap flags). Used whenever “done” is defined on agent text. |
+| `loop_management.js` | Generic loop decision layer. Optionally runs `run_runners.sh`, then `check_condition.sh`, updates `loop_iteration.json`, and prints JSON (`continue_loop`, `status`, `action`, `reason`). Statuses: complete / continue / capped / interrupted. |
 | `orchestrate_unit_test_matrix.py` | Matrix decision layer. Locates or accepts a `test_matrix_unit.md`, classifies Status cells (`[ ]` `[x]` `[!]` `[~]` `[-]`), and prints the next orchestration decision + suggested subagent/skill. Drives the unit-test-matrix-generator agent. |
 | `search_frontend_elements.py` | Fuzzy symbol search scoped to an `apps/web/src` layer (`shell`, `canvas`, `state`, …). Prefer after graphify when the layer is known but the file is not. `--list-layers` for the catalog. |
 | `search_backend_elements.py` | Same idea for `server/` layers (`domain`, `db`, `api`, `export`, `image`, …). Aliases like `handlers` → `api`. |
-| `sync_paint_matrix_status.py` | Paint-matrix helper: runs vitest (or reads JSON), maps `[HP-001]`-style IDs to Status/Notes in the paint `test_matrix_unit.md`. Keeps the living matrix aligned with automated unit results. |
+| `sync_paint_matrix_status.py` | Paint-matrix helper: runs vitest (or reads JSON), maps `[HP-001]`-style IDs to Status/Notes in the paint `test_matrix_unit.md`. Keeps the living matrix aligned with automated unit results — do not treat unchecked agent `[x]` as lint/unit green. |
+| `run_runners.sh` | Writes `loop/runners/{lint,unit,e2e,summary}.json` from `./scripts/ci.sh` steps (Develop or Deliver profile). |
+| `check_runner_gate.js` | Reads runner JSON; exit 0/1/2 for the conjunction. Ignores markdown EVALUATION / STATUS. |
 | `run_skill_output_smoke.py` | CI/local gate: reads [`.cursor/ci-smoke-manifest.txt`](../ci-smoke-manifest.txt), runs `test.md` **Automated** bash blocks and verifies matrix Status cells (no open `[ ]` / `[!]`). |
 
 ### `skill-outputs/` — Runtime delivery store
@@ -390,7 +400,7 @@ Use changelog when the artifact is meant for humans planning releases or running
 
 ## Fast path (when **not** to loop)
 
-Use the full harness (recursive-implementer + `loop_management.js` + scored review) for multi-file features, cross-layer work, or anything that must hit EVALUATION ≥ 95 before merge.
+Use the full harness (recursive-implementer + `loop_management.js` + Develop runners) for multi-file features, cross-layer work, or anything that must pass lint+unit runners before merge.
 
 **Use the fast path** — single `skill-implementer` stroke or direct edit + lint — when **all** of these hold:
 
@@ -415,7 +425,7 @@ When in doubt: if the task fits in one PR hunk and one test command, skip the lo
 
 ## CI smoke for skill outputs (Batch 3 gate)
 
-Durable proof lives in files, not chat EVALUATION scores. CI runs a **light manifest** — not a full agent loop.
+Durable proof lives in runner JSON and matrices, not chat EVALUATION scores. CI runs a **light manifest** — not a full agent loop.
 
 | Piece | Path |
 |-------|------|

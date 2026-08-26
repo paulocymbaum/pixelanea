@@ -39,9 +39,10 @@ Use **fixed canonical names** for skill deliverables. Use **numbered step files*
 | Gherkin spec (optional) | `gherkin.md` | qa-e2e-gherkin | Matrix-derived E2E scenarios when not in changelog |
 | QA run report | `qa_run_report.md` | qa-gherkin-run | Flagged scenario results beside gherkin source |
 | Loop config | `loop/loop_config.json` | loop-management | Orchestrator paths, caps, next prompt |
-| Loop stop check | `loop/check_condition.sh` | loop-management | Bash script; exit 0 = stop loop |
+| Loop stop check | `loop/check_condition.sh` | loop-management | Bash script; exit 0/1/2 from `loop/runners/` |
 | Loop stop summary | `loop/stop_condition.md` | loop-management | One-sentence definition of exit 0 |
-| Previous agent response | `loop/last_agent_response.md` | loop orchestrator | Overwritten each iteration |
+| Runner sensors | `loop/runners/*.json` | `run_runners.sh` only | lint/unit/(e2e)/summary exits + log tails |
+| Previous agent response | `loop/last_agent_response.md` | loop orchestrator | Critic/context; overwritten each iteration — not the stop sensor |
 | Loop iteration state | `loop/loop_iteration.json` | `loop_management.js` | Iteration counter; tool-managed |
 
 **Loop rule:** All loop conditions, configs, checks, and response snapshots live under `loop/` inside the run folder — never in `.cursor/tools/`, repo root, or source trees.
@@ -87,6 +88,7 @@ Use **fixed canonical names** for skill deliverables. Use **numbered step files*
           check_condition.sh
           stop_condition.md
           last_agent_response.md
+          runners/                    # lint.json, unit.json, summary.json, …
           loop_iteration.json
         01_setup-loop.md              # optional step note
 ```

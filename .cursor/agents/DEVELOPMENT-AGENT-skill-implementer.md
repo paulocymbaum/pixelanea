@@ -128,10 +128,12 @@ Review against:
 |---------|---------|
 | **Goal** | Review the Step 3 delivery against skill and project standards. |
 | **Outcome** | Findings by priority: Critical → Warnings → Suggestions. Note what was fixed during review vs left for follow-up. |
-| **EVALUATION** | Single integer **0–100** score for overall delivery quality, with one short paragraph justifying the score. |
+| **CRITIC** | Exactly one of `CRITIC: PASS` or `CRITIC: FAIL`, plus short findings. Optional context for the next stroke — **not** the recursive stop bit. |
 | **Files** | All paths reviewed. |
 
-Fix clear Critical issues before finishing. If you fix issues during review, update the score and note fixes in **Outcome**.
+Fix clear Critical issues before finishing. If Criticals remain unresolved, use `CRITIC: FAIL`.
+
+Do **not** tell the orchestrator that an EVALUATION score or `STATUS: complete` stops the loop. Recursive Develop stop is CI runners under `loop/runners/` (lint + unit). Critic never greens a red runner.
 
 ---
 
@@ -142,7 +144,7 @@ End with a concise summary:
 1. Skill implemented
 2. What was delivered
 3. Output folder path under `.cursor/skill-outputs/`
-4. **EVALUATION** score (repeat the number from the review file)
+4. **CRITIC: PASS** or **CRITIC: FAIL** (repeat from the review file)
 
 ---
 
