@@ -2,13 +2,21 @@
 /**
  * Loop management decision layer.
  *
- * Runs a bash check script against a previous agent's response file and returns
- * JSON indicating whether the orchestration loop should continue or stop.
+ * Runs a bash check script against loop sensors and returns JSON indicating
+ * whether the orchestration loop should continue or stop.
+ *
+ * Prefer the runner gate (Develop/Deliver):
+ *   1. Optionally run `.cursor/tools/run_runners.sh` (writes loop/runners/*.json)
+ *   2. `check_condition.sh` reads runners only — ignores EVALUATION / STATUS in RESPONSE_FILE
  *
  * Check script contract:
- *   - RESPONSE_FILE env var points at the previous agent output.
- *   - Exit 0  → stop condition met (loop should stop).
- *   - Exit ≠0 → stop condition not met (loop should continue).
+ *   - RESPONSE_FILE env var points at the previous agent output (critic / context only).
+ *   - Exit 0  → complete (loop should stop).
+ *   - Exit 1  → continue (loop should continue).
+ *   - Exit 2  → interrupted / misconfigured (loop should stop).
+ *
+ * Status classes on the decision JSON:
+ *   complete | continue | capped | interrupted
  *
  * Usage:
  *   node .cursor/tools/loop_management.js --loop-config path/to/loop/loop_config.json
@@ -23,12 +31,18 @@ const path = require("path");
 const { execFileSync } = require("child_process");
 
 const PROJECT_ROOT = path.resolve(__dirname, "..", "..");
+const DEFAULT_RUN_RUNNERS = path.join(PROJECT_ROOT, ".cursor", "tools", "run_runners.sh");
+/** Check-only read should stay short; runners run in a prior step (or via run_runners). */
+const CHECK_TIMEOUT_MS = 120000;
+/** Develop lint+unit can exceed 2 minutes. */
+const RUN_RUNNERS_TIMEOUT_MS = 900000;
 
 function parseArgs(argv) {
   const args = {
     loopConfig: null,
     responseFile: null,
     maxIterationsExceeded: false,
+    skipRunners: false,
   };
 
   for (let i = 2; i < argv.length; i += 1) {
@@ -39,6 +53,8 @@ function parseArgs(argv) {
       args.responseFile = argv[++i];
     } else if (arg === "--max-iterations-exceeded") {
       args.maxIterationsExceeded = true;
+    } else if (arg === "--skip-runners") {
+      args.skipRunners = true;
     } else if (arg === "--help" || arg === "-h") {
       printHelp();
       process.exit(0);
@@ -59,7 +75,8 @@ function printHelp() {
     "Usage: node .cursor/tools/loop_management.js --loop-config <path> [options]\n\n" +
       "Options:\n" +
       "  --response-file <path>         Override response file from loop config\n" +
-      "  --max-iterations-exceeded      Force stop with iteration-cap reason\n" +
+      "  --max-iterations-exceeded      Force stop with status=capped\n" +
+      "  --skip-runners                 Do not invoke run_runners.sh even if configured\n" +
       "  --help                         Show this help\n",
   );
 }
@@ -92,6 +109,7 @@ function formatHumanBanner(decision) {
       "  ▶ ACTION REQUIRED: continue loop (delegate to next agent step)",
       "",
       `  action:          ${decision.action}`,
+      `  status:          ${decision.status}`,
       `  reason:          ${decision.reason}`,
       `  iteration:       ${decision.iteration}/${decision.max_iterations}`,
       `  check_script:    ${decision.check_script}`,
@@ -99,13 +117,15 @@ function formatHumanBanner(decision) {
       `  check_exit_code: ${decision.check_exit_code}`,
       "",
       "  Read the JSON `prompt` field and pass it to the next subagent if set.",
+      "  Prefer loop/runners/summary.json + failing log tails over EVALUATION.",
       "",
     );
   } else {
     lines.push(
-      "  ✓ STOP — loop condition satisfied or cap reached",
+      `  ✓ STOP — status=${decision.status}`,
       "",
       `  action:          ${decision.action}`,
+      `  status:          ${decision.status}`,
       `  reason:          ${decision.reason}`,
       `  iteration:       ${decision.iteration}/${decision.max_iterations}`,
       `  check_exit_code: ${decision.check_exit_code}`,
@@ -117,11 +137,83 @@ function formatHumanBanner(decision) {
   return lines.join("\n");
 }
 
+function runnersDirForCheck(checkScriptPath) {
+  return path.join(path.dirname(checkScriptPath), "runners");
+}
+
+function summaryIsStale(loopDir, responseFilePath) {
+  const summaryPath = path.join(loopDir, "runners", "summary.json");
+  if (!fs.existsSync(summaryPath)) {
+    return true;
+  }
+  if (!fs.existsSync(responseFilePath)) {
+    return false;
+  }
+  const summaryMtime = fs.statSync(summaryPath).mtimeMs;
+  const responseMtime = fs.statSync(responseFilePath).mtimeMs;
+  return responseMtime > summaryMtime;
+}
+
+function resolveRunRunnersPath(config, checkScriptPath) {
+  if (config.run_runners === false) {
+    return null;
+  }
+  if (typeof config.run_runners === "string" && config.run_runners.length > 0) {
+    return resolveRepoPath(config.run_runners);
+  }
+  const sibling = path.join(path.dirname(checkScriptPath), "run_runners.sh");
+  if (fs.existsSync(sibling)) {
+    return sibling;
+  }
+  // Default: invoke shared writer when loop/runners is expected (recursive gate).
+  if (config.harness_profile || config.require_e2e || config.auto_run_runners) {
+    return DEFAULT_RUN_RUNNERS;
+  }
+  return null;
+}
+
+function runRunnersIfNeeded(config, checkScriptPath, responseFilePath, options) {
+  if (options.skipRunners) {
+    return;
+  }
+  const runPath = resolveRunRunnersPath(config, checkScriptPath);
+  if (!runPath) {
+    return;
+  }
+  if (!fs.existsSync(runPath)) {
+    throw new Error(`run_runners script not found: ${runPath}`);
+  }
+
+  const loopDir = path.dirname(checkScriptPath);
+  if (!summaryIsStale(loopDir, responseFilePath) && config.force_run_runners !== true) {
+    return;
+  }
+
+  const profile = config.harness_profile || (config.require_e2e ? "deliver" : "develop");
+  const args = ["--loop-dir", loopDir, "--profile", profile];
+  if (config.include_backend) {
+    args.push("--include-backend");
+  }
+
+  execFileSync("bash", [runPath, ...args], {
+    cwd: PROJECT_ROOT,
+    stdio: ["ignore", "pipe", "pipe"],
+    timeout: config.run_runners_timeout_ms ?? RUN_RUNNERS_TIMEOUT_MS,
+    env: {
+      ...process.env,
+      HARNESS_PROFILE: profile,
+      HARNESS_INCLUDE_BACKEND: config.include_backend ? "1" : "0",
+    },
+  });
+}
+
 function runCheckScript(checkScriptPath, responseFilePath) {
   const env = {
     ...process.env,
+    PIXELANEA_ROOT: PROJECT_ROOT,
     RESPONSE_FILE: responseFilePath,
     LOOP_RESPONSE_FILE: responseFilePath,
+    RUNNERS_DIR: runnersDirForCheck(checkScriptPath),
   };
 
   try {
@@ -129,15 +221,25 @@ function runCheckScript(checkScriptPath, responseFilePath) {
       env,
       cwd: PROJECT_ROOT,
       stdio: ["ignore", "pipe", "pipe"],
-      timeout: 120000,
+      timeout: CHECK_TIMEOUT_MS,
     });
     return 0;
   } catch (err) {
-    if (err.status !== undefined) {
+    if (err.status !== undefined && err.status !== null) {
       return err.status;
     }
     throw new Error(`Failed to run check script: ${err.message}`);
   }
+}
+
+function statusFromCheckExit(checkExitCode) {
+  if (checkExitCode === 0) {
+    return "complete";
+  }
+  if (checkExitCode === 2) {
+    return "interrupted";
+  }
+  return "continue";
 }
 
 function buildDecision(config, options) {
@@ -160,6 +262,7 @@ function buildDecision(config, options) {
     return {
       action: "stop",
       continue_loop: false,
+      status: "interrupted",
       reason: `Check script not found: ${config.check_script}`,
       iteration,
       max_iterations: maxIterations,
@@ -169,7 +272,8 @@ function buildDecision(config, options) {
       check_exit_code: null,
       loop_name: config.name ?? "unnamed-loop",
       prompt: null,
-      action_summary: "STOP — check script missing; fix loop artifacts before continuing.",
+      action_summary:
+        "STOP — check script missing; fix loop artifacts before continuing (status=interrupted).",
     };
   }
 
@@ -177,6 +281,7 @@ function buildDecision(config, options) {
     return {
       action: "stop",
       continue_loop: false,
+      status: "interrupted",
       reason: `Response file not found: ${config.response_file}`,
       iteration,
       max_iterations: maxIterations,
@@ -186,7 +291,7 @@ function buildDecision(config, options) {
       check_exit_code: null,
       loop_name: config.name ?? "unnamed-loop",
       prompt: null,
-      action_summary: "STOP — previous agent response file missing.",
+      action_summary: "STOP — previous agent response file missing (status=interrupted).",
     };
   }
 
@@ -194,7 +299,9 @@ function buildDecision(config, options) {
     return {
       action: "stop",
       continue_loop: false,
-      reason: "Maximum loop iterations reached; reporting current state.",
+      status: "capped",
+      reason:
+        "Maximum loop iterations reached; setpoints may still be red (status=capped, not complete).",
       iteration,
       max_iterations: maxIterations,
       max_iterations_exceeded: true,
@@ -203,18 +310,41 @@ function buildDecision(config, options) {
       check_exit_code: null,
       loop_name: config.name ?? "unnamed-loop",
       prompt: null,
-      action_summary: "STOP — iteration cap reached.",
+      action_summary: "STOP — iteration cap reached (status=capped).",
+    };
+  }
+
+  try {
+    runRunnersIfNeeded(config, checkScript, responseFile, options);
+  } catch (err) {
+    return {
+      action: "stop",
+      continue_loop: false,
+      status: "interrupted",
+      reason: `run_runners failed: ${err.message}`,
+      iteration,
+      max_iterations: maxIterations,
+      max_iterations_exceeded: false,
+      check_script: config.check_script,
+      response_file: config.response_file,
+      check_exit_code: 2,
+      loop_name: config.name ?? "unnamed-loop",
+      prompt: null,
+      action_summary: "STOP — runner writer failed (status=interrupted).",
     };
   }
 
   const checkExitCode = runCheckScript(checkScript, responseFile);
-  const stopConditionMet = checkExitCode === 0;
+  const status = statusFromCheckExit(checkExitCode);
 
-  if (stopConditionMet) {
+  if (status === "complete") {
     return {
       action: "stop",
       continue_loop: false,
-      reason: config.stop_reason ?? "Stop condition met by check script (exit 0).",
+      status: "complete",
+      reason:
+        config.stop_reason ??
+        "Stop condition met by check script (exit 0) — required runners green.",
       iteration,
       max_iterations: maxIterations,
       max_iterations_exceeded: false,
@@ -223,7 +353,27 @@ function buildDecision(config, options) {
       check_exit_code: checkExitCode,
       loop_name: config.name ?? "unnamed-loop",
       prompt: null,
-      action_summary: "STOP — bash check succeeded; loop goal achieved.",
+      action_summary: "STOP — bash check succeeded; loop goal achieved (status=complete).",
+    };
+  }
+
+  if (status === "interrupted") {
+    return {
+      action: "stop",
+      continue_loop: false,
+      status: "interrupted",
+      reason:
+        config.interrupt_reason ??
+        "Check script exit 2 — misconfigured runners or missing artifacts.",
+      iteration,
+      max_iterations: maxIterations,
+      max_iterations_exceeded: false,
+      check_script: config.check_script,
+      response_file: config.response_file,
+      check_exit_code: checkExitCode,
+      loop_name: config.name ?? "unnamed-loop",
+      prompt: null,
+      action_summary: "STOP — gate misconfigured (status=interrupted).",
     };
   }
 
@@ -237,6 +387,7 @@ function buildDecision(config, options) {
       iteration: nextIteration,
       loop_name: config.name ?? "unnamed-loop",
       last_check_exit_code: checkExitCode,
+      status: "continue",
       updated_at: new Date().toISOString(),
     });
   }
@@ -244,9 +395,10 @@ function buildDecision(config, options) {
   return {
     action: "continue",
     continue_loop: true,
+    status: "continue",
     reason:
       config.continue_reason ??
-      "Stop condition not met by check script (non-zero exit); loop continues.",
+      "Stop condition not met by check script (exit 1); required runners still red.",
     iteration: nextIteration,
     max_iterations: maxIterations,
     max_iterations_exceeded: false,
@@ -255,7 +407,8 @@ function buildDecision(config, options) {
     check_exit_code: checkExitCode,
     loop_name: config.name ?? "unnamed-loop",
     prompt: config.next_prompt ?? null,
-    action_summary: "CONTINUE — delegate next loop step using `prompt` if set.",
+    action_summary:
+      "CONTINUE — delegate next loop step using `prompt`; feed summary.json + failing tails.",
   };
 }
 
