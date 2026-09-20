@@ -36,8 +36,12 @@ stage_desktop_core_assets() {
     return 1
   fi
 
-  mkdir -p "${target_dir}/web"
+  mkdir -p "${target_dir}/web" "${target_dir}/migrations"
   install -m 755 "${server_binary}" "${target_dir}/$(basename "${server_binary}")"
+  local sql
+  for sql in "${_STAGE_ASSETS_ROOT_DIR}/server/db/migrations/"*.sql; do
+    install -m 644 "${sql}" "${target_dir}/migrations/"
+  done
   (tar -C "${_STAGE_ASSETS_ROOT_DIR}/apps/web/dist" --exclude='.pixelanea-assets-hash' -cf - .) \
     | tar -C "${target_dir}/web" -xf -
   install -m 644 "${_STAGE_ASSETS_ROOT_DIR}/brand/logo-glyph.svg" "${target_dir}/logo-glyph.svg"

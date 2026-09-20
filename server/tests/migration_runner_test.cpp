@@ -2,10 +2,13 @@
 
 #include "db/connection.hpp"
 #include "db/migration_runner.hpp"
+#include "db/migrations_dir.hpp"
 
 #include <sqlite3.h>
 
+#include <cstdlib>
 #include <filesystem>
+#include <fstream>
 
 using pixelanea::db::Connection;
 using pixelanea::db::MigrationRunner;
@@ -108,4 +111,41 @@ TEST_CASE("MigrationRunner upgrades schema v1 to current", "[migration]") {
                     "SELECT value FROM app_meta WHERE key = 'schema_version'") == 3);
 
   std::filesystem::remove(db_path, ec);
+}
+
+TEST_CASE("resolve_migrations_dir prefers PIXELANEA_MIGRATIONS_DIR env", "[migration]") {
+  const auto override_dir =
+      std::filesystem::temp_directory_path() / "pixelanea-tests" / "migrations-env-override";
+  std::filesystem::create_directories(override_dir);
+  {
+    std::ofstream sql(override_dir / "001_initial.sql");
+    sql << "-- env override stub\n";
+  }
+
+#ifdef _WIN32
+  _putenv_s("PIXELANEA_MIGRATIONS_DIR", override_dir.string().c_str());
+#else
+  setenv("PIXELANEA_MIGRATIONS_DIR", override_dir.string().c_str(), 1);
+#endif
+
+  REQUIRE(pixelanea::db::resolve_migrations_dir() == override_dir);
+
+#ifdef _WIN32
+  _putenv_s("PIXELANEA_MIGRATIONS_DIR", "");
+#else
+  unsetenv("PIXELANEA_MIGRATIONS_DIR");
+#endif
+
+  REQUIRE(pixelanea::db::migrations_dir_is_valid(
+      std::filesystem::path(PIXELANEA_MIGRATIONS_DIR)));
+  REQUIRE(pixelanea::db::resolve_migrations_dir() ==
+          std::filesystem::path(PIXELANEA_MIGRATIONS_DIR));
+}
+
+TEST_CASE("migrations_dir_is_valid rejects missing 001_initial.sql", "[migration]") {
+  const auto empty_dir =
+      std::filesystem::temp_directory_path() / "pixelanea-tests" / "migrations-empty";
+  std::filesystem::create_directories(empty_dir);
+  REQUIRE_FALSE(pixelanea::db::migrations_dir_is_valid(empty_dir));
+  REQUIRE_FALSE(pixelanea::db::migrations_dir_is_valid({}));
 }

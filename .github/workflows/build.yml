@@ -121,6 +121,57 @@ jobs:
       - name: Frontend smoke tests
         run: ./scripts/ci-steps/13-smoke-frontend.sh
 
+  test-server-windows:
+    name: Server tests (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Native server tests (migrations + file dialogs)
+        shell: bash
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: ./scripts/ci-native-server-tests.sh
+
+  test-server-macos:
+    name: Server tests (macOS ${{ matrix.mac_arch }})
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            mac_arch: arm64
+          - os: macos-15-intel
+            mac_arch: x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify host architecture
+        run: |
+          HOST_ARCH="$(uname -m)"
+          case "${HOST_ARCH}" in
+            arm64|aarch64) EXPECTED="arm64" ;;
+            x86_64) EXPECTED="x64" ;;
+            *) echo "Unsupported host arch: ${HOST_ARCH}" >&2; exit 1 ;;
+          esac
+          if [[ "${EXPECTED}" != "${{ matrix.mac_arch }}" ]]; then
+            echo "Runner arch ${EXPECTED} does not match matrix ${{ matrix.mac_arch }}" >&2
+            exit 1
+          fi
+
+      - name: Native server tests (migrations + file dialogs)
+        env:
+          GIT_TERMINAL_PROMPT: "0"
+        run: ./scripts/ci-native-server-tests.sh
+
   package-linux:
     name: Package Linux (.deb)
     needs: build
@@ -207,7 +258,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15
             mac_arch: arm64
           - os: macos-15-intel
             mac_arch: x64
@@ -285,7 +336,7 @@ jobs:
       - name: Build macOS packages
         run: ./scripts/package-dmg.sh
 
-      - name: Smoke test macOS packages
+      - name: Install smoke test (DMG + migrations + create project)
         run: ./scripts/test-package-macos.sh --skip-build --install-test
 
       - name: Upload macOS packages
@@ -376,8 +427,8 @@ jobs:
           VCPKG_ROOT: ${{ runner.temp }}\vcpkg
         run: .\scripts\package-windows.ps1
 
-      - name: Smoke test Windows packages
-        run: .\scripts\test-package-windows.ps1 -SkipBuild
+      - name: Install smoke test (migrations + create project)
+        run: .\scripts\test-package-windows.ps1 -SkipBuild -InstallTest
 
       - name: Upload Windows packages
         uses: actions/upload-artifact@v4

@@ -228,7 +228,7 @@ pnpm ci:sprint           # canonical sprint gate (./scripts/ci.sh sprint)
 ./scripts/ci-sprint1.sh  # thin alias of the above
 ```
 
-CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke scripts, and **desktop packaging** (`.deb`, DMG, Windows installer) on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Playwright `@smoke` + `@race` runs **nightly** on `main` — see [`.github/workflows/e2e-nightly.yml`](.github/workflows/e2e-nightly.yml). Full Playwright is local opt-in (`pnpm ci:e2e`). Mirror the PR gate locally: `./scripts/ci.sh`. Tagged releases upload the same artifacts to GitHub Releases — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
+CI runs `typecheck`, `lint`, `test:qa`, `test:unit`, backend tests, smoke scripts, **native server tests on `windows-latest` / `macos-15` / `macos-15-intel`**, and **desktop packaging** (`.deb`, DMG, Windows installer with install smoke) on every PR — see [`.github/workflows/build.yml`](.github/workflows/build.yml). Playwright `@smoke` + `@race` runs **nightly** on `main` — see [`.github/workflows/e2e-nightly.yml`](.github/workflows/e2e-nightly.yml). Full Playwright is local opt-in (`pnpm ci:e2e`). Mirror the PR gate locally: `./scripts/ci.sh`. Tagged releases upload the same artifacts to GitHub Releases — see [`.github/workflows/release.yml`](.github/workflows/release.yml).
 
 ## Documentation
 

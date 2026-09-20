@@ -1,6 +1,7 @@
 #include "db/project_repository.hpp"
 
 #include "db/migration_runner.hpp"
+#include "db/migrations_dir.hpp"
 #include "db/pixel_blob_codec.hpp"
 #include "domain/time.hpp"
 #include "export/bundle_io.hpp"
@@ -75,7 +76,7 @@ domain::Result<domain::Project> ProjectRepository::create(
 
   try {
     auto connection = Connection::open(db_path);
-    MigrationRunner{std::filesystem::path(PIXELANEA_MIGRATIONS_DIR)}.apply_all(*connection);
+    MigrationRunner{resolve_migrations_dir()}.apply_all(*connection);
     const std::string now = domain::utc_now_iso8601();
     auto project_result = insert_project(*connection, params, id, now);
     if (!project_result.has_value()) {
@@ -217,7 +218,7 @@ domain::Result<domain::Project> ProjectRepository::open_from_bundle(
 
   try {
     auto connection = Connection::open(unpacked.value().db_path);
-    MigrationRunner{std::filesystem::path(PIXELANEA_MIGRATIONS_DIR)}.apply_all(*connection);
+    MigrationRunner{resolve_migrations_dir()}.apply_all(*connection);
 
     const domain::ProjectId manifest_id(unpacked.value().manifest.project_id);
     auto project = read_project(*connection, manifest_id);

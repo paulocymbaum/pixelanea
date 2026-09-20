@@ -6,7 +6,7 @@
 #   ./scripts/package-dmg.sh --skip-build
 #
 # Output (native host arch):
-#   dist/pixelanea-{version}-macos-arm64.dmg|.zip   # Apple Silicon (macos-14 CI)
+#   dist/pixelanea-{version}-macos-arm64.dmg|.zip   # Apple Silicon (macos-15 CI)
 #   dist/pixelanea-{version}-macos-x64.dmg|.zip     # Intel (macos-15-intel CI)
 #
 # Requires: macOS host matching the target arch, Xcode CLT, Rust, Tauri CLI.
@@ -15,7 +15,7 @@ set -euo pipefail
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "ERROR: DMG packaging requires a macOS (Darwin) host" >&2
-  echo "Use GitHub Actions package-macos / release-macos matrix (macos-14 + macos-15-intel)." >&2
+  echo "Use GitHub Actions package-macos / release-macos matrix (macos-15 + macos-15-intel)." >&2
   exit 1
 fi
 

@@ -94,6 +94,7 @@ endif()
 set(PIXELANEA_DB_SOURCES
   src/db/connection.cpp
   src/db/migration_runner.cpp
+  src/db/migrations_dir.cpp
   src/db/pixel_blob_codec.cpp
   src/db/project_repository.cpp
   src/db/frame_repository.cpp
@@ -212,7 +213,11 @@ set(PIXELANEA_SERVER_SOURCES
   src/logging/http_request_log.cpp
 )
 
-if(NOT WIN32)
+if(WIN32)
+  list(APPEND PIXELANEA_SERVER_SOURCES src/api/win32_file_dialog_provider.cpp)
+elseif(APPLE)
+  list(APPEND PIXELANEA_SERVER_SOURCES src/api/osascript_file_dialog_provider.cpp)
+else()
   list(APPEND PIXELANEA_SERVER_SOURCES src/api/zenity_file_dialog_provider.cpp)
 endif()
 
@@ -225,6 +230,9 @@ target_link_libraries(
     pixelanea_export
     ${PIXELANEA_HTTPLIB_LIB}
 )
+if(WIN32)
+  target_link_libraries(pixelanea-server PRIVATE ole32 uuid shell32)
+endif()
 
 if(UNIX AND NOT APPLE)
   target_link_libraries(pixelanea-server PRIVATE pthread)

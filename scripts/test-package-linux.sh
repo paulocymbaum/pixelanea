@@ -66,6 +66,7 @@ REQUIRED_PATHS=(
   "./usr/bin/pixelanea-browser"
   "./usr/share/pixelanea/pixelanea-server"
   "./usr/share/pixelanea/web/index.html"
+  "./usr/share/pixelanea/migrations/001_initial.sql"
   "./usr/share/pixelanea/logo-glyph.svg"
   "./usr/share/applications/pixelanea.desktop"
   "./usr/share/applications/pixelanea-open.desktop"
@@ -138,6 +139,11 @@ if ! grep -q 'pixelanea-shell %f' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | 
   exit 1
 fi
 
+if ! grep -q 'CREATE TABLE' <<<"$(dpkg-deb --fsys-tarfile "${DEB_FILE}" | tar -xO ./usr/share/pixelanea/migrations/001_initial.sql 2>/dev/null)"; then
+  echo "ERROR: packaged 001_initial.sql is missing CREATE TABLE" >&2
+  exit 1
+fi
+
 echo "==> Package structure OK"
 
 if [[ "${RUN_DOCKER}" == true ]]; then
@@ -158,6 +164,7 @@ if [[ "${RUN_DOCKER}" == true ]]; then
         test -x /usr/bin/pixelanea-browser
         test -x /usr/share/pixelanea/pixelanea-server
         test -f /usr/share/pixelanea/web/index.html
+        test -f /usr/share/pixelanea/migrations/001_initial.sql
         ! grep -q "fuser -k" /usr/bin/pixelanea-browser
       '; then
       echo "==> Docker install smoke test passed"

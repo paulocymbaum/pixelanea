@@ -193,7 +193,7 @@ jobs:
       - name: Smoke test Windows packages
         run: .\scripts\test-package-windows.ps1 -SkipBuild
 
-      - name: Install smoke test Windows packages
+      - name: Install smoke test (migrations + create project)
         run: .\scripts\test-package-windows.ps1 -SkipBuild -InstallTest
 
       - name: Upload release assets
@@ -210,7 +210,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-14
+          - os: macos-15
             mac_arch: arm64
           - os: macos-15-intel
             mac_arch: x64
@@ -288,7 +288,7 @@ jobs:
       - name: Build macOS packages
         run: ./scripts/package-dmg.sh
 
-      - name: Smoke test macOS packages
+      - name: Install smoke test (DMG + migrations + create project)
         run: ./scripts/test-package-macos.sh --skip-build --install-test
 
       - name: Upload release assets

@@ -5,6 +5,7 @@ node_modules/
 # Build outputs
 dist/
 server/build/
+server/build-native/
 apps/web/dist/
 apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/bundle-resources/

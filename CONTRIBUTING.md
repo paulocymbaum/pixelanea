@@ -131,6 +131,7 @@ Rust build artifacts live under `apps/desktop/src-tauri/target/` (gitignored). S
 | E2E (CI full profile) | `pnpm ci:e2e` | Core gate + full Playwright (frees port 5173; use when no dev server running) |
 | Desktop package | `pnpm test:package:linux` | Touched `package-deb.sh`, `stage-linux-desktop.sh`, or `.deb` staging |
 | Windows package | `pnpm test:package:windows` | Touched `package-windows.ps1` or Windows CI job |
+| Native server (Win/mac) | `./scripts/ci-native-server-tests.sh` | Migrations resolve + file-dialog providers; CI jobs `test-server-windows` (`windows-latest`) and `test-server-macos` (`macos-15`, `macos-15-intel`) |
 | CLI export | `./scripts/ci-steps/09-test-backend-unit.sh` (filter `[cli][export]`) or `pnpm export:cli -- export …` | Touched `server/src/cli/` or `server/src/export/png_encoder.*` |
 | Desktop shell | `pnpm test:desktop-shell` | Touched `apps/desktop/` or shell launch scripts |
 | Sprint gate | `pnpm ci:sprint` (`./scripts/ci.sh sprint`) | Before sprint-close PRs |

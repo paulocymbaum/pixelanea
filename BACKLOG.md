@@ -9,7 +9,7 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 - [x] Debian `.deb` packaging and portable `.tar.gz` with shell primary, `pixelanea-browser` fallback
 - [x] CI release builds (amd64 + arm64) — see [`.github/workflows/release.yml`](./.github/workflows/release.yml)
 - [x] Workshop teacher guide and pilot protocol aligned with `.deb` install
-- [x] ADR 0001 (Tauri shell), ADR 0002 (keep zenity file dialogs on server)
+- [x] ADR 0001 (Tauri shell), ADR 0002 (server FileDialogProvider: zenity / Win32 / osascript)
 
 ## Active — post-v1
 
@@ -33,7 +33,7 @@ Active and post-v1 work items. Historical sprint detail lives in [CHANGELOG.md](
 
 - snap / flatpak packages
 - Auto-update **channel** (GitHub Releases productization + code signing) — desktop shell already has experimental updater IPC (`apps/desktop/src-tauri/src/updater.rs`); not shipping until signing + UX are ready
-- Tauri-native file dialogs replacing zenity (see [docs/adr/0002-desktop-file-dialogs.md](./docs/adr/0002-desktop-file-dialogs.md)) — revisit after Windows shell; server-side pickers remain on Linux
+- Tauri-native file dialogs replacing server pickers (see [docs/adr/0002-desktop-file-dialogs.md](./docs/adr/0002-desktop-file-dialogs.md)) — revisit if the web app is embedded as Tauri `frontendDist`; OpenAPI pickers remain the contract
 - Cloud sync or accounts
 
 ## References

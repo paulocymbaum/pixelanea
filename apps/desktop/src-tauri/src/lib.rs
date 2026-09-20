@@ -6,6 +6,7 @@ mod server;
 mod updater;
 
 use std::path::{Path, PathBuf};
+#[cfg(target_os = "linux")]
 use std::process::{Command, Stdio};
 use std::sync::{Arc, Mutex};
 
@@ -118,6 +119,7 @@ fn app_url_with_open(host: &str, port: u16, open_path: Option<&Path>) -> Result<
     Ok(parsed)
 }
 
+#[cfg(target_os = "linux")]
 fn zenity_available() -> bool {
     Command::new("zenity")
         .arg("--version")
@@ -128,6 +130,7 @@ fn zenity_available() -> bool {
         .unwrap_or(false)
 }
 
+#[cfg(target_os = "linux")]
 fn warn_zenity_missing(app: &AppHandle) {
     if zenity_available() {
         return;
@@ -311,6 +314,7 @@ pub fn run() {
                 error
             })?;
 
+            #[cfg(target_os = "linux")]
             warn_zenity_missing(app.handle());
 
             log::info!(

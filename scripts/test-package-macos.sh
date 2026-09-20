@@ -74,6 +74,7 @@ verify_app_layout() {
     "Contents/MacOS/pixelanea-shell"
     "Contents/Resources/pixelanea/pixelanea-server"
     "Contents/Resources/pixelanea/web/index.html"
+    "Contents/Resources/pixelanea/migrations/001_initial.sql"
     "Contents/Resources/pixelanea/logo-glyph.svg"
   )
   local rel missing=0
@@ -95,6 +96,10 @@ verify_app_layout() {
     echo "ERROR: pixelanea-server is not executable" >&2
     exit 1
   fi
+  if ! grep -q 'CREATE TABLE' "${app_root}/Contents/Resources/pixelanea/migrations/001_initial.sql"; then
+    echo "ERROR: packaged 001_initial.sql is missing CREATE TABLE" >&2
+    exit 1
+  fi
 }
 
 wait_for_health() {
@@ -110,6 +115,20 @@ wait_for_health() {
   done
   echo "ERROR: health check failed: ${url}" >&2
   return 1
+}
+
+wait_for_create_project() {
+  local url="http://127.0.0.1:8787/api/projects"
+  local body='{"name":"smoke","width":16,"height":16,"frameCount":1}'
+  local response
+  response="$(curl -fsS --max-time 5 -H 'Content-Type: application/json' -d "${body}" "${url}")" || {
+    echo "ERROR: POST /api/projects failed — migrations may be missing from the package" >&2
+    return 1
+  }
+  if ! grep -q '"id"' <<<"${response}"; then
+    echo "ERROR: create project response missing id: ${response}" >&2
+    return 1
+  fi
 }
 
 echo "==> Verifying release artifacts"
@@ -159,30 +178,27 @@ if [[ "${RUN_INSTALL_TEST}" == true ]]; then
 
   echo "==> DMG mount + install smoke test"
   if ! hdiutil attach -nobrowse -quiet -mountpoint "${MOUNT_DIR}" "${DMG_FILE}"; then
-    if [[ "${CI:-}" == "true" ]]; then
-      echo "WARN: could not mount DMG in CI — skipping install smoke test" >&2
-    else
-      echo "ERROR: could not mount DMG: ${DMG_FILE}" >&2
-      exit 1
-    fi
-  else
-    if [[ ! -d "${MOUNT_DIR}/${APP_NAME}" ]]; then
-      echo "ERROR: DMG did not contain ${APP_NAME}" >&2
-      exit 1
-    fi
-    cp -R "${MOUNT_DIR}/${APP_NAME}" "${INSTALL_ROOT}/"
-    hdiutil detach -quiet "${MOUNT_DIR}" || true
-
-    INSTALLED_APP="${INSTALL_ROOT}/${APP_NAME}"
-    verify_app_layout "${INSTALLED_APP}"
-
-    SERVER_BIN="${INSTALLED_APP}/Contents/Resources/pixelanea/pixelanea-server"
-    WEB_ROOT="${INSTALLED_APP}/Contents/Resources/pixelanea/web"
-    "${SERVER_BIN}" --host 127.0.0.1 --port 8787 --web-root "${WEB_ROOT}" &
-    SERVER_PID=$!
-    wait_for_health "${HEALTH_URL}"
-    echo "==> Health check OK"
+    echo "ERROR: could not mount DMG: ${DMG_FILE}" >&2
+    exit 1
   fi
+  if [[ ! -d "${MOUNT_DIR}/${APP_NAME}" ]]; then
+    echo "ERROR: DMG did not contain ${APP_NAME}" >&2
+    exit 1
+  fi
+  cp -R "${MOUNT_DIR}/${APP_NAME}" "${INSTALL_ROOT}/"
+  hdiutil detach -quiet "${MOUNT_DIR}" || true
+
+  INSTALLED_APP="${INSTALL_ROOT}/${APP_NAME}"
+  verify_app_layout "${INSTALLED_APP}"
+
+  SERVER_BIN="${INSTALLED_APP}/Contents/Resources/pixelanea/pixelanea-server"
+  WEB_ROOT="${INSTALLED_APP}/Contents/Resources/pixelanea/web"
+  "${SERVER_BIN}" --host 127.0.0.1 --port 8787 --web-root "${WEB_ROOT}" &
+  SERVER_PID=$!
+  wait_for_health "${HEALTH_URL}"
+  echo "==> Health check OK"
+  wait_for_create_project
+  echo "==> Create project OK"
 fi
 
 echo ""

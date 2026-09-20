@@ -32,7 +32,9 @@ function Copy-CoreAssets {
     param([string]$TargetDir)
 
     New-Item -ItemType Directory -Force -Path (Join-Path $TargetDir "web") | Out-Null
+    New-Item -ItemType Directory -Force -Path (Join-Path $TargetDir "migrations") | Out-Null
     Copy-Item -Force $ServerExe (Join-Path $TargetDir "pixelanea-server.exe")
+    Copy-Item -Force (Join-Path $RootDir "server\db\migrations\*.sql") (Join-Path $TargetDir "migrations")
     Copy-Item -Recurse -Force (Join-Path $WebDist "*") (Join-Path $TargetDir "web")
     if (Test-Path (Join-Path $WebDist ".pixelanea-assets-hash")) {
         Remove-Item -Force (Join-Path $TargetDir "web\.pixelanea-assets-hash") -ErrorAction SilentlyContinue

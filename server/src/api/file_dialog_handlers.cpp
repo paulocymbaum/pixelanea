@@ -81,7 +81,8 @@ httplib::Response handle_pick_project_path(const nlohmann::json& body, FileDialo
 
   const auto result = provider.pick_path(request);
   if (!result.error_message.empty()) {
-    if (result.error_message == "zenity is not installed") {
+    if (result.error_message == "zenity is not installed" ||
+        result.error_message == "native file dialog is not configured") {
       return respond_dialog_error(log, 503, "dialog.unavailable", result.error_message);
     }
     if (result.error_message == "file dialog timed out") {

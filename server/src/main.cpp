@@ -1,7 +1,11 @@
 #include "api/api_server.hpp"
 #include "api/file_dialog_provider.hpp"
 #include "api/web_static.hpp"
-#ifndef _WIN32
+#if defined(_WIN32)
+#include "api/win32_file_dialog_provider.hpp"
+#elif defined(__APPLE__)
+#include "api/osascript_file_dialog_provider.hpp"
+#else
 #include "api/zenity_file_dialog_provider.hpp"
 #endif
 
@@ -125,7 +129,11 @@ int main(int argc, char** argv) {
   pixelanea::db::FrameRepository frames(projects, *logger);
   pixelanea::db::PaletteRepository palettes(projects, *logger);
   std::unique_ptr<pixelanea::api::FileDialogProvider> file_dialog;
-#ifndef _WIN32
+#if defined(_WIN32)
+  file_dialog = std::make_unique<pixelanea::api::Win32FileDialogProvider>(*logger);
+#elif defined(__APPLE__)
+  file_dialog = std::make_unique<pixelanea::api::OsascriptFileDialogProvider>(*logger);
+#else
   file_dialog = std::make_unique<pixelanea::api::ZenityFileDialogProvider>(*logger);
 #endif
   pixelanea::api::ApiServer api(projects, frames, palettes, *logger, std::move(file_dialog));

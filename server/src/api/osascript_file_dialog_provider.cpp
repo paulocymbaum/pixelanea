@@ -1,17 +1,14 @@
-#include "api/zenity_file_dialog_provider.hpp"
+#include "api/osascript_file_dialog_provider.hpp"
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cctype>
-#include <cstdlib>
-#include <cstring>
-#include <optional>
+#include <chrono>
+#include <spawn.h>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include <spawn.h>
 #include <signal.h>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -22,31 +19,7 @@ namespace pixelanea::api {
 
 namespace {
 
-constexpr const char* kZenityBinary = "zenity";
-constexpr const char* kFileFilter = "Pixelanea projects | *.pixelanea";
-
-bool command_available(const char* command) {
-  const std::string probe = std::string("command -v ") + command + " >/dev/null 2>&1";
-  return std::system(probe.c_str()) == 0;
-}
-
-std::string to_lower(std::string value) {
-  std::transform(value.begin(), value.end(), value.begin(),
-                 [](unsigned char ch) { return static_cast<char>(std::tolower(ch)); });
-  return value;
-}
-
-std::optional<std::filesystem::path> parent_directory(
-    const std::optional<std::filesystem::path>& path) {
-  if (!path || path->empty()) {
-    return std::nullopt;
-  }
-  const auto parent = path->parent_path();
-  if (parent.empty()) {
-    return std::nullopt;
-  }
-  return parent;
-}
+constexpr const char* kOsascriptBinary = "/usr/bin/osascript";
 
 std::vector<char*> build_argv(const std::vector<std::string>& args) {
   std::vector<char*> argv;
@@ -80,7 +53,7 @@ ProcessOutput run_process(const std::vector<std::string>& args, int timeout_seco
   pid_t child = -1;
   auto argv = build_argv(args);
   const int spawn_status =
-      posix_spawnp(&child, args.front().c_str(), &actions, nullptr, argv.data(), environ);
+      posix_spawn(&child, args.front().c_str(), &actions, nullptr, argv.data(), environ);
   posix_spawn_file_actions_destroy(&actions);
   close(stdout_pipe[1]);
 
@@ -90,7 +63,8 @@ ProcessOutput run_process(const std::vector<std::string>& args, int timeout_seco
   }
 
   std::array<char, 256> buffer{};
-  const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds);
+  const auto deadline =
+      std::chrono::steady_clock::now() + std::chrono::seconds(timeout_seconds);
   bool child_exited = false;
 
   while (true) {
@@ -147,48 +121,78 @@ std::string trim(std::string value) {
   return value;
 }
 
+std::string apple_script_string(const std::string& value) {
+  std::string escaped;
+  escaped.reserve(value.size());
+  for (const char ch : value) {
+    if (ch == '\\' || ch == '"') {
+      escaped.push_back('\\');
+    }
+    escaped.push_back(ch);
+  }
+  return escaped;
+}
+
+std::string build_open_script(const PickPathRequest& request) {
+  std::string script = "POSIX path of (choose file of type {\"pixelanea\"} with prompt \"";
+  script += apple_script_string(kOpenProjectTitle);
+  script += "\"";
+  if (request.default_path && !request.default_path->empty()) {
+    const auto parent = request.default_path->parent_path();
+    if (!parent.empty()) {
+      script += " default location POSIX file \"";
+      script += apple_script_string(parent.string());
+      script += "\"";
+    }
+  }
+  script += ")";
+  return script;
+}
+
+std::string build_save_script(const PickPathRequest& request) {
+  std::string script = "POSIX path of (choose file name with prompt \"";
+  script += apple_script_string(kSaveProjectTitle);
+  script += "\" default name \"";
+  script += apple_script_string(default_save_filename(request));
+  script += "\"";
+  if (request.default_path && !request.default_path->empty()) {
+    const auto parent = request.default_path->parent_path();
+    if (!parent.empty()) {
+      script += " default location POSIX file \"";
+      script += apple_script_string(parent.string());
+      script += "\"";
+    }
+  }
+  script += ")";
+  return script;
+}
+
 }  // namespace
 
-ZenityFileDialogProvider::ZenityFileDialogProvider(logging::Logger& logger)
-    : log_(logger, "api", "ZenityFileDialogProvider") {}
+OsascriptFileDialogProvider::OsascriptFileDialogProvider(logging::Logger& logger)
+    : log_(logger, "api", "OsascriptFileDialogProvider") {}
 
-PickPathResult ZenityFileDialogProvider::pick_path(const PickPathRequest& request) {
+PickPathResult OsascriptFileDialogProvider::pick_path(const PickPathRequest& request) {
   PickPathResult result;
 
-  if (!command_available(kZenityBinary)) {
-    result.error_message = "zenity is not installed";
-    log_.warn("dialog.zenity_missing", {});
+  if (access(kOsascriptBinary, X_OK) != 0) {
+    result.error_message = "native file dialog is not configured";
+    log_.warn("dialog.osascript_missing", {});
     return result;
   }
 
-  std::vector<std::string> args = {kZenityBinary, "--file-selection"};
-  if (request.mode == FileDialogMode::SaveAs) {
-    args.push_back("--save");
-    args.push_back("--confirm-overwrite");
-    args.push_back("--title");
-    args.push_back(kSaveProjectTitle);
-    args.push_back("--filename");
-    args.push_back(default_save_filename(request));
-  } else {
-    args.push_back("--title");
-    args.push_back(kOpenProjectTitle);
-  }
-
-  args.push_back("--file-filter");
-  args.push_back(kFileFilter);
-
-  if (const auto directory = parent_directory(request.default_path)) {
-    args.push_back("--filename");
-    args.push_back(directory->string());
-  }
-
-  const auto process = run_process(args, kZenityMaxWaitSeconds);
+  const std::string script = request.mode == FileDialogMode::SaveAs
+                                 ? build_save_script(request)
+                                 : build_open_script(request);
+  const auto process =
+      run_process({kOsascriptBinary, "-e", script}, kZenityMaxWaitSeconds);
   if (process.timed_out) {
     result.error_message = "file dialog timed out";
     log_.warn("dialog.timeout", {{"timeout_seconds", kZenityMaxWaitSeconds}});
     return result;
   }
 
+  // User cancel is typically exit 1 with "User canceled." on stderr.
   if (process.exit_code == 1) {
     result.cancelled = true;
     return result;

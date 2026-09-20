@@ -33,9 +33,9 @@ Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder 
 ### NSIS installer (recommended)
 
 1. Download `pixelanea-{version}-windows-x64-setup.exe` from the [GitHub Release](https://github.com/pixelanea/pixelanea/releases).
-2. Double-click the installer and follow the wizard (default location: `C:\Program Files\Pixelanea`).
+2. Double-click the installer and follow the wizard. Default location is typically `%LOCALAPPDATA%\Pixelanea` (per-user). A machine-wide install under `C:\Program Files\Pixelanea` only happens if you choose that location in the wizard.
 3. Launch **Pixelanea** from the Start menu or desktop shortcut.
-4. A **native Pixelanea window** opens. Draw, save, and close when finished.
+4. A **native Pixelanea window** opens. Draw, save, and close when finished. **File → Open** and **Save As** use the Windows file picker.
 
 **OS requirement:** Windows 10 x64 or later. **WebView2** (Microsoft Edge runtime) is required for the native window — it is preinstalled on current Windows 10/11 builds.
 
@@ -47,7 +47,7 @@ Extract the `.tar.gz` release, then run `./pixelanea` from the extracted folder 
 2. Extract the folder anywhere (e.g. Desktop or USB drive).
 3. Run `pixelanea-shell.exe` inside the extracted folder.
 
-Portable layout mirrors the Linux `.tar.gz`: `pixelanea-server.exe`, `pixelanea-shell.exe`, and `web/` sit in the same directory.
+Portable layout mirrors the Linux `.tar.gz`: `pixelanea-server.exe`, `pixelanea-shell.exe`, `web/`, and `migrations/` sit in the same directory.
 
 ### Release asset naming
 
@@ -55,6 +55,29 @@ Portable layout mirrors the Linux `.tar.gz`: `pixelanea-server.exe`, `pixelanea-
 |--------------|------------------|--------------------|
 | Installer | `pixelanea-{version}-windows-x64-setup.exe` | `pixelanea-1.1.0-windows-x64-setup.exe` |
 | Portable | `pixelanea-{version}-windows-x64.zip` | `pixelanea-1.1.0-windows-x64.zip` |
+
+## Install (macOS)
+
+### DMG (recommended)
+
+1. Download `pixelanea-{version}-macos-arm64.dmg` (Apple Silicon) or `pixelanea-{version}-macos-x64.dmg` (Intel) from the [GitHub Release](https://github.com/pixelanea/pixelanea/releases).
+2. Open the disk image and drag **Pixelanea.app** into **Applications** (or `~/Applications`).
+3. Open **Pixelanea** from Applications, Launchpad, or Spotlight.
+4. **File → Open** and **Save As** use the macOS file picker.
+
+**OS requirement:** macOS 12 (Monterey) or later. Match the architecture: Apple Silicon → `macos-arm64`, Intel → `macos-x64`.
+
+**Unsigned builds:** Pilot and CI builds are not notarized. Gatekeeper may show “Apple cannot check it for malicious software.” Allow once via **System Settings → Privacy & Security → Open Anyway**, or:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Pixelanea.app
+```
+
+### Portable zip (no install)
+
+1. Download `pixelanea-{version}-macos-arm64.zip` or `pixelanea-{version}-macos-x64.zip`.
+2. Unzip anywhere (Desktop, Downloads, USB drive).
+3. Open `Pixelanea.app`. The zip includes `README.txt` with Gatekeeper steps.
 
 Linux assets use the same version tag with `pixelanea_{version}_{arch}.deb` and `pixelanea-{version}-linux-{arch}.tar.gz`.
 
@@ -224,7 +247,8 @@ See [shortcuts.md](./shortcuts.md) for a printable reference card.
 | Problem | Try |
 |---------|-----|
 | Connection banner / can't reach server | Click **Retry**; restart Pixelanea from the app menu or run `pixelanea` again |
-| Native window won't open | Install WebKitGTK (`libwebkit2gtk-4.1-0`) or use `pixelanea-browser` |
+| Native window won't open | Linux: install WebKitGTK (`libwebkit2gtk-4.1-0`) or use `pixelanea-browser`. Windows: install WebView2. macOS: allow the app in Privacy & Security if Gatekeeper blocked it. |
+| File Open/Save has no picker | Linux: `sudo apt install zenity`. Windows and macOS use the OS picker; if it fails, type a path ending in `.pixelanea`. |
 | Port 8787 already in use | Choose **Open** to use the running instance, or **Cancel** and close the other copy first |
 | Save fails | Check disk space and write permissions on the target folder |
 | Import looks wrong | Try a smaller output size or different palette preset |

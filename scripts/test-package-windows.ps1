@@ -18,6 +18,7 @@ $SetupExe = Join-Path $DistDir "pixelanea-$Version-windows-x64-setup.exe"
 $PortableZip = Join-Path $DistDir "pixelanea-$Version-windows-x64.zip"
 $PortableDir = Join-Path $DistDir "pixelanea-$Version-windows-x64"
 $HealthUrl = "http://127.0.0.1:8787/api/health"
+$CreateUrl = "http://127.0.0.1:8787/api/projects"
 
 function Assert-FileExists {
     param([string]$Path, [int]$MinBytes = 1)
@@ -36,6 +37,7 @@ function Test-PortableLayout {
         "pixelanea-server.exe",
         "pixelanea-shell.exe",
         "web\index.html",
+        "migrations\001_initial.sql",
         "logo-glyph.svg",
         "README.txt"
     )
@@ -45,6 +47,27 @@ function Test-PortableLayout {
             throw "Portable layout missing: $rel"
         }
     }
+    $sql = Get-Content -Raw (Join-Path $Dir "migrations\001_initial.sql")
+    if ($sql -notmatch "CREATE TABLE") {
+        throw "Packaged 001_initial.sql is missing CREATE TABLE"
+    }
+}
+
+function Resolve-InstalledServerDir {
+    param([string]$InstallDir)
+    $candidates = @(
+        (Join-Path $InstallDir "resources\pixelanea"),
+        (Join-Path $InstallDir "pixelanea"),
+        $InstallDir
+    )
+    foreach ($dir in $candidates) {
+        if ((Test-Path (Join-Path $dir "pixelanea-server.exe")) -and
+            (Test-Path (Join-Path $dir "web\index.html")) -and
+            (Test-Path (Join-Path $dir "migrations\001_initial.sql"))) {
+            return $dir
+        }
+    }
+    throw "Installed package missing pixelanea-server.exe, web, or migrations under $InstallDir"
 }
 
 function Wait-Health {
@@ -61,6 +84,18 @@ function Wait-Health {
         }
     }
     throw "Health check failed: $Url"
+}
+
+function Wait-CreateProject {
+    $body = '{"name":"smoke","width":16,"height":16,"frameCount":1}'
+    $response = Invoke-WebRequest -Uri $CreateUrl -Method POST -ContentType "application/json" `
+        -Body $body -UseBasicParsing -TimeoutSec 5
+    if ($response.StatusCode -ne 201 -and $response.StatusCode -ne 200) {
+        throw "POST /api/projects failed with status $($response.StatusCode)"
+    }
+    if ($response.Content -notmatch '"id"') {
+        throw "Create project response missing id: $($response.Content)"
+    }
 }
 
 if (-not $SkipBuild) {
@@ -101,28 +136,26 @@ if ($InstallTest) {
 
         $installedShell = Join-Path $InstallDir "pixelanea-shell.exe"
         if (-not (Test-Path $installedShell)) {
-            throw "Installed shell missing: $installedShell"
+            $installedShell = Join-Path $InstallDir "Pixelanea.exe"
+        }
+        if (-not (Test-Path $installedShell)) {
+            throw "Installed shell missing under $InstallDir"
         }
 
-        $serverProc = Start-Process -FilePath (Join-Path $InstallDir "resources\pixelanea\pixelanea-server.exe") `
-            -ArgumentList @("--host", "127.0.0.1", "--port", "8787", "--web-root", (Join-Path $InstallDir "resources\pixelanea\web")) `
+        $serverDir = Resolve-InstalledServerDir -InstallDir $InstallDir
+        $serverProc = Start-Process -FilePath (Join-Path $serverDir "pixelanea-server.exe") `
+            -ArgumentList @("--host", "127.0.0.1", "--port", "8787", "--web-root", (Join-Path $serverDir "web")) `
             -PassThru
         try {
             Wait-Health -Url $HealthUrl
             Write-Host "==> Health check OK"
+            Wait-CreateProject
+            Write-Host "==> Create project OK"
         }
         finally {
             if ($serverProc -and -not $serverProc.HasExited) {
                 Stop-Process -Id $serverProc.Id -Force -ErrorAction SilentlyContinue
             }
-        }
-    }
-    catch {
-        if ($env:CI -eq "true") {
-            Write-Warning "Install smoke test skipped in CI: $_"
-        }
-        else {
-            throw
         }
     }
     finally {

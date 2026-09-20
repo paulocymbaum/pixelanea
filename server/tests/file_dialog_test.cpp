@@ -6,6 +6,8 @@
 
 #include <nlohmann/json.hpp>
 
+#include <filesystem>
+
 using pixelanea::api::FileDialogMode;
 using pixelanea::api::FileDialogProvider;
 using pixelanea::api::PickPathRequest;
@@ -36,6 +38,15 @@ pixelanea::logging::ScopedLogger make_log() {
 }
 
 }  // namespace
+
+TEST_CASE("default_save_filename uses defaultName then untitled", "[file_dialog]") {
+  pixelanea::api::PickPathRequest named;
+  named.default_name = "hero";
+  REQUIRE(pixelanea::api::default_save_filename(named) == "hero.pixelanea");
+
+  pixelanea::api::PickPathRequest empty;
+  REQUIRE(pixelanea::api::default_save_filename(empty) == "untitled.pixelanea");
+}
 
 TEST_CASE("pixelanea extension helpers", "[file_dialog]") {
   REQUIRE(has_pixelanea_extension("project.pixelanea"));
@@ -79,6 +90,16 @@ TEST_CASE("handle_pick_project_path returns selected path", "[file_dialog]") {
 TEST_CASE("handle_pick_project_path maps provider errors", "[file_dialog]") {
   MockFileDialogProvider provider;
   provider.next_result.error_message = "zenity is not installed";
+
+  const auto response = handle_pick_project_path(
+      nlohmann::json{{"mode", "open"}}, provider, make_log());
+
+  REQUIRE(response.status == 503);
+}
+
+TEST_CASE("handle_pick_project_path maps missing native dialog", "[file_dialog]") {
+  MockFileDialogProvider provider;
+  provider.next_result.error_message = "native file dialog is not configured";
 
   const auto response = handle_pick_project_path(
       nlohmann::json{{"mode", "open"}}, provider, make_log());
