@@ -53,10 +53,11 @@ else()
   )
 
   FetchContent_Declare(
-    zlib
+    ZLIB
     GIT_REPOSITORY https://github.com/madler/zlib.git
     GIT_TAG v1.3.1
     GIT_SHALLOW TRUE
+    OVERRIDE_FIND_PACKAGE
   )
 
   FetchContent_Declare(
@@ -79,7 +80,18 @@ else()
   set(ENABLE_GNUTLS OFF CACHE BOOL "" FORCE)
   set(ENABLE_MBEDTLS OFF CACHE BOOL "" FORCE)
 
-  FetchContent_MakeAvailable(sqlite3_amalgamation cpp_httplib nlohmann_json stb zlib libzip)
+  # zlib first so libzip's find_package(ZLIB) uses OVERRIDE_FIND_PACKAGE (Windows has no system zlib).
+  FetchContent_MakeAvailable(sqlite3_amalgamation cpp_httplib nlohmann_json stb ZLIB)
+  set(ZLIB_INCLUDE_DIR "${zlib_SOURCE_DIR}" CACHE PATH "zlib headers from FetchContent" FORCE)
+  set(ZLIB_INCLUDE_DIRS "${zlib_SOURCE_DIR};${zlib_BINARY_DIR}" CACHE STRING "" FORCE)
+  if(NOT TARGET ZLIB::ZLIB)
+    if(TARGET zlibstatic)
+      add_library(ZLIB::ZLIB ALIAS zlibstatic)
+    elseif(TARGET zlib)
+      add_library(ZLIB::ZLIB ALIAS zlib)
+    endif()
+  endif()
+  FetchContent_MakeAvailable(libzip)
 
   add_library(pixelanea_sqlite STATIC ${sqlite3_amalgamation_SOURCE_DIR}/sqlite3.c)
   target_include_directories(pixelanea_sqlite PUBLIC ${sqlite3_amalgamation_SOURCE_DIR})

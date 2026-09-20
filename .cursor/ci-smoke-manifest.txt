@@ -3,7 +3,8 @@
 #   test-md  — run ## Automated bash blocks from test.md
 #   matrix   — fail if any case Status is [ ] or [!]
 #
+# Paths must be tracked in git (not under the gitignored .cursor/skill-outputs/ tree).
 # Update when a delivery becomes the regression anchor for a feature area.
 
-test-md	.cursor/skill-outputs/editor/state/20260824T013858_pixelanea-frontend-standards/test.md
-matrix	.cursor/skill-outputs/qa/paint/20260731T223100_test-matrix-unit/test_matrix_unit.md
+test-md	.cursor/ci-smoke/harness-gate/test.md
+matrix	.cursor/ci-smoke/paint-matrix-anchor/test_matrix_unit.md
