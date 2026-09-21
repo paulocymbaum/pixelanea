@@ -79,11 +79,9 @@ else()
   set(ENABLE_COMMONCRYPTO OFF CACHE BOOL "" FORCE)
   set(ENABLE_GNUTLS OFF CACHE BOOL "" FORCE)
   set(ENABLE_MBEDTLS OFF CACHE BOOL "" FORCE)
-  set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
-
-  # Bundled zlib has no export set. libzip's install(EXPORT) then fails unless install is skipped.
-  set(_pixelanea_skip_install "${CMAKE_SKIP_INSTALL_RULES}")
-  set(CMAKE_SKIP_INSTALL_RULES ON)
+  # Suppress libzip's install(EXPORT) which fails when zlib is from FetchContent
+  # (zlibstatic is not IMPORTED and therefore cannot be in an export set).
+  set(LIBZIP_DO_INSTALL OFF CACHE BOOL "" FORCE)
 
   FetchContent_MakeAvailable(sqlite3_amalgamation cpp_httplib nlohmann_json stb ZLIB)
   if(NOT TARGET ZLIB::ZLIB)
@@ -94,8 +92,6 @@ else()
     endif()
   endif()
   FetchContent_MakeAvailable(libzip)
-
-  set(CMAKE_SKIP_INSTALL_RULES "${_pixelanea_skip_install}")
 
   add_library(pixelanea_sqlite STATIC ${sqlite3_amalgamation_SOURCE_DIR}/sqlite3.c)
   target_include_directories(pixelanea_sqlite PUBLIC ${sqlite3_amalgamation_SOURCE_DIR})
