@@ -17,8 +17,8 @@ Palette make_palette() {
   palette.id = "test";
   palette.name = "Test";
   palette.colors = {
-      Color{.slot = 1, .hex = "#ff0000"},
-      Color{.slot = 2, .hex = "#00ff00"},
+      Color{1, "#ff0000", std::nullopt},
+      Color{2, "#00ff00", std::nullopt},
   };
   return palette;
 }
