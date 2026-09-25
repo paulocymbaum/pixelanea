@@ -441,7 +441,7 @@ Durable proof lives in runner JSON and matrices, not chat EVALUATION scores. CI 
 | `test-md` | Run bash blocks under `## Automated` in the listed `test.md` (skips `cargo` when Rust toolchain absent) |
 | `matrix` | Fail if any case Status is `[ ]` or `[!]` |
 
-After a shippable skill run becomes the regression anchor for a feature, add or replace its path in the manifest. Keep the list short (1–3 entries).
+After a shippable delivery becomes the regression anchor for a feature, add or replace its path in the manifest — **tracked** under `.cursor/ci-smoke/` (not under gitignored `.cursor/skill-outputs/`). Keep the list short (1–3 entries).
 
 ---
 
