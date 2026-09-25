@@ -133,13 +133,20 @@ If building a 4-slide tutorial carousel, capture one PNG per onboarding step wit
 
 ---
 
-## Suggested LinkedIn usage
+## Suggested LinkedIn usage (Epic 1 spine)
 
-| Asset | Post placement |
-|-------|----------------|
-| `blank-project.gif` | Hook clip — editor from scratch |
-| `import-capybara.gif` | Import wizard / image pipeline |
-| `animation-walk.gif` | Shading + frame animation |
-| `still-01-onboarding-tutorial.png` | Onboarding polish |
+**Bridge sentence (reuse in every GIF caption):**
 
-Pair with `docs/loop-engineering-control-loop-linkedin.md` — videos show the **plant**; the article explains the **loops** around it.
+> This is the desktop plant I closed the loop on — local pixel editor, no cloud to hide behind.
+
+**Narrative:** GIFs = what the app under control looks like when sensors can tell truth. Essay = how the feedback path is built. Harness wiring = Part 2.
+
+| Slot | Asset | Post job (one only) | Caption must include |
+|------|-------|---------------------|----------------------|
+| **1a** | `blank-project.gif` | Plant: blank → paint → save | Bridge + “sensors care that save actually sticks” |
+| **1b** | `import-capybara.gif` | Plant: import path | Bridge + “wizard/contract = written target before agents touch UI” (one line max) |
+| **1c** | `animation-walk.gif` | Plant: frames sync | Bridge + “frame sync is where open loop bites” |
+| **1d** | Essay (`loop-engineering-control-loop-linkedin.md`) | Teach loop + one disturbance | Repo link; Part 2 promise; at most one inline still — do **not** re-demo all GIF flows |
+| **1e** | Part 2 | Harness wiring | Link `docs/recursive-agent-loop-spec.md` or follow-up post |
+
+**Publish order:** 1a → 1b → 1c before or with 1d; never orphan GIFs after the essay with no bridge. Optional for 1d: onboarding still *or* a red-matrix / stop-script screenshot (proof > polish).
